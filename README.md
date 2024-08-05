@@ -1,93 +1,59 @@
-# MIXTAPEII
-
-
-
-## Getting started
-
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
-
-```
-cd existing_repo
-git remote add origin https://gitlab.kitware.com/mixtape/mixtapeii.git
-git branch -M main
-git push -uf origin main
-```
-
-## Integrate with your tools
-
-- [ ] [Set up project integrations](https://gitlab.kitware.com/mixtape/mixtapeii/-/settings/integrations)
-
-## Collaborate with your team
-
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
-
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
+# MIXTAPE
 
 ## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+Explainable AI (XAI) middleware and visualation tools that support the interactive explanation and visualization og AI decision-making systems.
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+## Getting Started
+Start the Docker container to make the API available:
+```bash
+cd {path-to-mixtapeii-repo}/mixtapeii
+docker build -t mixtape-fastapi -f devops/fastapi/Dockerfile .
+docker compose -f devops/docker-compose.fastapi.yml up
+```
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+## Usage / Examples
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+Navigate to http://localhost:5000/docs to use the interactive docs.
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+### Training
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+**train(env_to_register: ButterflyEnvs, env_config: Dict, parallel: bool = True, num_gpus: int = 0, timesteps_total: int = 100, env_args: Dict = None, rollout_args: Dict = None, training_args: Dict = None, framework_args: Dict = None, run_args: Dict = None) -> None**
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+Run training and produce logs as well as a gif for each episode. The logs produced are a json file containing the observation spaces, actions, and rewards for each actor per step, as well as the total reward for that episode.
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+**Parameters:**
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+- **env_to_register**: Select from one of the available PettingZoo [butterfly](https://pettingzoo.farama.org/environments/butterfly/) environments.
+- **env_config**: A dict of arguments to be passed in the environment creation step (see docs for [cooperative pong](https://pettingzoo.farama.org/environments/butterfly/cooperative_pong/#arguments), [knights archers zombies](https://pettingzoo.farama.org/environments/butterfly/knights_archers_zombies/#arguments), and [pistonball](https://pettingzoo.farama.org/environments/butterfly/pistonball/#arguments) arguments).
+- **parallel**: Whether or not to use the parallel environment where all agents have simultaneous actions and observations.
+- **num_gpus**: Number of GPUs to allocate to the algorithm process. Note that not all algorithms can take advantage of GPUs. This can be fractional (e.g., 0.3 GPUs).
+- **timesteps_total**: Total number of timesteps
+- **env_args**: Sets the config’s RL-environment settings ([See docs for details](https://docs.ray.io/en/latest/rllib/package_ref/doc/ray.rllib.algorithms.algorithm_config.AlgorithmConfig.environment.html#ray.rllib.algorithms.algorithm_config.AlgorithmConfig.environment))
+- **training_args**: Sets the training related configuration ([See docs for details](https://docs.ray.io/en/latest/rllib/package_ref/doc/ray.rllib.algorithms.algorithm_config.AlgorithmConfig.training.html#ray.rllib.algorithms.algorithm_config.AlgorithmConfig.training))
+- **framework_args**: Sets the config’s DL framework settings([See docs for details](https://docs.ray.io/en/latest/rllib/package_ref/doc/ray.rllib.algorithms.algorithm_config.AlgorithmConfig.framework.html#ray.rllib.algorithms.algorithm_config.AlgorithmConfig.framework))
+- **run_args**: Runtime configuration for training and tuning runs ([See docs for details](https://docs.ray.io/en/latest/train/api/doc/ray.train.RunConfig.html#ray.train.RunConfig))
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+### Inference
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+**inference(env_to_register: ButterflyEnvs, env_config: Dict, checkpoint_path: str, parallel: bool = False)**
 
-## License
-For open source projects, say how it is licensed.
+Run inference and produce logs as well as a gif for each episode. The logs produced are a json file containing the observation spaces, actions, and rewards for each actor per step, as well as the total reward for that episode.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+**Parameters:**
+
+- **env_to_register**: Select from one of the available PettingZoo [butterfly](https://pettingzoo.farama.org/environments/butterfly/) environments.
+- **env_config**: A dict of arguments to be passed in the environment creation step (see docs for [cooperative pong](https://pettingzoo.farama.org/environments/butterfly/cooperative_pong/#arguments), [knights archers zombies](https://pettingzoo.farama.org/environments/butterfly/knights_archers_zombies/#arguments), and [pistonball](https://pettingzoo.farama.org/environments/butterfly/pistonball/#arguments) arguments).
+- **checkpoint_path**: The path (str) to a Policy or Algorithm checkpoint directory instance to restore from.
+- **parallel**: Whether or not to use the parallel environment where all agents have simultaneous actions and observations.
+
+## Local Development / Testing
+
+Running locally is recommended for faster development.
+
+```bash
+pip install fastapi/requirements.txt
+cd fastapi/
+uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
+```
+
+The `reload` flag automatically reloads the server when you make changes. The interactive docs will be available at http://localhost:5000/docs
