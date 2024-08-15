@@ -1,0 +1,13 @@
+stages:
+  - lint
+
+# Run linting on merge requests
+lint:
+  stage: lint
+  image: python:3.10-slim
+  script:
+    - pip install --upgrade pip
+    - pip install tox
+    - tox -e lint
+  only:
+    - merge_requests
