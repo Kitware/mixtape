@@ -123,7 +123,7 @@ def train(
     env_to_register: ButterflyEnvs,
     env_config: Dict,
     parallel: bool = True,
-    num_gpus: int = 0,
+    num_gpus: float = 0,
     timesteps_total: int = 100,
     env_args: Dict = None,
     training_args: Dict = None,
@@ -139,8 +139,8 @@ def train(
         parallel (bool, optional): Use the parallel API where all agents have
                                    simultaneous actions and observations.
                                    Defaults to True.
-        num_gpus (int, optional): Number of GPUs to allocate to the algorithm
-                                  process. Defaults to 0.
+        num_gpus (float, optional): Number of GPUs to allocate to the algorithm
+                                    process. Defaults to 0.
         timesteps_total (int, optional): Number of timesteps to stop after.
                                          Defaults to 100.
         env_args (Dict, optional): Set the config’s RL-environment settings.
