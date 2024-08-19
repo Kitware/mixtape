@@ -5,9 +5,6 @@ from PIL import Image
 
 from app.logger import Logger
 
-from ray.rllib.algorithms import Algorithm
-from ray.rllib.utils.metrics.metrics_logger import MetricsLogger
-
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
 from ray.rllib.env.base_env import BaseEnv
 from ray.rllib.env.env_runner import EnvRunner
@@ -22,34 +19,6 @@ class CustomLoggingCallbacks(DefaultCallbacks):
 
     Used to track, parse, and log data throughout the training process.
     """
-
-    def on_algorithm_init(
-        self,
-        *,
-        algorithm: Algorithm,
-        metrics_logger: MetricsLogger,
-        **kwargs
-    ) -> None:
-        """Run when a new Algorithm instance has finished setup.
-
-        This method gets called at the end of Algorithm.setup() after all the
-        initialization is done, and before actually training starts.
-
-        Create a Logger object for each worker. By instantiating on init we can
-        create directories by date and time and keep a reference to those
-        directories throughout all steps of the training.
-
-
-        Args:
-            algorithm (Algorithm): Reference to the Algorithm instance.
-            metrics_logger (MetricsLogger): The MetricsLogger object inside the
-                                            Algorithm. Can be used to log custom
-                                            metrics after algo initialization.
-        """
-        def create_logger(w):
-            w.global_vars['logger'] = Logger()
-
-        algorithm.workers.foreach_worker(create_logger)
 
     def on_episode_start(
         self,
@@ -86,6 +55,7 @@ class CustomLoggingCallbacks(DefaultCallbacks):
                                reset call, the on_episode_start callback will
                                be called.
         """
+        worker.global_vars.setdefault('logger', Logger())
         episode.user_data['frame_list'] = []
 
     def on_episode_step(
