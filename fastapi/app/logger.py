@@ -1,30 +1,55 @@
+"""Log custom data to files."""
+
 import json
+from typing import Any, Dict
 import numpy as np
 from pathlib import Path
 from datetime import datetime
 
 
 class Logger:
+    """Custom class for writing data to a log."""
+
     def __init__(self):
+        """Initialize the Logger class.
+
+        Capture the date and time the class was initialized.
+        """
         self.date_time = datetime.today().strftime('%Y-%m-%d-%H:%M:%S')
 
     @property
-    def log_path(self):
+    def log_path(self) -> Path:
+        """Log directory.
+
+        Returns:
+            Path: Path to the directory files are logged to.
+        """
         return Path(f'./logs/results/{self.date_time}').resolve()
 
-    def serialize_numpy(self, obj):
+    def serialize_numpy(self, obj: Any) -> Any:
+        """Serialize Numpy values.
+
+        Args:
+            obj (Any): Object to serialize.
+
+        Returns:
+            Any: The converted, serializable object.
+        """
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         if isinstance(obj, np.int32) or isinstance(obj, np.int64):
             return int(obj)
         if isinstance(obj, np.float32) or isinstance(obj, np.float64):
             return float(obj)
-        try:
-            return json.JSONEncoder.default(self, obj)
-        except Exception as e:
-            return f'{e} - {type(obj)}'
+        return json.JSONEncoder.default(self, obj)
 
-    def write_to_log(self, file_name, data):
+    def write_to_log(self, file_name: str, data: Dict) -> None:
+        """Write data to log file.
+
+        Args:
+            file_name (str): Log file name to use.
+            data (Dict): The dict of data to write to the log file.
+        """
         p = Path(f'{self.log_path}/{file_name}')
         p.parent.mkdir(parents=True, exist_ok=True)
         with open(str(p), 'w') as log_file:

@@ -7,8 +7,7 @@ Explainable AI (XAI) middleware and visualation tools that support the interacti
 Start the Docker container to make the API available:
 ```bash
 cd {path-to-mixtapeii-repo}/mixtapeii
-docker build -t mixtape-fastapi -f devops/fastapi/Dockerfile .
-docker compose -f devops/docker-compose.fastapi.yml up
+docker compose up
 ```
 
 ## Usage / Examples
