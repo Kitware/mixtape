@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Dict
 from fastapi import FastAPI
 from datetime import datetime
+import supersuit as ss
 
 from app.callbacks import CustomLoggingCallbacks
 from app.logger import Logger
@@ -21,6 +22,8 @@ from ray.rllib.env import PettingZooEnv
 from ray.rllib.env.wrappers.pettingzoo_env import ParallelPettingZooEnv
 from ray.tune import run
 from ray.tune.registry import register_env
+
+import pettingzoo.butterfly as ButterflyEnv
 
 app = FastAPI()
 
@@ -97,21 +100,30 @@ class ButterflyEnvs(str, Enum):
     Pong = 'cooperative_pong_v5'
 
 
+# Create the selected environment
+def _env_creator(env_module: ButterflyEnv, config: Dict):
+    env = env_module.parallel_env(render_mode='rgb_array', **config)
+    env = ss.resize_v1(env, x_size=84, y_size=84)
+    return env
+
+
+# Create the selected parallel environment
+def _parallel_env_creator(env_module: ButterflyEnv, config: Dict):
+    env = env_module.parallel_env(render_mode='rgb_array', **config)
+    env = ss.resize_v1(env, x_size=84, y_size=84)
+    return env
+
+
 # Register the selected environment with RLlib
 def _register_environment(env_name: str, config: Dict, parallel: bool):
     env_module = importlib.import_module(f'pettingzoo.butterfly.{env_name}')
 
     if parallel:
-        env_creator = lambda config: env_module.parallel_env(
-            render_mode='rgb_array', **config)
-        register_env(env_name, lambda config: ParallelPZWrapper(
-            env_creator(config)))
+        register_env(env_name, lambda config: ParallelPZWrapper(_parallel_env_creator(env_module, config)))
     else:
-        env_creator = lambda config: env_module.env(
-            render_mode='rgb_array', **config)
-        register_env(env_name, lambda config: PZWrapper(env_creator(config)))
+        register_env(env_name, lambda config: PZWrapper(_env_creator(env_module, config)))
 
-    return env_creator(config)
+    return _env_creator(env_module, config)
 
 
 ###############################################################################
