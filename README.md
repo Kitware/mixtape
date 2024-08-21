@@ -10,6 +10,11 @@ cd {path-to-mixtapeii-repo}/mixtapeii
 docker compose up
 ```
 
+Stop the service and remove unneeded temporary docker volumes:
+```bash
+docker compose down -v
+```
+
 ## Usage / Examples
 
 Navigate to http://localhost:5000/docs to use the interactive docs.

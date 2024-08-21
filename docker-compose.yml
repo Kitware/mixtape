@@ -7,3 +7,4 @@ services:
       - "5000:5000"
     volumes:
       - ./fastapi/logs:/app/logs
+      - ./fastapi/app:/app/app
