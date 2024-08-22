@@ -94,18 +94,30 @@ class ButterflyEnvs(str, Enum):
     Pong = 'cooperative_pong_v5'
 
 
+# Re-shape the environment if necessary
+def _reshape_if_necessary(env):
+    allowed = [[42, 42], [84, 84], [64, 64], [10, 10]]
+    agent = env.possible_agents[0]
+    shape = list(env.observation_space(agent).shape)
+    if (len(shape) >= 3 and shape[:2] not in allowed):
+        env = ss.color_reduction_v0(env, mode="B")
+        env = ss.dtype_v0(env, "float32")
+        env = ss.resize_v1(env, x_size=84, y_size=84)
+        env = ss.normalize_obs_v0(env, env_min=0, env_max=1)
+        env = ss.frame_stack_v1(env, 3)
+    return env
+
+
 # Create the selected environment
 def _env_creator(env_module: ButterflyEnv, config: Dict):
-    env = env_module.parallel_env(render_mode='rgb_array', **config)
-    env = ss.resize_v1(env, x_size=84, y_size=84)
-    return env
+    env = env_module.env(render_mode='rgb_array', **config)
+    return _reshape_if_necessary(env)
 
 
 # Create the selected parallel environment
 def _parallel_env_creator(env_module: ButterflyEnv, config: Dict):
     env = env_module.parallel_env(render_mode='rgb_array', **config)
-    env = ss.resize_v1(env, x_size=84, y_size=84)
-    return env
+    return _reshape_if_necessary(env)
 
 
 # Register the selected environment with RLlib
