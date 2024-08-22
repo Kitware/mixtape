@@ -23,7 +23,7 @@ from ray.rllib.env.wrappers.pettingzoo_env import ParallelPettingZooEnv
 from ray.tune import run
 from ray.tune.registry import register_env
 
-import pettingzoo.butterfly as ButterflyEnv
+import pettingzoo.butterfly as butterfly
 
 app = FastAPI()
 
@@ -100,8 +100,8 @@ def _reshape_if_necessary(env):
     agent = env.possible_agents[0]
     shape = list(env.observation_space(agent).shape)
     if (len(shape) >= 3 and shape[:2] not in allowed):
-        env = ss.color_reduction_v0(env, mode="B")
-        env = ss.dtype_v0(env, "float32")
+        env = ss.color_reduction_v0(env, mode='B')
+        env = ss.dtype_v0(env, 'float32')
         env = ss.resize_v1(env, x_size=84, y_size=84)
         env = ss.normalize_obs_v0(env, env_min=0, env_max=1)
         env = ss.frame_stack_v1(env, 3)
@@ -109,13 +109,13 @@ def _reshape_if_necessary(env):
 
 
 # Create the selected environment
-def _env_creator(env_module: ButterflyEnv, config: Dict):
+def _env_creator(env_module: butterfly, config: Dict):
     env = env_module.env(render_mode='rgb_array', **config)
     return _reshape_if_necessary(env)
 
 
 # Create the selected parallel environment
-def _parallel_env_creator(env_module: ButterflyEnv, config: Dict):
+def _parallel_env_creator(env_module: butterfly, config: Dict):
     env = env_module.parallel_env(render_mode='rgb_array', **config)
     return _reshape_if_necessary(env)
 
@@ -125,9 +125,11 @@ def _register_environment(env_name: str, config: Dict, parallel: bool):
     env_module = importlib.import_module(f'pettingzoo.butterfly.{env_name}')
 
     if parallel:
-        register_env(env_name, lambda config: ParallelPZWrapper(_parallel_env_creator(env_module, config)))
+        register_env(env_name, lambda config: ParallelPZWrapper(
+            _parallel_env_creator(env_module, config)))
     else:
-        register_env(env_name, lambda config: PZWrapper(_env_creator(env_module, config)))
+        register_env(env_name, lambda config: PZWrapper(
+            _env_creator(env_module, config)))
 
     return _env_creator(env_module, config)
 

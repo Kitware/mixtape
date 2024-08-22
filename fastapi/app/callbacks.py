@@ -138,9 +138,9 @@ class CustomLoggingCallbacks(DefaultCallbacks):
         logger = worker.global_vars['logger']
         episode.user_data['completed_agents'].append(agent_id)
 
-        if episode.user_data["completed_agents"] == episode.get_agents():
-            # Write out the actions, rewards and observation space for each agent
-            # per step
+        if episode.user_data['completed_agents'] == episode.get_agents():
+            # Write out the actions, rewards and observation space for each
+            # agent per step
             data = {}
             for step in range(3):
                 for agent_id, values in original_batches.items():
@@ -150,17 +150,19 @@ class CustomLoggingCallbacks(DefaultCallbacks):
                         'rewards': {},
                         'observation': {}
                     })
-                    if len(batch.get('actions')) > step:
-                        data[step]['actions'][agent_id] = batch.get('actions')[step]
-                    if len(batch.get('rewards')) > step:
-                        data[step]['rewards'][agent_id] = batch.get('rewards')[step]
-                    if len(batch.get('obs')) > step:
-                        data[step]['observation'][agent_id] = batch.get('obs')[step]
+                    if len(actions := batch.get('actions')) > step:
+                        data[step]['actions'][agent_id] = actions[step]
+                    if len(rewards := batch.get('rewards')) > step:
+                        data[step]['rewards'][agent_id] = rewards[step]
+                    if len(obs := batch.get('obs')) > step:
+                        data[step]['observation'][agent_id] = obs[step]
             data['total_reward'] = episode.total_reward
-            logger.write_to_log(f'training_episode_{episode.episode_id}.json', data)
+            file_name = f'training_episode_{episode.episode_id}.json'
+            logger.write_to_log(file_name, data)
 
             frame_list = episode.user_data['frame_list']
             fn = f'training_episode_{episode.episode_id}'
             gif_file = f'{logger.log_path}/{fn}.gif'
             frame_list[0].save(gif_file, save_all=True,
-                            append_images=frame_list[1:], duration=3, loop=0)
+                               append_images=frame_list[1:],
+                               duration=3, loop=0)
