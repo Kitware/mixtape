@@ -57,6 +57,7 @@ class CustomLoggingCallbacks(DefaultCallbacks):
         """
         worker.global_vars.setdefault('logger', Logger())
         episode.user_data['frame_list'] = []
+        episode.user_data['completed_agents'] = []
 
     def on_episode_step(
         self,
@@ -135,29 +136,31 @@ class CustomLoggingCallbacks(DefaultCallbacks):
                     Dict mapping policy IDs to policy objects.
         """
         logger = worker.global_vars['logger']
+        episode.user_data['completed_agents'].append(agent_id)
 
-        # Write out the actions, rewards and observation space for each agent
-        # per step
-        data = {}
-        for step in range(postprocessed_batch.agent_steps()):
-            for agent_id, values in original_batches.items():
-                _, _, batch = values
-                data.setdefault(step, {
-                    'actions': {},
-                    'rewards': {},
-                    'observation': {}
-                })
-                if len(batch.get('actions')) > step:
-                    data[step]['actions'][agent_id] = batch.get('actions')[step]
-                if len(batch.get('rewards')) > step:
-                    data[step]['rewards'][agent_id] = batch.get('rewards')[step]
-                if len(batch.get('obs')) > step:
-                    data[step]['observation'][agent_id] = batch.get('obs')[step]
-        data['total_reward'] = episode.total_reward
-        logger.write_to_log(f'training_episode_{episode.episode_id}.json', data)
+        if episode.user_data["completed_agents"] == episode.get_agents():
+            # Write out the actions, rewards and observation space for each agent
+            # per step
+            data = {}
+            for step in range(3):
+                for agent_id, values in original_batches.items():
+                    _, _, batch = values
+                    data.setdefault(step, {
+                        'actions': {},
+                        'rewards': {},
+                        'observation': {}
+                    })
+                    if len(batch.get('actions')) > step:
+                        data[step]['actions'][agent_id] = batch.get('actions')[step]
+                    if len(batch.get('rewards')) > step:
+                        data[step]['rewards'][agent_id] = batch.get('rewards')[step]
+                    if len(batch.get('obs')) > step:
+                        data[step]['observation'][agent_id] = batch.get('obs')[step]
+            data['total_reward'] = episode.total_reward
+            logger.write_to_log(f'training_episode_{episode.episode_id}.json', data)
 
-        frame_list = episode.user_data['frame_list']
-        fn = f'training_episode_{episode.episode_id}'
-        gif_file = f'{logger.log_path}/{fn}.gif'
-        frame_list[0].save(gif_file, save_all=True,
-                           append_images=frame_list[1:], duration=3, loop=0)
+            frame_list = episode.user_data['frame_list']
+            fn = f'training_episode_{episode.episode_id}'
+            gif_file = f'{logger.log_path}/{fn}.gif'
+            frame_list[0].save(gif_file, save_all=True,
+                            append_images=frame_list[1:], duration=3, loop=0)
