@@ -30,12 +30,6 @@ app = FastAPI()
 # Initialize Ray
 ray.init(ignore_reinit_error=True)
 
-###############################################################################
-# Wrapper classes to correct an issue with the latest release of PettingZoo
-# environments, which no longer accept an argument to the render function. The
-# RLlib PettingZoo wrapper still passes in the `render_mode` argument.
-###############################################################################
-
 
 class PZWrapper(PettingZooEnv):
     """Temporary wrapper for PettingZooEnv.
