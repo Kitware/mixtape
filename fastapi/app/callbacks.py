@@ -142,7 +142,7 @@ class CustomLoggingCallbacks(DefaultCallbacks):
             # Write out the actions, rewards and observation space for each
             # agent per step
             data = {}
-            for step in range(3):
+            for step in range(episode.total_env_steps):
                 for agent_id, values in original_batches.items():
                     _, _, batch = values
                     data.setdefault(step, {
