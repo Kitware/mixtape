@@ -177,20 +177,31 @@ def train(
 
     config = (
         PPOConfig()
-        .environment(env=env_name, clip_actions=True, **env_args)
-        .rollouts(num_rollout_workers=4, rollout_fragment_length=128)
+        .callbacks(callbacks_class=CustomLoggingCallbacks)
+        .debugging(log_level='ERROR')
+        .environment(
+            env=env_name,
+            clip_actions=env_args.get('clip_actions', True),
+            **env_args
+        )
+        .env_runners(num_env_runners=4, rollout_fragment_length='auto')
+        .framework(
+            framework=framework_args.get('framework', 'torch'),
+            **framework_args
+        )
+        .resources(num_gpus=num_gpus)
         .training(
-            train_batch_size=512,
-            lr=2e-5,
-            gamma=0.99,
-            lambda_=0.9,
-            use_gae=True,
-            clip_param=0.4,
-            grad_clip=None,
-            entropy_coeff=0.1,
-            vf_loss_coeff=0.25,
-            sgd_minibatch_size=64,
-            num_sgd_iter=10,
+            train_batch_size=training_args.get('train_batch_size', 512),
+            lr=training_args.get('lr', 2e-5),
+            gamma=training_args.get('gamma', 0.99),
+            lambda_=training_args.get('lambda_', 0.9),
+            use_gae=training_args.get('use_gae', True),
+            clip_param=training_args.get('clip_param', 0.4),
+            grad_clip=training_args.get('grad_clip', None),
+            entropy_coeff=training_args.get('entropy_coeff', 0.1),
+            vf_loss_coeff=training_args.get('vf_loss_coeff', 0.25),
+            sgd_minibatch_size=training_args.get('sgd_minibatch_size', 64),
+            num_sgd_iter=training_args.get('num_sgd_iter', 10),
             **training_args
         )
         .debugging(log_level='ERROR')
@@ -203,11 +214,12 @@ def train(
     run(
         'PPO',
         name='PPO',
-        stop={'timesteps_total': timesteps_total},
-        checkpoint_freq=10,
-        checkpoint_at_end=True,
-        storage_path=Path(f'./logs/metrics/{date_time}').resolve(),
-        config=config.to_dict(),
+        stop=run_args.get('stop', {'timesteps_total': timesteps_total}),
+        checkpoint_freq=run_args.get('checkpoint_freq', 10),
+        checkpoint_at_end=run_args.get('checkpoint_at_end', True),
+        storage_path=run_args.get(
+            'storage_path', Path(f'./logs/metrics/{date_time}').resolve()),
+        config=run_args.get('config', config.to_dict()),
         **run_args
     )
 
