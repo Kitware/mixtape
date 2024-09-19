@@ -2,15 +2,18 @@
 
 from typing import Any, Dict, Optional, Tuple
 from PIL import Image
+import gymnasium
 
 from app.logger import Logger
 
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
+from ray.rllib.core.rl_module.rl_module import RLModule
 from ray.rllib.env.base_env import BaseEnv
 from ray.rllib.env.env_runner import EnvRunner
 from ray.rllib.evaluation import Episode
 from ray.rllib.policy import Policy
 from ray.rllib.policy.sample_batch import SampleBatch
+from ray.rllib.utils.metrics.metrics_logger import MetricsLogger
 from ray.rllib.utils.typing import PolicyID
 
 
@@ -57,7 +60,7 @@ class CustomLoggingCallbacks(DefaultCallbacks):
         """
         worker.global_vars.setdefault('logger', Logger())
         episode.user_data['frame_list'] = []
-        episode.user_data['completed_agents'] = []
+        episode.user_data[f'completed_episodes'] = []
 
     def on_episode_step(
         self,
@@ -97,6 +100,55 @@ class CustomLoggingCallbacks(DefaultCallbacks):
         img = Image.fromarray(worker.env.render())
         episode.user_data['frame_list'].append(img)
 
+    def on_episode_end(
+        self,
+        *,
+        episode: Episode,
+        env_runner: EnvRunner | None = None,
+        metrics_logger: MetricsLogger | None = None,
+        env: gymnasium.Env | None = None,
+        env_index: int,
+        rl_module: RLModule | None = None,
+        worker: EnvRunner | None = None,
+        base_env: BaseEnv | None = None,
+        policies: Dict[str, Policy] | None = None,
+        **kwargs
+    ) -> None:
+        """Call when an episode is done.
+
+        Args:
+            episode (Episode): The terminated/truncated episode object after
+                               the returned obs, rewards, etc.. have been
+                               logged to the episode object.
+            env_index (int): The index of the sub-environment that is about to
+                             be reset (within the vector of sub-environments of
+                             the BaseEnv).
+            env_runner (EnvRunner | None, optional): Reference to the EnvRunner
+                                                     running the env and
+                                                     episode. Defaults to None.
+            metrics_logger (MetricsLogger | None, optional): The MetricsLogger
+                                                             object inside the
+                                                             env_runner.
+                                                             Defaults to None.
+            env (gymnasium.Env | None, optional): The environment object
+                                                  running the started episode.
+                                                  Defaults to None.
+            rl_module (RLModule | None, optional): The RLModule used to compute
+                                                   actions for stepping the
+                                                   env. Defaults to None.
+            worker (EnvRunner | None, optional): Reference to the EnvRunner
+                                                 running the env and episode.
+                                                 Defaults to None.
+            base_env (BaseEnv | None, optional): The lowest-level env interface
+                                                 used by RLlib for sampling.
+                                                 Defaults to None.
+            policies (Dict[str, Policy] | None, optional): A dict mapping
+                                                           policy IDs to policy
+                                                           objects.
+                                                           Defaults to None.
+        """
+        episode.user_data[f'completed_episodes'].push(episode.episode_id)
+
     def on_postprocess_trajectory(
         self,
         *,
@@ -135,12 +187,10 @@ class CustomLoggingCallbacks(DefaultCallbacks):
             policies (Optional[Dict[PolicyID, Policy]], optional):
                     Dict mapping policy IDs to policy objects.
         """
-        logger = worker.global_vars['logger']
-        episode.user_data['completed_agents'].append(agent_id)
-
-        if episode.user_data['completed_agents'] == episode.get_agents():
+        if episode.episode_id in episode.user_data[f'completed_episodes']:
             # Write out the actions, rewards and observation space for each
             # agent per step
+            logger = worker.global_vars['logger']
             data = {}
             for step in range(episode.total_env_steps):
                 for agent_id, values in original_batches.items():
