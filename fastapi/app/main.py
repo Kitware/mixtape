@@ -144,7 +144,7 @@ def train(
     env_config: Dict,
     parallel: bool = True,
     num_gpus: float = 0,
-    timesteps_total: int = 100,
+    timesteps_total: int = 5000,
     env_args: Dict = None,
     training_args: Dict = None,
     framework_args: Dict = None,
