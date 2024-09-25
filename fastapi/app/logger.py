@@ -10,12 +10,13 @@ from datetime import datetime
 class Logger:
     """Custom class for writing data to a log."""
 
-    def __init__(self):
+    def __init__(self, parent: str | Path = './logs'):
         """Initialize the Logger class.
 
-        Capture the date and time the class was initialized.
+        Args:
+            parent (str | Path): Parent directory for logs. Defaults to None.
         """
-        self.date_time = datetime.today().strftime('%Y-%m-%d-%H:%M:%S')
+        self.parent = Path(parent).resolve()
 
     @property
     def log_path(self) -> Path:
@@ -24,7 +25,7 @@ class Logger:
         Returns:
             Path: Path to the directory files are logged to.
         """
-        return Path(f'./logs/results/{self.date_time}').resolve()
+        return f'{self.parent}/custom_logs'
 
     def serialize_numpy(self, obj: Any) -> Any:
         """Serialize Numpy values.
@@ -53,4 +54,4 @@ class Logger:
         p = Path(f'{self.log_path}/{file_name}')
         p.parent.mkdir(parents=True, exist_ok=True)
         with open(str(p), 'w') as log_file:
-            json.dump(data, log_file, default=self.serialize_numpy)
+            json.dump(data, log_file, indent=2, default=self.serialize_numpy)

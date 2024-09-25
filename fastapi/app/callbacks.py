@@ -1,5 +1,6 @@
 """Customize callbacks to parse and track relevant data."""
 
+from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 from PIL import Image
 import gymnasium
@@ -58,9 +59,8 @@ class CustomLoggingCallbacks(DefaultCallbacks):
                                reset call, the on_episode_start callback will
                                be called.
         """
-        worker.global_vars.setdefault('logger', Logger())
         episode.user_data['frame_list'] = []
-        episode.user_data[f'completed_episodes'] = []
+        episode.user_data['step_data'] = {}
 
     def on_episode_step(
         self,
@@ -147,7 +147,18 @@ class CustomLoggingCallbacks(DefaultCallbacks):
                                                            objects.
                                                            Defaults to None.
         """
-        episode.user_data[f'completed_episodes'].push(episode.episode_id)
+        log_dir = worker.io_context.log_dir.rsplit('/', 1)[-1]
+        log_dir = list(Path('./logs').glob(f'*/{log_dir}/'))[0]
+        logger = Logger(log_dir)
+
+        file_name = f'training_episode_{episode.episode_id}.json'
+        episode.user_data['step_data']['total_reward'] = episode.total_reward
+        logger.write_to_log(file_name, episode.user_data['step_data'])
+
+        frame_list = episode.user_data['frame_list']
+        fn = f'training_episode_{episode.episode_id}'
+        gif_file = f'{logger.log_path}/{fn}.gif'
+        frame_list[0].save(gif_file, save_all=True, append_images=frame_list[1:], duration=3, loop=0)
 
     def on_postprocess_trajectory(
         self,
@@ -187,32 +198,19 @@ class CustomLoggingCallbacks(DefaultCallbacks):
             policies (Optional[Dict[PolicyID, Policy]], optional):
                     Dict mapping policy IDs to policy objects.
         """
-        if episode.episode_id in episode.user_data[f'completed_episodes']:
-            # Write out the actions, rewards and observation space for each
-            # agent per step
-            logger = worker.global_vars['logger']
-            data = {}
-            for step in range(episode.total_env_steps):
-                for agent_id, values in original_batches.items():
-                    _, _, batch = values
-                    data.setdefault(step, {
-                        'actions': {},
-                        'rewards': {},
-                        'observation': {}
-                    })
-                    if len(actions := batch.get('actions')) > step:
-                        data[step]['actions'][agent_id] = actions[step]
-                    if len(rewards := batch.get('rewards')) > step:
-                        data[step]['rewards'][agent_id] = rewards[step]
-                    if len(obs := batch.get('obs')) > step:
-                        data[step]['observation'][agent_id] = obs[step]
-            data['total_reward'] = episode.total_reward
-            file_name = f'training_episode_{episode.episode_id}.json'
-            logger.write_to_log(file_name, data)
+        # Write out the actions, rewards and observation space for each
+        # agent per step
+        data = episode.user_data['step_data']
+        offset = episode.total_env_steps - episode.active_env_steps
 
-            frame_list = episode.user_data['frame_list']
-            fn = f'training_episode_{episode.episode_id}'
-            gif_file = f'{logger.log_path}/{fn}.gif'
-            frame_list[0].save(gif_file, save_all=True,
-                               append_images=frame_list[1:],
-                               duration=3, loop=0)
+        for idx in range(episode.active_env_steps):
+            step = idx + offset
+            values = original_batches[agent_id]
+            _, _, batch = values
+            data.setdefault(step, {'actions': {}, 'rewards': {}, 'obss': {}})
+            if idx < len(actions := batch.get('actions')):
+                data[step]['actions'][agent_id] = actions[idx]
+            if idx < len(rewards := batch.get('rewards')):
+                data[step]['rewards'][agent_id] = rewards[idx]
+            if idx < len(obs := batch.get('obs')):
+                data[step]['obss'][agent_id] = obs[idx]

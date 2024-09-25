@@ -204,13 +204,8 @@ def train(
             num_sgd_iter=training_args.get('num_sgd_iter', 10),
             **training_args
         )
-        .debugging(log_level='ERROR')
-        .framework(framework='torch', **framework_args)
-        .resources(num_gpus=num_gpus)
-        .callbacks(callbacks_class=CustomLoggingCallbacks)
     )
 
-    date_time = datetime.today().strftime('%Y-%m-%d-%H:%M:%S')
     run(
         'PPO',
         name='PPO',
@@ -218,7 +213,7 @@ def train(
         checkpoint_freq=run_args.get('checkpoint_freq', 10),
         checkpoint_at_end=run_args.get('checkpoint_at_end', True),
         storage_path=run_args.get(
-            'storage_path', Path(f'./logs/metrics/{date_time}').resolve()),
+            'storage_path', Path(f'./logs').resolve()),
         config=run_args.get('config', config.to_dict()),
         **run_args
     )
