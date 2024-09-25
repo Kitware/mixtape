@@ -1,0 +1,1 @@
+{"type": "Policy", "checkpoint_version": "1.1", "format": "cloudpickle", "state_file": "policy_state.pkl", "ray_version": "2.34.0", "ray_commit": "fc87217e031b4e551cbb3d3ffc75f8c0fb57886a"}

@@ -1,0 +1,3 @@
+## Example Log Output
+
+An example of expected logging output for PettingZoo Butterfly `Knights Archers Zombies` environment. This example output is slightly modified to keep the overall size down. Most of the files under `Knights Archers Zombies/PPO/PPO_knights_archers_zombies_v10_37af9_00000_0_2024-09-25_18-01-41/custom_logs` have been removed and only the worst performing, median, and best performing episodes have been kept as examples.
