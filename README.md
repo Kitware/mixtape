@@ -70,3 +70,26 @@ Stop the service and remove unneeded temporary docker volumes:
 ```bash
 docker compose down -v
 ```
+
+## Contributing
+
+Clone the repo
+
+```bash
+git clone https://gitlab.kitware.com/mixtape/mixtapeii.git
+cd mixtapeii
+```
+
+It's strongly recommended that you use a virtual environment of your choice.
+- **venv** [[user guide](https://docs.python.org/3/library/venv.html#creating-virtual-environments)]
+- **micromamba** [[installation](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html)] [[user guide](https://mamba.readthedocs.io/en/latest/user_guide/micromamba.html)]
+- **conda** [[installation](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html)] [[user guide](https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html#getting-started-with-conda)]
+
+Install dependencies
+
+``` bash
+pip install -r requirements.txt
+pre-commit install
+```
+
+From now on `pre-commit` will automatically run `Black` on files that you've modified. If formatting changes are needed, `pre-commit` will update files before committing.
