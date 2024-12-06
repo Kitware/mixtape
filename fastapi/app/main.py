@@ -99,7 +99,7 @@ def _reshape_if_necessary(env):
     allowed = [[42, 42], [84, 84], [64, 64], [10, 10]]
     agent = env.possible_agents[0]
     shape = list(env.observation_space(agent).shape)
-    if (len(shape) >= 3 and shape[:2] not in allowed):
+    if len(shape) >= 3 and shape[:2] not in allowed:
         env = ss.color_reduction_v0(env, mode='B')
         env = ss.dtype_v0(env, 'float32')
         env = ss.resize_v1(env, x_size=84, y_size=84)
@@ -125,11 +125,17 @@ def _register_environment(env_name: str, config: Dict, parallel: bool):
     env_module = importlib.import_module(f'pettingzoo.butterfly.{env_name}')
 
     if parallel:
-        register_env(env_name, lambda config: ParallelPZWrapper(
-            _parallel_env_creator(env_module, config)))
+        register_env(
+            env_name,
+            lambda config: ParallelPZWrapper(
+                _parallel_env_creator(env_module, config)
+            ),
+        )
     else:
-        register_env(env_name, lambda config: PZWrapper(
-            _env_creator(env_module, config)))
+        register_env(
+            env_name,
+            lambda config: PZWrapper(_env_creator(env_module, config)),
+        )
 
     return _env_creator(env_module, config)
 
@@ -137,6 +143,7 @@ def _register_environment(env_name: str, config: Dict, parallel: bool):
 ###############################################################################
 # API ENDPOINTS
 ###############################################################################
+
 
 @app.post('/train')
 def train(
@@ -148,7 +155,7 @@ def train(
     env_args: Dict = None,
     training_args: Dict = None,
     framework_args: Dict = None,
-    run_args: Dict = None
+    run_args: Dict = None,
 ) -> None:
     """Train an RL PettingZoo Butterfly environment.
 
@@ -182,12 +189,12 @@ def train(
         .environment(
             env=env_name,
             clip_actions=env_args.get('clip_actions', True),
-            **env_args
+            **env_args,
         )
         .env_runners(num_env_runners=4, rollout_fragment_length='auto')
         .framework(
             framework=framework_args.get('framework', 'torch'),
-            **framework_args
+            **framework_args,
         )
         .resources(num_gpus=num_gpus)
         .training(
@@ -202,7 +209,7 @@ def train(
             vf_loss_coeff=training_args.get('vf_loss_coeff', 0.25),
             sgd_minibatch_size=training_args.get('sgd_minibatch_size', 64),
             num_sgd_iter=training_args.get('num_sgd_iter', 10),
-            **training_args
+            **training_args,
         )
     )
 
@@ -212,10 +219,9 @@ def train(
         stop=run_args.get('stop', {'timesteps_total': timesteps_total}),
         checkpoint_freq=run_args.get('checkpoint_freq', 10),
         checkpoint_at_end=run_args.get('checkpoint_at_end', True),
-        storage_path=run_args.get(
-            'storage_path', Path(f'./logs').resolve()),
+        storage_path=run_args.get('storage_path', Path(f'./logs').resolve()),
         config=run_args.get('config', config.to_dict()),
-        **run_args
+        **run_args,
     )
 
 
@@ -224,7 +230,7 @@ def inference(
     env_to_register: ButterflyEnvs,
     env_config: Dict,
     checkpoint_path: str,
-    parallel: bool = True
+    parallel: bool = True,
 ) -> None:
     """Perform prediction on a trained model.
 
@@ -273,5 +279,10 @@ def inference(
 
     logger.write_to_log('inference.json', data)
     gif_file = f'{logger.log_path}/inference.gif'
-    frame_list[0].save(gif_file, save_all=True,
-                       append_images=frame_list[1:], duration=3, loop=0)
+    frame_list[0].save(
+        gif_file,
+        save_all=True,
+        append_images=frame_list[1:],
+        duration=3,
+        loop=0,
+    )
