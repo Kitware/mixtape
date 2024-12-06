@@ -1,18 +1,15 @@
 # MIXTAPE
 
 ## Description
-Explainable AI (XAI) middleware and visualation tools that support the interactive explanation and visualization og AI decision-making systems.
+This project aims to deliver middleware and visualization tools that facilitate the interactive explanation and visualization of AI decision-making systems.
+
+MIXTAPE utilizes Ray and Ray RLLib, along with the standardized frameworks Gymnasium and PettingZoo, to create a scalable platform. This architecture supports both pre-configured environments and agents, as well as the flexibility for users to integrate their own custom environments and agents. Through simple API endpoints, accessible via the command line or Swagger interactive documentation, users can easily train models, run inference tasks, and generate explanations. These results, along with summary information, can be seamlessly visualized through the web UI.
 
 ## Getting Started
-Start the Docker container to make the API available:
+Start the Docker container:
 ```bash
 cd {path-to-mixtapeii-repo}/mixtapeii
 docker compose up
-```
-
-Stop the service and remove unneeded temporary docker volumes:
-```bash
-docker compose down -v
 ```
 
 ## Usage / Examples
@@ -20,9 +17,20 @@ docker compose down -v
 Navigate to http://localhost:5000/docs to use the interactive docs.
 
 ### Training
-
-**train(env_to_register: ButterflyEnvs, env_config: Dict, parallel: bool = True, num_gpus: int = 0, timesteps_total: int = 100, env_args: Dict = None, rollout_args: Dict = None, training_args: Dict = None, framework_args: Dict = None, run_args: Dict = None) -> None**
-
+```
+train(
+    env_to_register: ButterflyEnvs,
+    env_config: Dict,
+    parallel: bool = True,
+    num_gpus: int = 0,
+    timesteps_total: int = 100,
+    env_args: Dict = None,
+    rollout_args: Dict = None,
+    training_args: Dict = None,
+    framework_args: Dict = None,
+    run_args: Dict = None
+) -> None
+```
 Run training and produce logs as well as a gif for each episode. The logs produced are a json file containing the observation spaces, actions, and rewards for each actor per step, as well as the total reward for that episode.
 
 **Parameters:**
@@ -38,8 +46,14 @@ Run training and produce logs as well as a gif for each episode. The logs produc
 - **run_args**: Runtime configuration for training and tuning runs ([See docs for details](https://docs.ray.io/en/latest/train/api/doc/ray.train.RunConfig.html#ray.train.RunConfig))
 
 ### Inference
-
-**inference(env_to_register: ButterflyEnvs, env_config: Dict, checkpoint_path: str, parallel: bool = False)**
+```
+inference(
+    env_to_register: ButterflyEnvs,
+    env_config: Dict,
+    checkpoint_path: str,
+    parallel: bool = False
+) -> None
+```
 
 Run inference and produce logs as well as a gif for each episode. The logs produced are a json file containing the observation spaces, actions, and rewards for each actor per step, as well as the total reward for that episode.
 
@@ -50,14 +64,9 @@ Run inference and produce logs as well as a gif for each episode. The logs produ
 - **checkpoint_path**: The path (str) to a Policy or Algorithm checkpoint directory instance to restore from.
 - **parallel**: Whether or not to use the parallel environment where all agents have simultaneous actions and observations.
 
-## Local Development / Testing
+## Cleanup
 
-Running locally is recommended for faster development.
-
+Stop the service and remove unneeded temporary docker volumes:
 ```bash
-pip install fastapi/requirements.txt
-cd fastapi/
-uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
+docker compose down -v
 ```
-
-The `reload` flag automatically reloads the server when you make changes. The interactive docs will be available at http://localhost:5000/docs
