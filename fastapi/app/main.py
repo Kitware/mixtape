@@ -12,7 +12,6 @@ import supersuit as ss
 from app.callbacks import CustomLoggingCallbacks, InferenceLoggingCallbacks
 
 import ray
-from ray.rllib.algorithms.ppo import PPO
 from ray.rllib.algorithms.ppo import PPOConfig
 from ray.rllib.env import PettingZooEnv
 from ray.rllib.env.wrappers.pettingzoo_env import ParallelPettingZooEnv
@@ -119,19 +118,16 @@ def _parallel_env_creator(env_module: butterfly, config: Dict):
 # Register the selected environment with RLlib
 def _register_environment(env_name: str, config: Dict, parallel: bool):
     env_module = importlib.import_module(f'pettingzoo.butterfly.{env_name}')
+    env = None
 
     if parallel:
-        register_env(
-            env_name,
-            lambda config: ParallelPZWrapper(_parallel_env_creator(env_module, config)),
-        )
+        env = _parallel_env_creator(env_module, config)
+        register_env(env_name, lambda config: ParallelPZWrapper(env))
     else:
-        register_env(
-            env_name,
-            lambda config: PZWrapper(_env_creator(env_module, config)),
-        )
+        env = _env_creator(env_module, config)
+        register_env(env_name, lambda config: PZWrapper(env))
 
-    return _env_creator(env_module, config)
+    return env
 
 
 ###############################################################################
@@ -242,12 +238,23 @@ def inference(
     env = _register_environment(env_name, env_config, parallel)
     callback = InferenceLoggingCallbacks(env)
 
-    ppo_agent = PPO.from_checkpoint(Path(checkpoint_path).resolve())
+    config = PPOConfig().environment(env=env_name)
+    algorithm = config.build()
+    algorithm.restore(checkpoint_path)
 
     callback.on_begin_inference()
 
     if parallel:
-        pass
+        observations, _ = env.reset()
+        done = {agent: False for agent in env.agents}
+        while not all(done.values()):
+            actions = {
+                agent: algorithm.compute_single_action(obs) for agent, obs in observations.items()
+            }
+            observations, rewards, terminations, truncations, infos = env.step(actions)
+            done = {agent: terminations[agent] or truncations[agent] for agent in env.agents}
+            callback.on_compute_action(actions, rewards, observations)
+        callback.on_complete_inference(env_name)
     else:
         env.reset()
         for agent in env.agent_iter():
@@ -255,7 +262,7 @@ def inference(
             if termination or truncation:
                 action = None
             else:
-                action = ppo_agent.compute_single_action(observation)
+                action = algorithm.compute_single_action(observation)
 
             env.step(action)
             callback.on_compute_action({agent: action}, {agent: reward}, {agent: observation})
