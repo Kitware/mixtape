@@ -7,13 +7,9 @@ from enum import Enum
 from pathlib import Path
 from typing import Dict
 from fastapi import FastAPI
-from datetime import datetime
 import supersuit as ss
 
-from app.callbacks import CustomLoggingCallbacks
-from app.logger import Logger
-
-from PIL import Image
+from app.callbacks import CustomLoggingCallbacks, InferenceLoggingCallbacks
 
 import ray
 from ray.rllib.algorithms.ppo import PPO
@@ -242,45 +238,26 @@ def inference(
                                    simultaneous actions and observations.
                                    Defaults to True.
     """
-    logger = Logger()
     env_name = env_to_register.value
     env = _register_environment(env_name, env_config, parallel)
-    if parallel:
-        env = env.aec_env
+    callback = InferenceLoggingCallbacks(env)
 
     ppo_agent = PPO.from_checkpoint(Path(checkpoint_path).resolve())
-    reward_sum = 0
-    frame_list = []
 
-    env.reset()
-    i = 0
-    data = {}
-    for agent in env.agent_iter():
-        data.setdefault(i, {'actions': {}, 'rewards': {}, 'observation': {}})
-        observation, reward, termination, truncation, info = env.last()
-        data[i]['rewards'][agent] = reward
-        data[i]['observation'][agent] = observation
-        reward_sum += reward
-        if termination or truncation:
-            action = None
-        else:
-            action = ppo_agent.compute_single_action(observation)
-        data[i]['actions'][agent] = action
+    callback.on_begin_inference()
 
-        env.step(action)
-        i += 1
-        if i % (len(env.possible_agents) + 1) == 0:
-            img = Image.fromarray(env.render())
-            frame_list.append(img)
-    data['total_reward'] = reward_sum
+    if parallel:
+        pass
+    else:
+        env.reset()
+        for agent in env.agent_iter():
+            observation, reward, termination, truncation, info = env.last()
+            if termination or truncation:
+                action = None
+            else:
+                action = ppo_agent.compute_single_action(observation)
+
+            env.step(action)
+            callback.on_compute_action({agent: action}, {agent: reward}, {agent: observation})
+        callback.on_complete_inference(env_name, parallel=False)
     env.close()
-
-    logger.write_to_log('inference.json', data)
-    gif_file = f'{logger.log_path}/inference.gif'
-    frame_list[0].save(
-        gif_file,
-        save_all=True,
-        append_images=frame_list[1:],
-        duration=3,
-        loop=0,
-    )
