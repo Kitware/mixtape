@@ -236,35 +236,52 @@ def inference(
     """
     env_name = env_to_register.value
     env = _register_environment(env_name, env_config, parallel)
+
+    # FIXME: Temporary work-around
+    # Ray currently has no way to natively hook up callbacks like they do for
+    # training. In the future this should be a custom class that will hook into
+    # the inference workflow so that logs are automatically produced like they
+    # are for training.
     callback = InferenceLoggingCallbacks(env)
 
     config = PPOConfig().environment(env=env_name)
     algorithm = config.build()
-    algorithm.restore(checkpoint_path)
+    algorithm.restore(checkpoint_path)  # Restore a trained model checkpoint for inference
 
-    callback.on_begin_inference()
+    callback.on_begin_inference()  # FIXME: Manually signal the start of the inference process via callback
 
     if parallel:
-        observations, _ = env.reset()
+        observations, _ = (
+            env.reset()
+        )  # `reset` returns observations for all agents in parallel envs
         done = {agent: False for agent in env.agents}
+
+        # Loop until all agents are done (terminated or truncated)
         while not all(done.values()):
             actions = {
                 agent: algorithm.compute_single_action(obs) for agent, obs in observations.items()
             }
+            # Step the environment forward with the computed actions
             observations, rewards, terminations, truncations, infos = env.step(actions)
             done = {agent: terminations[agent] or truncations[agent] for agent in env.agents}
+            # FIXME: Manually log the actions, rewards, and observations for analysis
             callback.on_compute_action(actions, rewards, observations)
+        # FIXME: Manually signal that inference is complete
         callback.on_complete_inference(env_name)
     else:
+        # AEC environment (agent-iterating environment)
         env.reset()
+
+        # Loop over agents in the environment using the agent iterator
         for agent in env.agent_iter():
             observation, reward, termination, truncation, info = env.last()
             if termination or truncation:
-                action = None
+                action = None  # No action needed if the agent is done
             else:
                 action = algorithm.compute_single_action(observation)
-
-            env.step(action)
+            env.step(action)  # Step the environment forward with the action
+            # FIXME: Manually log the action, reward, and observation for the current agent
             callback.on_compute_action({agent: action}, {agent: reward}, {agent: observation})
+        # FIXME: Manually signal that inference for the AEC environment is complete
         callback.on_complete_inference(env_name, parallel=False)
-    env.close()
+    env.close()  # Close the environment to free resources
