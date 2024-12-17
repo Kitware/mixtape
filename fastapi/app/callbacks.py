@@ -211,14 +211,12 @@ class CustomLoggingCallbacks(DefaultCallbacks):
 
         for idx in range(episode.active_env_steps):
             step = idx + offset
-            values = original_batches[agent_id]
-            _, _, batch = values
             data.setdefault(step, {'actions': {}, 'rewards': {}, 'obss': {}})
-            if idx < len(actions := batch.get('actions')):
+            if idx < len(actions := postprocessed_batch.get('actions')):
                 data[step]['actions'][agent_id] = actions[idx]
-            if idx < len(rewards := batch.get('rewards')):
+            if idx < len(rewards := postprocessed_batch.get('rewards')):
                 data[step]['rewards'][agent_id] = rewards[idx]
-            if idx < len(obs := batch.get('obs')):
+            if idx < len(obs := postprocessed_batch.get('obs')):
                 data[step]['obss'][agent_id] = obs[idx]
 
 
