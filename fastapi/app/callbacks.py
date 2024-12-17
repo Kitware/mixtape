@@ -32,7 +32,7 @@ class CustomLoggingCallbacks(DefaultCallbacks):
         policies: Dict[PolicyID, Policy],
         env_index: int,
         episode: Episode,
-        **kwargs
+        **kwargs,
     ) -> None:
         """Run right after an Episode has been started.
 
@@ -70,7 +70,7 @@ class CustomLoggingCallbacks(DefaultCallbacks):
         policies: Dict[PolicyID, Policy],
         episode: Episode,
         env_index: int,
-        **kwargs
+        **kwargs,
     ) -> None:
         """Run on each episode step (after the action(s) has/have been logged).
 
@@ -112,7 +112,7 @@ class CustomLoggingCallbacks(DefaultCallbacks):
         worker: EnvRunner | None = None,
         base_env: BaseEnv | None = None,
         policies: Dict[str, Policy] | None = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         """Call when an episode is done.
 
@@ -158,7 +158,13 @@ class CustomLoggingCallbacks(DefaultCallbacks):
         frame_list = episode.user_data['frame_list']
         fn = f'training_episode_{episode.episode_id}'
         gif_file = f'{logger.log_path}/{fn}.gif'
-        frame_list[0].save(gif_file, save_all=True, append_images=frame_list[1:], duration=3, loop=0)
+        frame_list[0].save(
+            gif_file,
+            save_all=True,
+            append_images=frame_list[1:],
+            duration=3,
+            loop=0,
+        )
 
     def on_postprocess_trajectory(
         self,
