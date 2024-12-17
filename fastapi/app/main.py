@@ -127,9 +127,7 @@ def _register_environment(env_name: str, config: Dict, parallel: bool):
     if parallel:
         register_env(
             env_name,
-            lambda config: ParallelPZWrapper(
-                _parallel_env_creator(env_module, config)
-            ),
+            lambda config: ParallelPZWrapper(_parallel_env_creator(env_module, config)),
         )
     else:
         register_env(
