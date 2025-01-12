@@ -23,7 +23,7 @@ train(
     env_config: Dict,
     parallel: bool = True,
     num_gpus: int = 0,
-    timesteps_total: int = 100,
+    training_iteration: int = 100,
     env_args: Dict = None,
     rollout_args: Dict = None,
     training_args: Dict = None,
@@ -39,7 +39,7 @@ Run training and produce logs as well as a gif for each episode. The logs produc
 - **env_config**: A dict of arguments to be passed in the environment creation step (see docs for [cooperative pong](https://pettingzoo.farama.org/environments/butterfly/cooperative_pong/#arguments), [knights archers zombies](https://pettingzoo.farama.org/environments/butterfly/knights_archers_zombies/#arguments), and [pistonball](https://pettingzoo.farama.org/environments/butterfly/pistonball/#arguments) arguments).
 - **parallel**: Whether or not to use the parallel environment where all agents have simultaneous actions and observations.
 - **num_gpus**: Number of GPUs to allocate to the algorithm process. Note that not all algorithms can take advantage of GPUs. This can be fractional (e.g., 0.3 GPUs).
-- **timesteps_total**: Total number of timesteps
+- **training_iteration**: Stop trials after reaching a training_iteration number of iterations
 - **env_args**: Sets the config’s RL-environment settings ([See docs for details](https://docs.ray.io/en/latest/rllib/package_ref/doc/ray.rllib.algorithms.algorithm_config.AlgorithmConfig.environment.html#ray.rllib.algorithms.algorithm_config.AlgorithmConfig.environment))
 - **training_args**: Sets the training related configuration ([See docs for details](https://docs.ray.io/en/latest/rllib/package_ref/doc/ray.rllib.algorithms.algorithm_config.AlgorithmConfig.training.html#ray.rllib.algorithms.algorithm_config.AlgorithmConfig.training))
 - **framework_args**: Sets the config’s DL framework settings([See docs for details](https://docs.ray.io/en/latest/rllib/package_ref/doc/ray.rllib.algorithms.algorithm_config.AlgorithmConfig.framework.html#ray.rllib.algorithms.algorithm_config.AlgorithmConfig.framework))

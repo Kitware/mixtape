@@ -147,7 +147,7 @@ def train(
     algorithm: SupportedAlgorithm = SupportedAlgorithm.PPO,
     parallel: bool = True,
     num_gpus: float = 0,
-    timesteps_total: int = 5000,
+    training_iteration: int = 100,
     env_args: Dict | None = None,
     training_args: Dict | None = None,
     framework_args: Dict | None = None,
@@ -164,8 +164,8 @@ def train(
                                    Defaults to True.
         num_gpus (float, optional): Number of GPUs to allocate to the algorithm
                                     process. Defaults to 0.
-        timesteps_total (int, optional): Number of timesteps to stop after.
-                                         Defaults to 100.
+        training_iteration (int, optional): Number of iterations to stop after.
+                                            Defaults to 100.
         env_args (Dict, optional): Set the config’s RL-environment settings.
                                    Defaults to None.
         training_args (Dict, optional): Set the training related configuration.
@@ -226,7 +226,7 @@ def train(
 
     # Set run arg defaults
     run_args = run_args or {}
-    run_args.setdefault('stop', {'timesteps_total': timesteps_total})
+    run_args.setdefault('stop', {'training_iteration': training_iteration})
     run_args.setdefault('checkpoint_freq', 10)
     run_args.setdefault('checkpoint_at_end', True)
     run_args.setdefault('storage_path', Path('./logs').resolve())
