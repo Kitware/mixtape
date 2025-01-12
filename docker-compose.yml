@@ -2,7 +2,7 @@ services:
   fastapi:
     image: kitware/mixtape-fastapi
     build:
-      context: ../../
-      dockerfile: devops/docker/fastapi/Dockerfile
+      context: ./fastapi
+      dockerfile: Dockerfile
     ports:
       - 5000:5000
