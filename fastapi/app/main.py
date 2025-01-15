@@ -1,24 +1,25 @@
 """Endpoints that can be used to train or run inference on RL environments."""
 
 import importlib
-import numpy as np
-
+import types
 from enum import Enum
 from pathlib import Path
 from typing import Dict
-from fastapi import FastAPI
-import supersuit as ss
 
-from app.callbacks import CustomLoggingCallbacks, InferenceLoggingCallbacks
-
+import numpy as np
+import pettingzoo.butterfly as butterfly
 import ray
+import supersuit as ss
+from ray.rllib.algorithms.algorithm import Algorithm
+from ray.rllib.algorithms.dqn import DQNConfig
 from ray.rllib.algorithms.ppo import PPOConfig
 from ray.rllib.env import PettingZooEnv
 from ray.rllib.env.wrappers.pettingzoo_env import ParallelPettingZooEnv
 from ray.tune import run
 from ray.tune.registry import register_env
 
-import pettingzoo.butterfly as butterfly
+from app.callbacks import CustomLoggingCallbacks, InferenceLoggingCallbacks
+from fastapi import FastAPI
 
 app = FastAPI()
 
@@ -104,7 +105,7 @@ def _reshape_if_necessary(env):
 
 
 # Create the selected environment
-def _env_creator(env_module: butterfly, config: Dict):
+def _env_creator(env_module: types.ModuleType, config: Dict):
     env = env_module.env(render_mode='rgb_array', **config)
     return _reshape_if_necessary(env)
 
@@ -135,17 +136,23 @@ def _register_environment(env_name: str, config: Dict, parallel: bool):
 ###############################################################################
 
 
+class SupportedAlgorithm(str, Enum):
+    PPO = 'PPO'  # noqa: F811
+    DQN = 'DQN'  # noqa: F811
+
+
 @app.post('/train')
 def train(
     env_to_register: ButterflyEnvs,
     env_config: Dict,
+    algorithm: SupportedAlgorithm = SupportedAlgorithm.PPO,
     parallel: bool = True,
     num_gpus: float = 0,
     timesteps_total: int = 5000,
-    env_args: Dict = None,
-    training_args: Dict = None,
-    framework_args: Dict = None,
-    run_args: Dict = None,
+    env_args: Dict | None = None,
+    training_args: Dict | None = None,
+    framework_args: Dict | None = None,
+    run_args: Dict | None = None,
 ) -> None:
     """Train an RL PettingZoo Butterfly environment.
 
@@ -172,9 +179,29 @@ def train(
     env_name = env_to_register.value
     _register_environment(env_name, env_config, parallel)
 
+    # Set general purpose defaults
+    training_args.setdefault('train_batch_size', 512)
+    training_args.setdefault('lr', 2e-5)
+    training_args.setdefault('gamma', 0.99)
+
+    # Set algorithm specific defaults
+    if algorithm == SupportedAlgorithm.PPO:
+        ppo_defaults = {
+            'lambda_': 0.9,
+            'use_gae': True,
+            'clip_param': 0.4,
+            'grad_clip': None,
+            'entropy_coeff': 0.1,
+            'vf_loss_coeff': 0.25,
+            'sgd_minibatch_size': 64,
+            'num_sgd_iter': 10,
+        }
+        training_args = ppo_defaults | training_args
+
+    # Setup config with callbacks, debugging, training, etc.
+    alg = PPOConfig() if algorithm == SupportedAlgorithm.PPO else DQNConfig()
     config = (
-        PPOConfig()
-        .callbacks(callbacks_class=CustomLoggingCallbacks)
+        alg.callbacks(callbacks_class=CustomLoggingCallbacks)
         .debugging(log_level='ERROR')
         .environment(
             env=env_name,
@@ -187,30 +214,21 @@ def train(
             **framework_args,
         )
         .resources(num_gpus=num_gpus)
-        .training(
-            train_batch_size=training_args.get('train_batch_size', 512),
-            lr=training_args.get('lr', 2e-5),
-            gamma=training_args.get('gamma', 0.99),
-            lambda_=training_args.get('lambda_', 0.9),
-            use_gae=training_args.get('use_gae', True),
-            clip_param=training_args.get('clip_param', 0.4),
-            grad_clip=training_args.get('grad_clip', None),
-            entropy_coeff=training_args.get('entropy_coeff', 0.1),
-            vf_loss_coeff=training_args.get('vf_loss_coeff', 0.25),
-            sgd_minibatch_size=training_args.get('sgd_minibatch_size', 64),
-            num_sgd_iter=training_args.get('num_sgd_iter', 10),
-            **training_args,
-        )
+        .training(**training_args)
     )
 
+    # Set run arg defaults
+    run_args = run_args or {}
+    run_args.setdefault('stop', {'timesteps_total': timesteps_total})
+    run_args.setdefault('checkpoint_freq', 10)
+    run_args.setdefault('checkpoint_at_end', True)
+    run_args.setdefault('storage_path', Path('./logs').resolve())
+    run_args.setdefault('config', config.to_dict())
+
+    # Dispatch run
     run(
-        'PPO',
-        name='PPO',
-        stop=run_args.get('stop', {'timesteps_total': timesteps_total}),
-        checkpoint_freq=run_args.get('checkpoint_freq', 10),
-        checkpoint_at_end=run_args.get('checkpoint_at_end', True),
-        storage_path=run_args.get('storage_path', Path(f'./logs').resolve()),
-        config=run_args.get('config', config.to_dict()),
+        algorithm.value,
+        name=algorithm.value,
         **run_args,
     )
 
