@@ -7,16 +7,11 @@ from enum import Enum
 from pathlib import Path
 from typing import Dict
 from fastapi import FastAPI
-from datetime import datetime
 import supersuit as ss
 
-from app.callbacks import CustomLoggingCallbacks
-from app.logger import Logger
-
-from PIL import Image
+from app.callbacks import CustomLoggingCallbacks, InferenceLoggingCallbacks
 
 import ray
-from ray.rllib.algorithms.ppo import PPO
 from ray.rllib.algorithms.ppo import PPOConfig
 from ray.rllib.env import PettingZooEnv
 from ray.rllib.env.wrappers.pettingzoo_env import ParallelPettingZooEnv
@@ -123,19 +118,16 @@ def _parallel_env_creator(env_module: butterfly, config: Dict):
 # Register the selected environment with RLlib
 def _register_environment(env_name: str, config: Dict, parallel: bool):
     env_module = importlib.import_module(f'pettingzoo.butterfly.{env_name}')
+    env = None
 
     if parallel:
-        register_env(
-            env_name,
-            lambda config: ParallelPZWrapper(_parallel_env_creator(env_module, config)),
-        )
+        env = _parallel_env_creator(env_module, config)
+        register_env(env_name, lambda config: ParallelPZWrapper(env))
     else:
-        register_env(
-            env_name,
-            lambda config: PZWrapper(_env_creator(env_module, config)),
-        )
+        env = _env_creator(env_module, config)
+        register_env(env_name, lambda config: PZWrapper(env))
 
-    return _env_creator(env_module, config)
+    return env
 
 
 ###############################################################################
@@ -242,45 +234,54 @@ def inference(
                                    simultaneous actions and observations.
                                    Defaults to True.
     """
-    logger = Logger()
     env_name = env_to_register.value
     env = _register_environment(env_name, env_config, parallel)
+
+    # FIXME: Temporary work-around
+    # Ray currently has no way to natively hook up callbacks like they do for
+    # training. In the future this should be a custom class that will hook into
+    # the inference workflow so that logs are automatically produced like they
+    # are for training.
+    callback = InferenceLoggingCallbacks(env)
+
+    config = PPOConfig().environment(env=env_name)
+    algorithm = config.build()
+    algorithm.restore(checkpoint_path)  # Restore a trained model checkpoint for inference
+
+    callback.on_begin_inference()  # FIXME: Manually signal the start of the inference process via callback
+
     if parallel:
-        env = env.aec_env
+        observations, _ = (
+            env.reset()
+        )  # `reset` returns observations for all agents in parallel envs
+        done = {agent: False for agent in env.agents}
 
-    ppo_agent = PPO.from_checkpoint(Path(checkpoint_path).resolve())
-    reward_sum = 0
-    frame_list = []
+        # Loop until all agents are done (terminated or truncated)
+        while not all(done.values()):
+            actions = {
+                agent: algorithm.compute_single_action(obs) for agent, obs in observations.items()
+            }
+            # Step the environment forward with the computed actions
+            observations, rewards, terminations, truncations, infos = env.step(actions)
+            done = {agent: terminations[agent] or truncations[agent] for agent in env.agents}
+            # FIXME: Manually log the actions, rewards, and observations for analysis
+            callback.on_compute_action(actions, rewards, observations)
+        # FIXME: Manually signal that inference is complete
+        callback.on_complete_inference(env_name)
+    else:
+        # AEC environment (agent-iterating environment)
+        env.reset()
 
-    env.reset()
-    i = 0
-    data = {}
-    for agent in env.agent_iter():
-        data.setdefault(i, {'actions': {}, 'rewards': {}, 'observation': {}})
-        observation, reward, termination, truncation, info = env.last()
-        data[i]['rewards'][agent] = reward
-        data[i]['observation'][agent] = observation
-        reward_sum += reward
-        if termination or truncation:
-            action = None
-        else:
-            action = ppo_agent.compute_single_action(observation)
-        data[i]['actions'][agent] = action
-
-        env.step(action)
-        i += 1
-        if i % (len(env.possible_agents) + 1) == 0:
-            img = Image.fromarray(env.render())
-            frame_list.append(img)
-    data['total_reward'] = reward_sum
-    env.close()
-
-    logger.write_to_log('inference.json', data)
-    gif_file = f'{logger.log_path}/inference.gif'
-    frame_list[0].save(
-        gif_file,
-        save_all=True,
-        append_images=frame_list[1:],
-        duration=3,
-        loop=0,
-    )
+        # Loop over agents in the environment using the agent iterator
+        for agent in env.agent_iter():
+            observation, reward, termination, truncation, info = env.last()
+            if termination or truncation:
+                action = None  # No action needed if the agent is done
+            else:
+                action = algorithm.compute_single_action(observation)
+            env.step(action)  # Step the environment forward with the action
+            # FIXME: Manually log the action, reward, and observation for the current agent
+            callback.on_compute_action({agent: action}, {agent: reward}, {agent: observation})
+        # FIXME: Manually signal that inference for the AEC environment is complete
+        callback.on_complete_inference(env_name, parallel=False)
+    env.close()  # Close the environment to free resources
