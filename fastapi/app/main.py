@@ -178,6 +178,14 @@ def train(
     env_name = env_to_register.value
     _register_environment(env_name, env_config, parallel)
 
+    # Ensure all arguments default to empty dict, not None
+    if training_args is None:
+        training_args = {}
+    if env_args is None:
+        env_args = {}
+    if framework_args is None:
+        framework_args = {}
+
     # Set general purpose defaults
     training_args.setdefault('train_batch_size', 512)
     training_args.setdefault('lr', 2e-5)
