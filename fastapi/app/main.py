@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Dict
 
 import numpy as np
-import pettingzoo.butterfly as butterfly
 import ray
 import supersuit as ss
 from ray.rllib.algorithms.algorithm import Algorithm
@@ -111,7 +110,7 @@ def _env_creator(env_module: types.ModuleType, config: Dict):
 
 
 # Create the selected parallel environment
-def _parallel_env_creator(env_module: butterfly, config: Dict):
+def _parallel_env_creator(env_module: types.ModuleType, config: Dict):
     env = env_module.parallel_env(render_mode='rgb_array', **config)
     return _reshape_if_necessary(env)
 
