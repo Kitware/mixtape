@@ -153,7 +153,7 @@ def train(
     training_args: Dict | None = None,
     framework_args: Dict | None = None,
     run_args: Dict | None = None,
-) -> None:
+):
     """Train an RL PettingZoo Butterfly environment.
 
     Args:
@@ -226,11 +226,19 @@ def train(
     run_args.setdefault('config', config.to_dict())
 
     # Dispatch run
-    run(
+    result = run(
         algorithm.value,
         name=algorithm.value,
         **run_args,
     )
+
+    checkpoint = result.get_last_checkpoint()
+    if checkpoint is None:
+        raise Exception('Last checkpoint not found!')
+
+    # Normalize path to start at the `fastapi` directory
+    checkpoint_path = checkpoint.path.removeprefix('/app/')
+    return checkpoint_path
 
 
 @app.post('/inference')
