@@ -262,9 +262,9 @@ def inference(
     # are for training.
     callback = InferenceLoggingCallbacks(env)
 
-    config = PPOConfig().environment(env=env_name)
-    algorithm = config.build()
-    algorithm.restore(checkpoint_path)  # Restore a trained model checkpoint for inference
+    # Restore a trained model checkpoint for inference
+    checkpoint_path = str(Path(checkpoint_path).resolve())
+    algorithm = Algorithm.from_checkpoint(checkpoint_path)
 
     callback.on_begin_inference()  # FIXME: Manually signal the start of the inference process via callback
 
