@@ -2,11 +2,9 @@
 
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
-from PIL import Image
+
 import gymnasium
-
-from app.logger import Logger
-
+from PIL import Image
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
 from ray.rllib.core.rl_module.rl_module import RLModule
 from ray.rllib.env.base_env import BaseEnv
@@ -16,6 +14,8 @@ from ray.rllib.policy import Policy
 from ray.rllib.policy.sample_batch import SampleBatch
 from ray.rllib.utils.metrics.metrics_logger import MetricsLogger
 from ray.rllib.utils.typing import PolicyID
+
+from app.logger import Logger
 
 
 class CustomLoggingCallbacks(DefaultCallbacks):
@@ -237,11 +237,14 @@ class InferenceLoggingCallbacks:
     def on_compute_action(self, actions, rewards, obss):
         data = self.user_data['step_data']
         data.setdefault(self.step, {'actions': {}, 'rewards': {}, 'obss': {}})
+
         for agent in actions.keys():
             data[self.step]['actions'][agent] = actions[agent]
+        for agent in rewards.keys():
             data[self.step]['rewards'][agent] = rewards[agent]
-            data[self.step]['obss'][agent] = obss[agent]
             data['total_reward'] += rewards[agent]
+        for agent in obss.keys():
+            data[self.step]['obss'][agent] = obss[agent]
 
         img = Image.fromarray(self.env.render())
         self.user_data['frame_list'].append(img)

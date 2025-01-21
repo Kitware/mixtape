@@ -1,5 +1,7 @@
 services:
   api:
+    stdin_open: true
+    tty: true
     build:
       context: ./fastapi
       dockerfile: Dockerfile
