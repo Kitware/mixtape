@@ -23,6 +23,8 @@ from fastapi import FastAPI
 app = FastAPI()
 
 # Initialize Ray
+tmp_dir = os.environ.get("TEMP_DIR", "/tmp")
+print(f'TEMP DIRECTORY: {tmp_dir}')
 ray.init(ignore_reinit_error=True)
 
 

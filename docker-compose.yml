@@ -1,12 +1,8 @@
 services:
-  api:
-    stdin_open: true
-    tty: true
+  fastapi:
+    image: kitware/mixtape-fastapi
     build:
       context: ./fastapi
       dockerfile: Dockerfile
     ports:
-      - "5000:5000"
-    volumes:
-      - ./fastapi/logs:/app/logs
-      - ./fastapi/app:/app/app
+      - 5000:5000

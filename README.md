@@ -8,7 +8,7 @@ MIXTAPE utilizes Ray and Ray RLLib, along with the standardized frameworks Gymna
 ## Getting Started
 Start the Docker container:
 ```bash
-cd {path-to-mixtapeii-repo}/mixtapeii
+cd {path-to-mixtapeii-repo}/fastapi
 docker compose up
 ```
 
