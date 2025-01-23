@@ -1,5 +1,6 @@
 """Endpoints that can be used to train or run inference on RL environments."""
 
+import os
 import importlib
 import types
 from enum import Enum
