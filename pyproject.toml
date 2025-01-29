@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "mixtape"
 version = "0.0.0"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 license = { text = "Apache 2.0" }
 dependencies = [
   "celery",
@@ -49,7 +49,7 @@ packages = [
 [tool.black]
 line-length = 100
 skip-string-normalization = true
-target-version = ["py313"]
+target-version = ["py312"]
 
 [tool.isort]
 profile = "black"
