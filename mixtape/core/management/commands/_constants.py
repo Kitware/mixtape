@@ -7,3 +7,8 @@ class ButterflyEnvs(str, Enum):
     KnightsArchersZombies = 'knights_archers_zombies_v10'
     Pistonball = 'pistonball_v6'
     Pong = 'cooperative_pong_v5'
+
+
+class SupportedAlgorithm(str, Enum):
+    PPO = 'PPO'
+    DQN = 'DQN'
