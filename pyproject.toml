@@ -21,8 +21,13 @@ dependencies = [
   "django-resonant-utils",
   "djangorestframework",
   "drf-yasg",
+  "PettingZoo[butterfly]>=1.24.3",
+  "Pillow",
   "psycopg[binary]",
+  "ray[default, rllib]==2.34.0",
   "rich",
+  "SuperSuit",
+  "torch",
   "whitenoise[brotli]",
   # Production-only
   "django-s3-file-field[s3]",
