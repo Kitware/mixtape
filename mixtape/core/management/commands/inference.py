@@ -1,0 +1,94 @@
+import argparse
+from pathlib import Path
+
+from django.core.management.base import BaseCommand
+from ray.rllib.algorithms.algorithm import Algorithm
+import yaml
+
+from mixtape.core.management.commands._callbacks import InferenceLoggingCallbacks
+from mixtape.core.management.commands._constants import ButterflyEnvs
+from mixtape.core.management.commands._utils import register_environment
+
+
+class Command(BaseCommand):
+    help = 'Runs inference on the specified trained environment.'
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            'checkpoint_path', type=str, help='The path to a checkpoint directory to restore from.'
+        )
+        parser.add_argument(
+            '-e',
+            '--env_name',
+            type=ButterflyEnvs,
+            choices=[
+                'knights_archers_zombies_v10',
+                'pistonball_v6',
+                'cooperative_pong_v5',
+            ],
+            default=ButterflyEnvs.KnightsArchersZombies,
+            help='The PettingZoo or Gymnasium environment to use.',
+        )
+        parser.add_argument(
+            '-f',
+            '--config_file',
+            type=argparse.FileType('r'),
+            help='Arguments to configure the environment.',
+        )
+        parser.add_argument(
+            '-p',
+            '--parallel',
+            action='store_true',
+            help='All agents have simultaneous actions and observations. Defaults to True.',
+        )
+        parser.add_argument('--aec', dest='parallel', action='store_false')
+        parser.set_defaults(parallel=False)
+
+    def handle(self, *args, **options):
+        config_dict = {}
+        if options.get('config_file') is not None:
+            config_dict = yaml.safe_load(options['config_file'])
+        env_name = options['env_name'].value
+        env_config = config_dict.get('env_config', {})
+        env = register_environment(env_name, env_config, options['parallel'])
+
+        callback = InferenceLoggingCallbacks(env)
+
+        # Restore a trained model checkpoint for inference
+        checkpoint_path = str(Path(options['checkpoint_path']).resolve())
+        algorithm = Algorithm.from_checkpoint(checkpoint_path)
+
+        callback.on_begin_inference()
+
+        if options['parallel']:
+            observations, _ = (
+                env.reset()
+            )  # `reset` returns observations for all agents in parallel envs
+            done = {agent: False for agent in env.agents}
+
+            # Loop until all agents are done (terminated or truncated)
+            while any(not finished for finished in done.values()):
+                actions = {
+                    agent: algorithm.compute_single_action(obs)
+                    for agent, obs in observations.items()
+                }
+                # Step the environment forward with the computed actions
+                observations, rewards, terminations, truncations, infos = env.step(actions)
+                done = {agent: terminations[agent] or truncations[agent] for agent in env.agents}
+                callback.on_compute_action(actions, rewards, observations)
+            callback.on_complete_inference(env_name)
+        else:
+            # AEC environment (agent-iterating environment)
+            env.reset()
+
+            # Loop over agents in the environment using the agent iterator
+            for agent in env.agent_iter():
+                observation, reward, termination, truncation, info = env.last()
+                if termination or truncation:
+                    action = None  # No action needed if the agent is done
+                else:
+                    action = algorithm.compute_single_action(observation)
+                env.step(action)  # Step the environment forward with the action
+                callback.on_compute_action({agent: action}, {agent: reward}, {agent: observation})
+            callback.on_complete_inference(env_name, parallel=False)
+        env.close()  # Close the environment to free resources
