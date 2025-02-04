@@ -7,6 +7,7 @@ services:
     # Log printing via Rich is enhanced by a TTY
     tty: true
     env_file: ./dev/.env.docker-compose
+    platform: linux/amd64
     volumes:
       - .:/opt/django-project
     ports:
@@ -30,6 +31,7 @@ services:
     # Docker Compose does not set the TTY width, which causes Celery errors
     tty: false
     env_file: ./dev/.env.docker-compose
+    platform: linux/amd64
     volumes:
       - .:/opt/django-project
     depends_on:
