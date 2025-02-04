@@ -1,13 +1,15 @@
 import argparse
 from pathlib import Path
 
+from gymnasium.wrappers import AtariPreprocessing, FrameStack
+import numpy as np
 from django.core.management.base import BaseCommand
 from ray.rllib.algorithms.algorithm import Algorithm
 import yaml
 
 from mixtape.core.management.commands._callbacks import InferenceLoggingCallbacks
-from mixtape.core.management.commands._constants import ButterflyEnvs
-from mixtape.core.management.commands._utils import register_environment
+from mixtape.core.management.commands._constants import ExampleEnvs
+from mixtape.core.management.commands._utils import is_gymnasium_env, register_environment
 
 
 class Command(BaseCommand):
@@ -20,13 +22,16 @@ class Command(BaseCommand):
         parser.add_argument(
             '-e',
             '--env_name',
-            type=ButterflyEnvs,
+            type=ExampleEnvs,
             choices=[
                 'knights_archers_zombies_v10',
                 'pistonball_v6',
                 'cooperative_pong_v5',
+                'BattleZone-v5',
+                'Berzerk-v5',
+                'ChopperCommand-v5',
             ],
-            default=ButterflyEnvs.KnightsArchersZombies,
+            default=ExampleEnvs.PZ_KnightsArchersZombies,
             help='The PettingZoo or Gymnasium environment to use.',
         )
         parser.add_argument(
@@ -60,7 +65,23 @@ class Command(BaseCommand):
 
         callback.on_begin_inference()
 
-        if options['parallel']:
+        if is_gymnasium_env(env_name):
+            env = AtariPreprocessing(env, grayscale_obs=True, scale_obs=False, frame_skip=1)
+            env = FrameStack(env, num_stack=4)
+            done = False
+            observation, _ = env.reset()  # `reset` returns observation for single agent in Gym envs
+
+            while not done:
+                observation = np.transpose(observation, (1, 2, 0))
+                action = algorithm.compute_single_action(observation)
+                # Step the environment forward with the computed actions
+                observation, reward, terminated, truncated, info = env.step(action)
+                done = terminated or truncated
+                callback.on_compute_action(
+                    {'agent_0': action}, {'agent_0': reward}, {'agent_0': np.array(observation)}
+                )
+            callback.on_complete_inference(env_name, parallel=False)
+        elif options['parallel']:
             observations, _ = (
                 env.reset()
             )  # `reset` returns observations for all agents in parallel envs

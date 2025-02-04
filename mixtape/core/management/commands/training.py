@@ -8,7 +8,7 @@ from ray.tune import run
 import yaml
 
 from mixtape.core.management.commands._callbacks import CustomLoggingCallbacks
-from mixtape.core.management.commands._constants import SupportedAlgorithm, ButterflyEnvs
+from mixtape.core.management.commands._constants import ExampleEnvs, SupportedAlgorithm
 from mixtape.core.management.commands._utils import register_environment
 
 
@@ -19,13 +19,16 @@ class Command(BaseCommand):
         parser.add_argument(
             '-e',
             '--env_name',
-            type=ButterflyEnvs,
+            type=ExampleEnvs,
             choices=[
                 'knights_archers_zombies_v10',
                 'pistonball_v6',
                 'cooperative_pong_v5',
+                'BattleZone-v5',
+                'Berzerk-v5',
+                'ChopperCommand-v5',
             ],
-            default=ButterflyEnvs.KnightsArchersZombies,
+            default=ExampleEnvs.PZ_KnightsArchersZombies,
             help='The PettingZoo or Gymnasium environment to use.',
         )
         parser.add_argument(
