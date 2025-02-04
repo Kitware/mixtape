@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "mixtape"
 version = "0.0.0"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 license = { text = "Apache 2.0" }
 dependencies = [
   "celery",
@@ -21,8 +21,13 @@ dependencies = [
   "django-resonant-utils",
   "djangorestframework",
   "drf-yasg",
+  "PettingZoo[butterfly]>=1.24.3",
+  "Pillow",
   "psycopg[binary]",
+  "ray[default, rllib]==2.34.0",
   "rich",
+  "SuperSuit",
+  "torch",
   "whitenoise[brotli]",
   # Production-only
   "django-s3-file-field[s3]",
@@ -49,7 +54,7 @@ packages = [
 [tool.black]
 line-length = 100
 skip-string-normalization = true
-target-version = ["py312"]
+target-version = ["py311"]
 
 [tool.isort]
 profile = "black"
