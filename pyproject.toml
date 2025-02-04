@@ -54,7 +54,7 @@ packages = [
 [tool.black]
 line-length = 100
 skip-string-normalization = true
-target-version = ["py312"]
+target-version = ["py311"]
 
 [tool.isort]
 profile = "black"
