@@ -42,20 +42,14 @@ class CustomLoggingCallbacks(DefaultCallbacks):
 
 
         Args:
-            worker (EnvRunner): Reference to the EnvRunner running the env and
-                                episode.
-            base_env (BaseEnv): The lowest-level env interface used by RLlib
-                                for sampling.
-            policies (dict[PolicyID, Policy]): A dict mapping policy IDs to
-                                               policy objects.
-            env_index (int): The index of the sub-environment that is about to
-                             be reset (within the vector of sub-environments of
-                             the BaseEnv).
-            episode (Episode): The newly created Episode or EpisodeV2 object.
-                               This is the episode that is about to be started
-                               with an upcoming env.reset(). Only after this
-                               reset call, the on_episode_start callback will
-                               be called.
+            worker: Reference to the EnvRunner running the env and episode.
+            base_env: The lowest-level env interface used by RLlib for sampling.
+            policies: A dict mapping policy IDs to policy objects.
+            env_index: The index of the sub-environment that is about to be reset (within the
+                       vector of sub-environments of the BaseEnv).
+            episode: The newly created Episode or EpisodeV2 object. This is the episode that is
+                     about to be started with an upcoming env.reset(). Only after this reset call,
+                     the on_episode_start callback will be called.
         """
         episode.user_data['frame_list'] = []
         episode.user_data['step_data'] = {}
@@ -82,18 +76,13 @@ class CustomLoggingCallbacks(DefaultCallbacks):
 
 
         Args:
-            worker (EnvRunner): Reference to the EnvRunner running the env and
-                                episode.
-            base_env (BaseEnv): The lowest-level env interface used by RLlib
-                                for sampling.
-            policies (dict[PolicyID, Policy]): A dict mapping policy IDs to
-                                               policy objects.
-            episode (Episode): The just stepped episode object (after
-                               env.step() and after returned obs, rewards,
-                               etc.. have been logged to the episode object).
-            env_index (int): The index of the sub-environment that is about to
-                             be reset (within the vector of sub-environments of
-                             the BaseEnv).
+            worker: Reference to the EnvRunner running the env and episode.
+            base_env: The lowest-level env interface used by RLlib for sampling.
+            policies: A dict mapping policy IDs to policy objects.
+            episode: The just stepped episode object (after env.step() and after returned obs,
+                     rewards, etc. have been logged to the episode object).
+            env_index: The index of the sub-environment that is about to be reset (within the
+                       vector of sub-environments of the BaseEnv).
         """
         img = Image.fromarray(worker.env.render())
         episode.user_data['frame_list'].append(img)
@@ -115,35 +104,17 @@ class CustomLoggingCallbacks(DefaultCallbacks):
         """Call when an episode is done.
 
         Args:
-            episode (Episode): The terminated/truncated episode object after
-                               the returned obs, rewards, etc.. have been
-                               logged to the episode object.
-            env_index (int): The index of the sub-environment that is about to
-                             be reset (within the vector of sub-environments of
-                             the BaseEnv).
-            env_runner (EnvRunner | None, optional): Reference to the EnvRunner
-                                                     running the env and
-                                                     episode. Defaults to None.
-            metrics_logger (MetricsLogger | None, optional): The MetricsLogger
-                                                             object inside the
-                                                             env_runner.
-                                                             Defaults to None.
-            env (gymnasium.Env | None, optional): The environment object
-                                                  running the started episode.
-                                                  Defaults to None.
-            rl_module (RLModule | None, optional): The RLModule used to compute
-                                                   actions for stepping the
-                                                   env. Defaults to None.
-            worker (EnvRunner | None, optional): Reference to the EnvRunner
-                                                 running the env and episode.
-                                                 Defaults to None.
-            base_env (BaseEnv | None, optional): The lowest-level env interface
-                                                 used by RLlib for sampling.
-                                                 Defaults to None.
-            policies (dict[str, Policy] | None, optional): A dict mapping
-                                                           policy IDs to policy
-                                                           objects.
-                                                           Defaults to None.
+            episode: The terminated/truncated episode object after the returned obs, rewards, etc.
+                     have been logged to the episode object.
+            env_index: The index of the sub-environment that is about to be reset (within the
+                       vector of sub-environments of the BaseEnv).
+            env_runner: Reference to the EnvRunner running the env and episode. Defaults to None.
+            metrics_logger: The MetricsLogger object inside the env_runner. Defaults to None.
+            env: The environment object running the started episode. Defaults to None.
+            rl_module: The RLModule used to compute actions for stepping the env. Defaults to None.
+            worker: Reference to the EnvRunner running the env and episode. Defaults to None.
+            base_env: The lowest-level env interface used by RLlib for sampling. Defaults to None.
+            policies: A dict mapping policy IDs to policy objects. Defaults to None.
         """
         log_dir_name = Path(worker.io_context.log_dir).name
         log_dir = next(Path('./logs').glob(f'*/{log_dir_name}/'))
@@ -184,19 +155,14 @@ class CustomLoggingCallbacks(DefaultCallbacks):
 
 
         Args:
-            worker (EnvRunner): Reference to the current rollout worker.
-            episode (Episode): Episode object.
-            agent_id (Any): Id of the current agent.
-            policy_id (str): Id of the current policy for the agent.
-            postprocessed_batch (SampleBatch): The postprocessed sample batch
-                                               for this agent. This object can
-                                               be mutated to apply custom
-                                               trajectory postprocessing.
-            original_batches (dict[Any, tuple[Policy, SampleBatch]]):
-                    dict mapping agent IDs to their unpostprocessed trajectory
-                    data.
-            policies (Optional[dict[PolicyID, Policy]], optional):
-                    dict mapping policy IDs to policy objects.
+            worker: Reference to the current rollout worker.
+            episode: Episode object.
+            agent_id: Id of the current agent.
+            policy_id: Id of the current policy for the agent.
+            postprocessed_batch: The postprocessed sample batch for this agent. This object can be
+                                 mutated to apply custom trajectory postprocessing.
+            original_batches: dict mapping agent IDs to their unpostprocessed trajectory data.
+            policies: dict mapping policy IDs to policy objects.
         """
         # Write out the actions, rewards and observation space for each
         # agent per step

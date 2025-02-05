@@ -10,7 +10,7 @@ class NumpyJSONEncoder(json.JSONEncoder):
         """Serialize Numpy values.
 
         Args:
-            obj (Any): Object to serialize.
+            obj: Object to serialize.
 
         Returns:
             Any: The converted, serializable object.
@@ -31,7 +31,7 @@ class Logger:
         """Initialize the Logger class.
 
         Args:
-            parent (str | Path): Parent directory for logs. Defaults to None.
+            parent: Parent directory for logs. Defaults to None.
         """
         self.parent = Path(parent).resolve()
 
@@ -48,8 +48,8 @@ class Logger:
         """Write data to log file.
 
         Args:
-            file_name (str): Log file name to use.
-            data (dict): The dict of data to write to the log file.
+            file_name: Log file name to use.
+            data: The dict of data to write to the log file.
         """
         p = Path(f'{self.log_path}/{file_name}')
         p.parent.mkdir(parents=True, exist_ok=True)
