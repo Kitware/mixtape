@@ -7,9 +7,9 @@ from ray.rllib.algorithms.ppo import PPOConfig
 from ray.tune import run
 import yaml
 
-from mixtape.core.management.commands._callbacks import CustomLoggingCallbacks
-from mixtape.core.management.commands._constants import ExampleEnvs, SupportedAlgorithm
-from mixtape.core.management.commands._utils import register_environment
+from mixtape.ray_utils.callbacks import CustomLoggingCallbacks
+from mixtape.ray_utils.constants import ExampleEnvs, SupportedAlgorithm
+from mixtape.ray_utils.utils import register_environment
 
 
 class Command(BaseCommand):

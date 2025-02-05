@@ -5,16 +5,16 @@ import gymnasium as gym
 from ray.tune.registry import register_env
 import supersuit as ss
 
-from mixtape.core.management.commands._constants import ExampleEnvs
-from mixtape.core.management.commands._wrappers import ParallelPZWrapper, PZWrapper
+from mixtape.ray_utils.constants import ExampleEnvs
+from mixtape.ray_utils.wrappers import ParallelPZWrapper, PZWrapper
 
 
 def is_gymnasium_env(env_name):
     return ExampleEnvs.type(env_name) == 'Gymnasium'
 
 
-# Re-shape the environment if necessary
 def reshape_if_necessary(env):
+    # Re-shape the environment if necessary
     allowed = [[42, 42], [84, 84], [64, 64], [10, 10]]
     agent = env.possible_agents[0]
     shape = list(env.observation_space(agent).shape)
@@ -27,29 +27,29 @@ def reshape_if_necessary(env):
     return env
 
 
-# Create the selected PettingZoo environment
 def pz_env_creator(env_module: types.ModuleType, config: dict):
+    # Create the selected PettingZoo environment
     env = env_module.env(render_mode='rgb_array', **config)
     return reshape_if_necessary(env)
 
 
-# Create the selected PettingZoo parallel environment
 def parallel_env_creator(env_module: types.ModuleType, config: dict):
+    # Create the selected PettingZoo parallel environment
     env = env_module.parallel_env(render_mode='rgb_array', **config)
     return reshape_if_necessary(env)
 
 
-# Create the selected Gymnasium environment
 def gym_env_creator(env_module: str, config: dict):
+    # Create the selected Gymnasium environment
     return gym.make(f'ale_py:ALE/{env_module}', render_mode='rgb_array', **config)
 
 
-# Register the selected environment with RLlib
 def register_environment(env_name: str, config: dict, parallel: bool):
-    if ExampleEnvs.type(env_name) == 'Gymnasium':
+    # Register the selected environment with RLlib
+    if is_gymnasium_env(env_name):
         register_env(env_name, lambda config: gym_env_creator(env_name, config))
         return gym_env_creator(env_name, config)
-    elif ExampleEnvs.type(env_name) == 'PettingZoo':
+    else:
         env_module = importlib.import_module(f'pettingzoo.butterfly.{env_name}')
         if parallel:
             env = parallel_env_creator(env_module, config)

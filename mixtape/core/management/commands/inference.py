@@ -7,9 +7,9 @@ from django.core.management.base import BaseCommand
 from ray.rllib.algorithms.algorithm import Algorithm
 import yaml
 
-from mixtape.core.management.commands._callbacks import InferenceLoggingCallbacks
-from mixtape.core.management.commands._constants import ExampleEnvs
-from mixtape.core.management.commands._utils import is_gymnasium_env, register_environment
+from mixtape.ray_utils.callbacks import InferenceLoggingCallbacks
+from mixtape.ray_utils.constants import ExampleEnvs
+from mixtape.ray_utils.utils import is_gymnasium_env, register_environment
 
 
 class Command(BaseCommand):

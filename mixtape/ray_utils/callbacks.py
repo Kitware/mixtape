@@ -13,7 +13,7 @@ from ray.rllib.policy.sample_batch import SampleBatch
 from ray.rllib.utils.metrics.metrics_logger import MetricsLogger
 from ray.rllib.utils.typing import PolicyID
 
-from mixtape.core.management.commands._logger import Logger
+from mixtape.ray_utils.logger import Logger
 
 
 class CustomLoggingCallbacks(DefaultCallbacks):
