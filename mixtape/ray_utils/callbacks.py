@@ -1,4 +1,4 @@
-from pathlib import Path
+from tempfile import mkdtemp
 from typing import Any, Optional
 
 from PIL import Image
@@ -116,8 +116,9 @@ class CustomLoggingCallbacks(DefaultCallbacks):
             base_env: The lowest-level env interface used by RLlib for sampling. Defaults to None.
             policies: A dict mapping policy IDs to policy objects. Defaults to None.
         """
-        log_dir_name = Path(worker.io_context.log_dir).name
-        log_dir = next(Path('./logs').glob(f'*/{log_dir_name}/'))
+        # log_dir_name = Path(worker.io_context.log_dir).name
+        # log_dir = next(Path('./logs').glob(f'*/{log_dir_name}/'))
+        log_dir = mkdtemp(prefix='ray_training_custom_')
         logger = Logger(log_dir)
 
         file_name = f'training_episode_{episode.episode_id}.json'
@@ -182,7 +183,7 @@ class CustomLoggingCallbacks(DefaultCallbacks):
 
 class InferenceLoggingCallbacks:
     def __init__(self, env: Any) -> None:
-        self.user_data = {}
+        self.user_data: dict[str, Any] = {}
         self.step = 0
         self.logger = Logger()
         self.env = env
@@ -193,7 +194,7 @@ class InferenceLoggingCallbacks:
         self.user_data['step_data']['total_reward'] = 0
 
     def on_compute_action(
-        self, actions: dict[str, float], rewards: dict[str, float], obss: dict[str, list]
+        self, actions: dict[str, float], rewards: dict[str, float], obss: Any
     ) -> None:
         data = self.user_data['step_data']
         data.setdefault(self.step, {'actions': {}, 'rewards': {}, 'obss': {}})

@@ -1,4 +1,5 @@
-from pathlib import Path
+from tempfile import mkdtemp
+from typing import TextIO
 
 import djclick as click
 from ray.rllib.algorithms.dqn import DQNConfig
@@ -56,24 +57,31 @@ from mixtape.ray_utils.utils import is_gymnasium_env, register_environment
     default=None,
     help='Arguments to configure the environment.',
 )
-def training(env_name, algorithm, parallel, num_gpus, training_iteration, config_file):
+def training(
+    env_name: str,
+    algorithm: str,
+    parallel: bool,
+    num_gpus: float,
+    training_iteration: int,
+    config_file: TextIO | None,
+) -> None:
     """Run training on the specified environment."""
-    config_dict = {}
-    if config_file is not None:
-        config_dict = yaml.safe_load(config_file)
+    config_dict = yaml.safe_load(config_file) if config_file else {}
     env_config = config_dict.get('env_config', {})
+
     parallel = False if is_gymnasium_env(env_name) else parallel
     register_environment(env_name, env_config, parallel)
 
     # Ensure all arguments default to empty dict, not None
-    training_args = config_dict.get('training_args', {})
+    training_args = {
+        # Set general purpose defaults
+        'train_batch_size': 512,
+        'lr': 2e-5,
+        'gamma': 0.99,
+        **config_dict.get('training_args', {}),
+    }
     env_args = config_dict.get('env_args', {})
     framework_args = config_dict.get('framework_args', {})
-
-    # Set general purpose defaults
-    training_args.setdefault('train_batch_size', 512)
-    training_args.setdefault('lr', 2e-5)
-    training_args.setdefault('gamma', 0.99)
 
     # Set algorithm specific defaults
     if algorithm == SupportedAlgorithm.PPO:
@@ -102,12 +110,17 @@ def training(env_name, algorithm, parallel, num_gpus, training_iteration, config
     )
 
     # Set run arg defaults
-    run_args = config_dict.get('run_args', {})
-    run_args.setdefault('stop', {'training_iteration': training_iteration})
-    run_args.setdefault('checkpoint_freq', 10)
-    run_args.setdefault('checkpoint_at_end', True)
-    run_args.setdefault('storage_path', Path('./logs').resolve())
-    run_args.setdefault('config', config.to_dict())
+    run_args = {
+        'stop': {'training_iteration': training_iteration},
+        'checkpoint_freq': 10,
+        'checkpoint_at_end': True,
+        'config': config.to_dict(),
+        **config_dict.get('run_args', {}),
+    }
+
+    if 'storage_path' not in run_args:
+        # TemporaryDirectory is a nicer API, but Python 3.11 lacks `delete`
+        run_args['storage_path'] = mkdtemp(prefix='ray_training_')
 
     # Dispatch run
     result = run(
@@ -120,6 +133,4 @@ def training(env_name, algorithm, parallel, num_gpus, training_iteration, config
     if checkpoint is None:
         raise Exception('Last checkpoint not found!')
 
-    # Normalize path to start at the `fastapi` directory
-    checkpoint_path = checkpoint.path.removeprefix('/app/')
-    return checkpoint_path
+    click.echo(f'Checkpoint saved at: {checkpoint.path}')
