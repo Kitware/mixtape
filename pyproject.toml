@@ -8,10 +8,13 @@ version = "0.0.0"
 requires-python = ">=3.11"
 license = { text = "Apache 2.0" }
 dependencies = [
+  "ale-py",
+  "autorom[accept-rom-license]",
   "celery",
   "django[argon2]",
   "django-allauth",
   "django-auth-style",
+  "django-click",
   "django-cors-headers",
   "django-environ",
   "django-extensions",
@@ -21,6 +24,7 @@ dependencies = [
   "django-resonant-utils",
   "djangorestframework",
   "drf-yasg",
+  "gymnasium[atari, other]",
   # PettingZoo[butterfly] extra pulls in both pymunk and pygame, but the pypi version of PettingZoo
   # is extremely outdated and depends on a version of pymunk that does not build and has no bdist
   # wheel for our target platforms. So we manually specify those transitive dependency versions.
