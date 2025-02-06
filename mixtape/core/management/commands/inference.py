@@ -21,17 +21,8 @@ from mixtape.ray_utils.utils import is_gymnasium_env, register_environment
 @click.option(
     '-e',
     '--env_name',
-    type=click.Choice(
-        [
-            'knights_archers_zombies_v10',
-            'pistonball_v6',
-            'cooperative_pong_v5',
-            'BattleZone-v5',
-            'Berzerk-v5',
-            'ChopperCommand-v5',
-        ]
-    ),
-    default=ExampleEnvs.PZ_KnightsArchersZombies.value,
+    type=click.Choice([choice.value for choice in ExampleEnvs]),
+    default=ExampleEnvs.PZ_KnightsArchersZombies,
     help='The PettingZoo or Gymnasium environment to use.',
 )
 @click.option(
@@ -48,7 +39,7 @@ from mixtape.ray_utils.utils import is_gymnasium_env, register_environment
     help='All agents have simultaneous actions and observations.',
 )
 def inference(
-    checkpoint_path: Path, env_name: str, config_file: TextIO | None, parallel: bool
+    checkpoint_path: Path, env_name: ExampleEnvs, config_file: TextIO | None, parallel: bool
 ) -> None:
     """Run inference on the specified trained environment."""
     config_dict: dict = yaml.safe_load(config_file) if config_file else {}

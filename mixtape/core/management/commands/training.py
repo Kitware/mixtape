@@ -16,24 +16,15 @@ from mixtape.ray_utils.utils import is_gymnasium_env, register_environment
 @click.option(
     '-e',
     '--env_name',
-    type=click.Choice(
-        [
-            'knights_archers_zombies_v10',
-            'pistonball_v6',
-            'cooperative_pong_v5',
-            'BattleZone-v5',
-            'Berzerk-v5',
-            'ChopperCommand-v5',
-        ]
-    ),
-    default=ExampleEnvs.PZ_KnightsArchersZombies.value,
+    type=click.Choice([choice.value for choice in ExampleEnvs]),
+    default=ExampleEnvs.PZ_KnightsArchersZombies,
     help='The PettingZoo or Gymnasium environment to use.',
 )
 @click.option(
     '-a',
     '--algorithm',
-    type=click.Choice(['PPO', 'DQN']),
-    default=SupportedAlgorithm.PPO.value,
+    type=click.Choice([choice.value for choice in SupportedAlgorithm]),
+    default=SupportedAlgorithm.PPO,
     help='The RLlib algorithm to use.',
 )
 @click.option(
@@ -58,8 +49,8 @@ from mixtape.ray_utils.utils import is_gymnasium_env, register_environment
     help='Arguments to configure the environment.',
 )
 def training(
-    env_name: str,
-    algorithm: str,
+    env_name: ExampleEnvs,
+    algorithm: SupportedAlgorithm,
     parallel: bool,
     num_gpus: float,
     training_iteration: int,
