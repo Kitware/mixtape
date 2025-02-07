@@ -194,7 +194,10 @@ class InferenceLoggingCallbacks:
         self.user_data['step_data']['total_reward'] = 0
 
     def on_compute_action(
-        self, actions: dict[str, float], rewards: dict[str, float], obss: Any
+        self,
+        actions: dict[str, float],
+        rewards: dict[str, float],
+        obss: dict[str, Any],
     ) -> None:
         data = self.user_data['step_data']
         data.setdefault(self.step, {'actions': {}, 'rewards': {}, 'obss': {}})

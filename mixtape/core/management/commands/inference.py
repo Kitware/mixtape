@@ -3,14 +3,17 @@ from pathlib import Path
 from typing import TextIO
 
 import djclick as click
+import gymnasium as gym
 from gymnasium.wrappers import AtariPreprocessing, FrameStack
 import numpy as np
+from pettingzoo import AECEnv
+from pettingzoo.utils import ParallelEnv
 from ray.rllib.algorithms.algorithm import Algorithm
 import yaml
 
 from mixtape.ray_utils.callbacks import InferenceLoggingCallbacks
 from mixtape.ray_utils.constants import ExampleEnvs
-from mixtape.ray_utils.utils import is_gymnasium_env, register_environment
+from mixtape.ray_utils.utils import register_environment
 
 
 @click.command()
@@ -52,7 +55,7 @@ def inference(
         algorithm = Algorithm.from_checkpoint(str(checkpoint_path))
 
         callback.on_begin_inference()
-        if is_gymnasium_env(env_name):
+        if isinstance(env, gym.Env):
             env = AtariPreprocessing(env, grayscale_obs=True, scale_obs=False, frame_skip=1)
             env = FrameStack(env, num_stack=4)
             observation, _ = env.reset()  # `reset` returns observation for single agent in Gym envs
@@ -68,7 +71,7 @@ def inference(
                 if terminated or truncated:
                     break
             callback.on_complete_inference(env_name, parallel=False)
-        elif parallel:
+        elif parallel and isinstance(env, ParallelEnv):
             # `reset` returns observations for all agents in parallel envs
             observations, _ = env.reset()
             done = {agent: False for agent in env.agents}
@@ -84,7 +87,7 @@ def inference(
                 done = {agent: terminations[agent] or truncations[agent] for agent in env.agents}
                 callback.on_compute_action(actions, rewards, observations)
             callback.on_complete_inference(env_name)
-        else:
+        elif isinstance(env, AECEnv):
             # AEC environment (agent-iterating environment)
             env.reset()
 
