@@ -1,7 +1,7 @@
 from django.db import models
 
 from mixtape.core.models.episode import Episode
-from mixtape.ray_utils.logger import NumpyJSONEncoder
+from mixtape.core.ray_utils.logger import NumpyJSONEncoder
 
 from .episode import Episode
 

@@ -7,8 +7,8 @@ from pettingzoo.utils import ParallelEnv
 from ray.tune.registry import register_env
 import supersuit as ss
 
-from mixtape.ray_utils.constants import ExampleEnvs
-from mixtape.ray_utils.wrappers import ParallelPZWrapper, PZWrapper
+from mixtape.core.ray_utils.constants import ExampleEnvs
+from mixtape.core.ray_utils.wrappers import ParallelPZWrapper, PZWrapper
 
 
 def is_gymnasium_env(env_name: str) -> bool:

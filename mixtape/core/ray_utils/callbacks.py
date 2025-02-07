@@ -2,7 +2,7 @@ from typing import Any
 
 from PIL import Image
 
-from mixtape.ray_utils.logger import Logger
+from mixtape.core.ray_utils.logger import Logger
 
 
 class InferenceLoggingCallbacks:

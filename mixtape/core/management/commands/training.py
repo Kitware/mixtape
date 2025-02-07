@@ -7,9 +7,9 @@ from ray.rllib.algorithms.ppo import PPOConfig
 from ray.tune import run
 import yaml
 
-from mixtape.ray_utils.callbacks import CustomLoggingCallbacks
-from mixtape.ray_utils.constants import ExampleEnvs, SupportedAlgorithm
-from mixtape.ray_utils.environments import is_gymnasium_env, register_environment
+from mixtape.core.ray_utils.callbacks import CustomLoggingCallbacks
+from mixtape.core.ray_utils.constants import ExampleEnvs, SupportedAlgorithm
+from mixtape.core.ray_utils.environments import is_gymnasium_env, register_environment
 
 
 @click.command()
