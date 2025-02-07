@@ -91,8 +91,7 @@ def training(
     # Setup config with callbacks, debugging, training, etc.
     alg = PPOConfig() if algorithm == SupportedAlgorithm.PPO else DQNConfig()
     config = (
-        alg.callbacks(callbacks_class=CustomLoggingCallbacks)
-        .debugging(log_level='ERROR')
+        alg.debugging(log_level='ERROR')
         .environment(env=env_name, clip_actions=env_args.pop('clip_actions', True), **env_args)
         .env_runners(num_env_runners=4, rollout_fragment_length='auto')
         .framework(framework=framework_args.pop('framework', 'torch'), **framework_args)
