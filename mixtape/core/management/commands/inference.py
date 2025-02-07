@@ -13,7 +13,7 @@ import yaml
 
 from mixtape.ray_utils.callbacks import InferenceLoggingCallbacks
 from mixtape.ray_utils.constants import ExampleEnvs
-from mixtape.ray_utils.utils import register_environment
+from mixtape.ray_utils.environments import register_environment
 
 
 @click.command()

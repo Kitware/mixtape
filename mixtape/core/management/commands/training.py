@@ -9,7 +9,7 @@ import yaml
 
 from mixtape.ray_utils.callbacks import CustomLoggingCallbacks
 from mixtape.ray_utils.constants import ExampleEnvs, SupportedAlgorithm
-from mixtape.ray_utils.utils import is_gymnasium_env, register_environment
+from mixtape.ray_utils.environments import is_gymnasium_env, register_environment
 
 
 @click.command()
