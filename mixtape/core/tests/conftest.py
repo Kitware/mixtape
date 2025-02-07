@@ -19,4 +19,4 @@ def authenticated_api_client(user) -> APIClient:
 
 @pytest.fixture
 def user() -> User:
-    return UserFactory()
+    return UserFactory.create()

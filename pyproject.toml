@@ -7,6 +7,7 @@ name = "mixtape"
 version = "0.0.0"
 requires-python = ">=3.11"
 license = { text = "Apache 2.0" }
+classifiers = ["Private :: Do Not Upload"]
 dependencies = [
   "ale-py",
   "autorom[accept-rom-license]",
@@ -53,6 +54,34 @@ dev = [
   "django-s3-file-field[minio]",
   "ipython",
   "tox",
+]
+
+[dependency-groups]
+lint = [
+  "flake8",
+  "flake8-black",
+  "flake8-bugbear",
+  "flake8-docstrings",
+  "flake8-isort",
+  "flake8-quotes",
+  "pep8-naming",
+]
+format = [
+  "black",
+  "isort",
+]
+type = [
+  "mypy",
+  {include-group = "test"},
+  "celery-types",
+  "django-stubs[compatible-mypy]",
+  "djangorestframework-stubs",
+]
+test = [
+  "factory-boy",
+  "pytest",
+  "pytest-django",
+  "pytest-mock",
 ]
 
 [tool.hatch.build]
