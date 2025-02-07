@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 import factory.django
 
 
-class UserFactory(factory.django.DjangoModelFactory):
+class UserFactory(factory.django.DjangoModelFactory[User]):
     class Meta:
         model = User
 
