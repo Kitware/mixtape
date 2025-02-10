@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from gymnasium.wrappers import LazyFrames
 import numpy as np
 
 
@@ -15,6 +16,8 @@ class NumpyJSONEncoder(json.JSONEncoder):
         Returns:
             Any: The converted, serializable object.
         """
+        if isinstance(obj, LazyFrames):
+            obj = np.array(obj)
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         if isinstance(obj, np.int32) or isinstance(obj, np.int64):
