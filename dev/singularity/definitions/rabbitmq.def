@@ -1,0 +1,9 @@
+Bootstrap: docker
+From: rabbitmq:management-alpine
+
+%post
+    mkdir -p /var/lib/rabbitmq
+    chown -R rabbitmq:rabbitmq /var/lib/rabbitmq
+
+%startscript
+    rabbitmq-server

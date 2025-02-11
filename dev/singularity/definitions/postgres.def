@@ -1,0 +1,9 @@
+Bootstrap: docker
+From: postgres:alpine
+
+%environment
+    export POSTGRES_DB=django
+    export POSTGRES_PASSWORD=postgres
+
+%startscript
+    docker-entrypoint.sh postgres
