@@ -1,6 +1,5 @@
 from django.db import models
 
-from mixtape.core.models.episode import Episode
 from mixtape.core.ray_utils.logger import NumpyJSONEncoder
 
 from .episode import Episode
@@ -19,5 +18,3 @@ class AgentStep(models.Model):
     action = models.FloatField()
     reward = models.FloatField()
     observation_space = models.JSONField(encoder=NumpyJSONEncoder)
-
-    rendering = models.ImageField()
