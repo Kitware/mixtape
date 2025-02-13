@@ -44,6 +44,7 @@ from mixtape.core.tasks.training_tasks import run_training_task
     default=None,
     help='Arguments to configure the environment.',
 )
+@click.option('--immediate', is_flag=True, help='Run the task immediately.')
 def training(
     env_name: ExampleEnvs,
     algorithm: SupportedAlgorithm,
@@ -51,6 +52,7 @@ def training(
     num_gpus: float,
     training_iteration: int,
     config_file: TextIO | None,
+    immediate: bool,
 ) -> None:
     """Run training on the specified environment."""
     config_dict = yaml.safe_load(config_file) if config_file else {}
@@ -64,4 +66,8 @@ def training(
         config=config_dict,
     )
 
-    run_training_task.delay(training_request_pk=training_request.pk)
+    task = run_training_task.s(training_request_pk=training_request.pk)
+    if immediate:
+        task.apply()
+    else:
+        task.delay()

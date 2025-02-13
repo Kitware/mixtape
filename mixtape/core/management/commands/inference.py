@@ -31,8 +31,13 @@ from mixtape.core.tasks.inference_tasks import run_inference_task
     is_flag=True,
     help='All agents have simultaneous actions and observations.',
 )
+@click.option('--immediate', is_flag=True, help='Run the task immediately.')
 def inference(
-    checkpoint_pk: int, env_name: ExampleEnvs, config_file: TextIO | None, parallel: bool
+    checkpoint_pk: int,
+    env_name: ExampleEnvs,
+    config_file: TextIO | None,
+    parallel: bool,
+    immediate: bool,
 ) -> None:
     """Run inference on the specified trained environment."""
     config_dict = yaml.safe_load(config_file) if config_file else {}
@@ -42,4 +47,8 @@ def inference(
         environment=env_name, checkpoint=checkpoint, parallel=parallel, config=config_dict
     )
 
-    run_inference_task.delay(inference_request_pk=inference_request.pk)
+    task = run_inference_task.s(inference_request_pk=inference_request.pk)
+    if immediate:
+        task.apply()
+    else:
+        task.delay()
