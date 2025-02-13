@@ -6,7 +6,7 @@ import yaml
 from mixtape.core.models.checkpoint import Checkpoint
 from mixtape.core.models.inference_request import InferenceRequest
 from mixtape.core.ray_utils.constants import ExampleEnvs
-from mixtape.core.tasks.training_tasks import run_inference_task
+from mixtape.core.tasks.inference_tasks import run_inference_task
 
 
 @click.command()
@@ -42,4 +42,4 @@ def inference(
         environment=env_name, checkpoint=checkpoint, parallel=parallel, config=config_dict
     )
 
-    run_inference_task.delay(inference_pk=inference_request.pk)
+    run_inference_task.delay(inference_request_pk=inference_request.pk)
