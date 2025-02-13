@@ -1,21 +1,20 @@
 import contextlib
-from io import BytesIO
 import itertools
-from typing import Any
+from typing import cast
+from uuid import uuid4
 
-from PIL import Image
 from celery import shared_task
-from django.core.files import File
 from django.db import transaction
 import gymnasium as gym
-from gymnasium.wrappers import AtariPreprocessing, FrameStack
+from gymnasium.wrappers.atari_preprocessing import AtariPreprocessing
+from gymnasium.wrappers.frame_stack import FrameStack
 import numpy as np
 from pettingzoo import AECEnv
 from pettingzoo.utils import ParallelEnv
 from ray.rllib.algorithms.algorithm import Algorithm
 
 from mixtape.core.models import AgentStep, Episode, InferenceRequest
-from mixtape.core.models.rendered_step import RenderedStep
+from mixtape.core.models.step import Step
 from mixtape.core.ray_utils.environments import register_environment
 
 
@@ -54,27 +53,25 @@ def run_inference_task(inference_request_pk: int):
                         # Step the environment forward with the computed actions
                         observation, reward, terminated, truncated, info = env.step(action)
 
+                        rgb_image_array = cast(np.ndarray, env.render())
+                        with Step.rgb_array_to_file(
+                            rgb_image_array, f'step/{uuid4()}'
+                        ) as image_file:
+                            step_model = Step.objects.create(
+                                episode=episode, number=step, image=image_file
+                            )
+
                         AgentStep.objects.create(
-                            episode=episode,
                             agent='agent_0',
-                            step=step,
+                            step=step_model,
                             action=action,
                             reward=reward,
                             observation_space=observation,
                         )
-                        rgb_image_array: Any = env.render()
-                        rendering_image = Image.fromarray(rgb_image_array)
-                        with BytesIO() as rendering_stream:
-                            rendering_image.save(rendering_stream, format='PNG')
-                            rendering_stream.seek(0)
-                            image_file = File(rendering_stream, f'step_{step}.png')
-                            RenderedStep.objects.create(
-                                episode=episode, step=step, image=image_file
-                            )
 
                         if terminated or truncated:
                             break
-                elif inference_request.parallel and isinstance(env, ParallelEnv):
+                elif isinstance(env, ParallelEnv):
                     # `reset` returns observations for all agents in parallel envs
                     observations, _ = env.reset()
 
@@ -86,22 +83,21 @@ def run_inference_task(inference_request_pk: int):
                         }
                         # Step the environment forward with the computed actions
                         observations, rewards, terminations, truncations, infos = env.step(actions)
+                        rgb_image_array = env.render()
+                        assert isinstance(rgb_image_array, np.ndarray)
+                        with Step.rgb_array_to_file(
+                            rgb_image_array, f'step/{uuid4()}'
+                        ) as image_file:
+                            step_model = Step.objects.create(
+                                episode=episode, number=step, image=image_file
+                            )
                         for agent in env.agents:
                             AgentStep.objects.create(
-                                episode=episode,
                                 agent=agent,
-                                step=step,
+                                step=step_model,
                                 action=actions[agent],
                                 reward=rewards[agent],
                                 observation_space=observations[agent],
-                            )
-                        rendering_image = Image.fromarray(env.render())
-                        with BytesIO() as rendering_stream:
-                            rendering_image.save(rendering_stream, format='PNG')
-                            rendering_stream.seek(0)
-                            image_file = File(rendering_stream, f'step_{step}.png')
-                            RenderedStep.objects.create(
-                                episode=episode, step=step, image=image_file
                             )
                         if all([terminations[agent] or truncations[agent] for agent in env.agents]):
                             break
@@ -117,19 +113,18 @@ def run_inference_task(inference_request_pk: int):
                         else:
                             action = algorithm.compute_single_action(observation)
                         env.step(action)  # Step the environment forward with the action
+                        rgb_image_array = env.render()
+                        assert isinstance(rgb_image_array, np.ndarray)
+                        with Step.rgb_array_to_file(
+                            rgb_image_array, f'step/{uuid4()}'
+                        ) as image_file:
+                            step_model = Step.objects.create(
+                                episode=episode, number=step, image=image_file
+                            )
                         AgentStep.objects.create(
-                            episode=episode,
                             agent=agent,
-                            step=step,
+                            step=step_model,
                             action=action,
                             reward=reward,
                             observation_space=observation,
                         )
-                        rendering_image = Image.fromarray(env.render())
-                        with BytesIO() as rendering_stream:
-                            rendering_image.save(rendering_stream, format='PNG')
-                            rendering_stream.seek(0)
-                            image_file = File(rendering_stream, f'step_{step}.png')
-                            RenderedStep.objects.create(
-                                episode=episode, step=step, image=image_file
-                            )

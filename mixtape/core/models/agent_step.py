@@ -2,18 +2,15 @@ from django.db import models
 
 from mixtape.core.ray_utils.logger import NumpyJSONEncoder
 
-from .episode import Episode
+from .step import Step
 
 
 class AgentStep(models.Model):
     class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=['episode', 'agent', 'step'], name='unique_agent_step')
-        ]
+        constraints = [models.UniqueConstraint(fields=['agent', 'step'], name='unique_agent_step')]
 
-    episode = models.ForeignKey(Episode, on_delete=models.CASCADE)
+    step = models.ForeignKey(Step, on_delete=models.CASCADE)
     agent = models.CharField(max_length=200)
-    step = models.PositiveIntegerField()
 
     action = models.FloatField()
     reward = models.FloatField()
