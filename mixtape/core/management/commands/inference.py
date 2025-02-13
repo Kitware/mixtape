@@ -44,7 +44,7 @@ def inference(
 
     checkpoint = Checkpoint.objects.get(pk=checkpoint_pk)
     inference_request = InferenceRequest.objects.create(
-        environment=env_name, checkpoint=checkpoint, parallel=parallel, config=config_dict
+        checkpoint=checkpoint, parallel=parallel, config=config_dict
     )
 
     task = run_inference_task.s(inference_request_pk=inference_request.pk)
