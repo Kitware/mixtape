@@ -1,39 +1,26 @@
-from tempfile import mkdtemp
 from typing import TextIO
 
 import djclick as click
-from ray.rllib.algorithms.dqn import DQNConfig
-from ray.rllib.algorithms.ppo import PPOConfig
-from ray.tune import run
 import yaml
 
-from mixtape.ray_utils.callbacks import CustomLoggingCallbacks
-from mixtape.ray_utils.constants import ExampleEnvs, SupportedAlgorithm
-from mixtape.ray_utils.utils import is_gymnasium_env, register_environment
+from mixtape.core.models import TrainingRequest
+from mixtape.core.ray_utils.constants import ExampleEnvs, SupportedAlgorithm
+from mixtape.core.tasks.training_tasks import run_training_task
 
 
 @click.command()
 @click.option(
     '-e',
     '--env_name',
-    type=click.Choice(
-        [
-            'knights_archers_zombies_v10',
-            'pistonball_v6',
-            'cooperative_pong_v5',
-            'BattleZone-v5',
-            'Berzerk-v5',
-            'ChopperCommand-v5',
-        ]
-    ),
-    default=ExampleEnvs.PZ_KnightsArchersZombies.value,
+    type=click.Choice([choice.value for choice in ExampleEnvs]),
+    default=ExampleEnvs.PZ_KnightsArchersZombies,
     help='The PettingZoo or Gymnasium environment to use.',
 )
 @click.option(
     '-a',
     '--algorithm',
-    type=click.Choice(['PPO', 'DQN']),
-    default=SupportedAlgorithm.PPO.value,
+    type=click.Choice([choice.value for choice in SupportedAlgorithm]),
+    default=SupportedAlgorithm.PPO,
     help='The RLlib algorithm to use.',
 )
 @click.option(
@@ -57,80 +44,30 @@ from mixtape.ray_utils.utils import is_gymnasium_env, register_environment
     default=None,
     help='Arguments to configure the environment.',
 )
+@click.option('--immediate', is_flag=True, help='Run the task immediately.')
 def training(
-    env_name: str,
-    algorithm: str,
+    env_name: ExampleEnvs,
+    algorithm: SupportedAlgorithm,
     parallel: bool,
     num_gpus: float,
     training_iteration: int,
     config_file: TextIO | None,
+    immediate: bool,
 ) -> None:
     """Run training on the specified environment."""
     config_dict = yaml.safe_load(config_file) if config_file else {}
-    env_config = config_dict.get('env_config', {})
 
-    parallel = False if is_gymnasium_env(env_name) else parallel
-    register_environment(env_name, env_config, parallel)
-
-    # Ensure all arguments default to empty dict, not None
-    training_args = {
-        # Set general purpose defaults
-        'train_batch_size': 512,
-        'lr': 2e-5,
-        'gamma': 0.99,
-        **config_dict.get('training_args', {}),
-    }
-    env_args = config_dict.get('env_args', {})
-    framework_args = config_dict.get('framework_args', {})
-
-    # Set algorithm specific defaults
-    if algorithm == SupportedAlgorithm.PPO:
-        ppo_defaults = {
-            'lambda_': 0.9,
-            'use_gae': True,
-            'clip_param': 0.4,
-            'grad_clip': None,
-            'entropy_coeff': 0.1,
-            'vf_loss_coeff': 0.25,
-            'sgd_minibatch_size': 64,
-            'num_sgd_iter': 10,
-        }
-        training_args = ppo_defaults | training_args
-
-    # Setup config with callbacks, debugging, training, etc.
-    alg = PPOConfig() if algorithm == SupportedAlgorithm.PPO else DQNConfig()
-    config = (
-        alg.callbacks(callbacks_class=CustomLoggingCallbacks)
-        .debugging(log_level='ERROR')
-        .environment(env=env_name, clip_actions=env_args.pop('clip_actions', True), **env_args)
-        .env_runners(num_env_runners=4, rollout_fragment_length='auto')
-        .framework(framework=framework_args.pop('framework', 'torch'), **framework_args)
-        .resources(num_gpus=num_gpus)
-        .training(**training_args)
+    training_request = TrainingRequest.objects.create(
+        environment=env_name,
+        algorithm=algorithm,
+        parallel=parallel,
+        num_gpus=num_gpus,
+        iterations=training_iteration,
+        config=config_dict,
     )
 
-    # Set run arg defaults
-    run_args = {
-        'stop': {'training_iteration': training_iteration},
-        'checkpoint_freq': 10,
-        'checkpoint_at_end': True,
-        'config': config.to_dict(),
-        **config_dict.get('run_args', {}),
-    }
-
-    if 'storage_path' not in run_args:
-        # TemporaryDirectory is a nicer API, but Python 3.11 lacks `delete`
-        run_args['storage_path'] = mkdtemp(prefix='ray_training_')
-
-    # Dispatch run
-    result = run(
-        algorithm,
-        name=algorithm,
-        **run_args,
-    )
-
-    checkpoint = result.get_last_checkpoint()
-    if checkpoint is None:
-        raise Exception('Last checkpoint not found!')
-
-    click.echo(f'Checkpoint saved at: {checkpoint.path}')
+    task = run_training_task.s(training_request_pk=training_request.pk)
+    if immediate:
+        task.apply()
+    else:
+        task.delay()
