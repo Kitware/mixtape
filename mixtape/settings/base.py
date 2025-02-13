@@ -101,3 +101,6 @@ CORS_ORIGIN_WHITELIST: list[str] = env.list('DJANGO_CORS_ORIGIN_WHITELIST', cast
 CORS_ORIGIN_REGEX_WHITELIST: list[str] = env.list(
     'DJANGO_CORS_ORIGIN_REGEX_WHITELIST', cast=str, default=[]
 )
+
+# This makes Ray happy for now, since it wants to redirect stdout
+CELERY_WORKER_REDIRECT_STDOUTS = False
