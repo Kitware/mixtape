@@ -1,8 +1,6 @@
 import contextlib
 from io import BytesIO
 import itertools
-from shutil import copyfileobj, unpack_archive
-from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 from PIL import Image
 from celery import shared_task
@@ -36,14 +34,7 @@ def run_inference_task(inference_request_pk: int):
     ) as env:
         # callback = InferenceLoggingCallbacks(env)
 
-        with TemporaryDirectory() as checkpoint_dir:
-            with NamedTemporaryFile() as archive_file_stream:
-                with inference_request.checkpoint.archive.open() as archive_stream:
-                    copyfileobj(archive_stream, archive_file_stream)
-                    archive_file_stream.seek(0)
-
-                unpack_archive(archive_file_stream.name, checkpoint_dir, format='bztar')
-
+        with inference_request.checkpoint.archive_path() as checkpoint_dir:
             algorithm = Algorithm.from_checkpoint(checkpoint_dir)
 
             # Create the Episode early, as AgentSteps need to reference it

@@ -1,8 +1,7 @@
-from shutil import make_archive
-from tempfile import NamedTemporaryFile, mkdtemp
+from tempfile import mkdtemp
+from uuid import uuid4
 
 from celery import shared_task
-from django.core.files import File
 from ray.rllib.algorithms.dqn import DQNConfig
 from ray.rllib.algorithms.ppo import PPOConfig
 from ray.tune import run
@@ -87,20 +86,10 @@ def run_training_task(training_request_pk: int):
     checkpoint = result.get_last_checkpoint()
     if checkpoint is None:
         raise Exception('Last checkpoint not found!')
-    with (
-        checkpoint.as_directory() as checkpoint_dir,
-        NamedTemporaryFile(mode='r+b') as archive_stream,
-    ):
-        make_archive(
-            base_name=archive_stream.name,
-            format='bztar',
-            root_dir=checkpoint_dir,
-            base_dir='',
-        )
-        Checkpoint.objects.create(
-            training_request=training_request,
-            last=True,
-            # TODO: does this file name need to be unique,
-            # so it doesn't clobber other things on MinIO?
-            archive=File(archive_stream, name='checkpoint.tar.bz2'),
-        )
+    with checkpoint.as_directory() as checkpoint_dir:
+        with Checkpoint.directory_to_file(checkpoint_dir, f'checkpoint/{uuid4()}') as archive:
+            Checkpoint.objects.create(
+                training_request=training_request,
+                last=True,
+                archive=archive,
+            )
