@@ -1,6 +1,7 @@
 import contextlib
 from io import BytesIO
 import itertools
+from typing import Any
 
 from PIL import Image
 from celery import shared_task
@@ -61,7 +62,8 @@ def run_inference_task(inference_request_pk: int):
                             reward=reward,
                             observation_space=observation,
                         )
-                        rendering_image = Image.fromarray(env.render())
+                        rgb_image_array: Any = env.render()
+                        rendering_image = Image.fromarray(rgb_image_array)
                         with BytesIO() as rendering_stream:
                             rendering_image.save(rendering_stream, format='PNG')
                             rendering_stream.seek(0)

@@ -37,8 +37,8 @@ class Checkpoint(models.Model):
     @contextmanager
     def archive_path(self) -> Generator[Path]:
         """Yield the archive as a directory on disk."""
-        with TemporaryDirectory() as archive_dir:
-            archive_dir = Path(archive_dir)
+        with TemporaryDirectory() as tmp_archive_dir:
+            archive_dir = Path(tmp_archive_dir)
             with NamedTemporaryFile() as archive_file_stream:
                 with self.archive.open('rb') as archive_stream:
                     copyfileobj(archive_stream, archive_file_stream)
