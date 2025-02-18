@@ -25,6 +25,16 @@
             padding: 10px;
             width: 50%;
             margin: auto;
+            max-height: 80vh;
+            overflow-y: scroll;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            text-align: justify;
         }
         .slidecontainer input {
             width: 100%;
@@ -47,11 +57,13 @@
             <h2>Step {{ step.number }}</h2>
             {% for data in step.agent_steps.all %}
                 <div class="data-entry">
-                    <p>
-                        <strong>Agent:</strong> {{ data.agent }}
-                        <strong>Action:</strong> {{ data.action }}
-                        <strong>Reward:</strong> {{ data.reward }}
+                    <p style="display: flex; justify-content: space-evenly;">
+                        <span><strong>Agent:</strong> {{ data.agent }}</span>
+                        <span><strong>Action:</strong> {{ data.action }}</span>
+                        <span><strong>Reward:</strong> {{ data.reward }}</span>
                     </p>
+                    <p><strong>Observation Space</strong></p>
+                    <p><pre>{{ data.observation_space }}</pre></p>
                     <script>
                         document.addEventListener("DOMContentLoaded", function () {
                             const slider = document.getElementById("stepsRange");
