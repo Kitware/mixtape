@@ -67,6 +67,16 @@ def training(
         )
         parallel = False
 
+    if algorithm == SupportedAlgorithm.DQN and env_name == ExampleEnvs.PZ_Pistonball:
+        raise click.ClickException(
+            click.style(
+                'DQN is only available for discrete action spaces, but Pisontball has a '
+                + 'continuous action space. Please select another algorithm.',
+                fg='red',
+                bold=True,
+            )
+        )
+
     config_dict = yaml.safe_load(config_file) if config_file else {}
 
     training_request = TrainingRequest.objects.create(
