@@ -23,7 +23,7 @@ urlpatterns = [
     path('api/v1/', include(router.urls)),
     path('api/docs/redoc/', schema_view.with_ui('redoc'), name='docs-redoc'),
     path('api/docs/swagger/', schema_view.with_ui('swagger'), name='docs-swagger'),
-    path("simple-view/<int:step_id>/", simple_view, name="simple-view"),
+    path('simple-view/<int:episode_id>/', simple_view, name='simple-view'),
 ]
 
 if settings.DEBUG:

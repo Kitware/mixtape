@@ -29,6 +29,7 @@
     </style>
 </head>
 <body>
+    {% for step in steps %}
     <div>
         <div class="image-container">
             <img src="{{ step.image.url }}" alt="Step Image">
@@ -37,12 +38,18 @@
             <h2>Step {{ step.number }}</h2>
             {% for data in step.agent_steps.all %}
                 <div class="data-entry">
-                    <p><strong>Agent:</strong> {{ data.agent }}</p>
-                    <p><strong>Action:</strong> {{ data.action }}</p>
-                    <p><strong>Reward:</strong> {{ data.reward }}</p>
+                    <p>
+                        <strong>Agent:</strong> {{ data.agent }}
+                        <strong>Action:</strong> {{ data.action }}
+                        <strong>Reward:</strong> {{ data.reward }}
+                    </p>
                     <hr>
                 </div>
+            {% empty %}
+                <p>End of episode</p>
+            {% endfor %}
         </div>
     </div>
+    {% endfor %}
 </body>
 </html>
