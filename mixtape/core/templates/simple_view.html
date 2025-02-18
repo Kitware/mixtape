@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Data Display</title>
+    <style>
+        .container {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+            text-align: center;
+            height: 90vh;
+        }
+        .image-container {
+            margin: auto;
+            width: 50%;
+        }
+        .image-container img {
+            height: auto;
+            max-width: 100%;
+        }
+        .data-container {
+            border: 1px solid #ddd;
+            padding: 10px;
+            width: 50%;
+            margin: auto;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <div class="image-container">
+            <img src="{{ step.image.url }}" alt="Step Image">
+        </div>
+        <div class="data-container">
+            <h2>Step {{ step.number }}</h2>
+            {% for data in step.agent_steps.all %}
+                <div class="data-entry">
+                    <p><strong>Agent:</strong> {{ data.agent }}</p>
+                    <p><strong>Action:</strong> {{ data.action }}</p>
+                    <p><strong>Reward:</strong> {{ data.reward }}</p>
+                    <hr>
+                </div>
+        </div>
+    </div>
+</body>
+</html>
