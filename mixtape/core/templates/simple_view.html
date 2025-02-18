@@ -26,11 +26,20 @@
             width: 50%;
             margin: auto;
         }
+        .slidecontainer input {
+            width: 100%;
+        }
+        .step {
+            display: none;
+        }
+        .step.active {
+            display: flex;
+        }
     </style>
 </head>
 <body>
     {% for step in steps %}
-    <div>
+    <div class="container step {% if forloop.first %}active{% endif %}" id="step-{{ forloop.counter0 }}">
         <div class="image-container">
             <img src="{{ step.image.url }}" alt="Step Image">
         </div>
@@ -43,6 +52,16 @@
                         <strong>Action:</strong> {{ data.action }}
                         <strong>Reward:</strong> {{ data.reward }}
                     </p>
+                    <script>
+                        document.addEventListener("DOMContentLoaded", function () {
+                            const slider = document.getElementById("stepsRange");
+                            const steps = document.querySelectorAll(".step");
+                            slider.addEventListener("input", function () {
+                                steps.forEach(step => step.classList.remove("active"));
+                                steps[slider.value].classList.add("active");
+                            });
+                        });
+                    </script>
                     <hr>
                 </div>
             {% empty %}
@@ -51,5 +70,8 @@
         </div>
     </div>
     {% endfor %}
+    <div class="slidecontainer">
+        <input type="range" id="stepsRange" min="0" max="{{ steps|length|add:'-1' }}" value="0" class="slider">
+    </div>
 </body>
 </html>
