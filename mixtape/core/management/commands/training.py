@@ -5,6 +5,7 @@ import yaml
 
 from mixtape.core.models import TrainingRequest
 from mixtape.core.ray_utils.constants import ExampleEnvs, SupportedAlgorithm
+from mixtape.core.ray_utils.environments import is_gymnasium_env
 from mixtape.core.tasks.training_tasks import run_training_task
 
 
@@ -55,6 +56,17 @@ def training(
     immediate: bool,
 ) -> None:
     """Run training on the specified environment."""
+    if is_gymnasium_env(env_name) and parallel:
+        click.echo(
+            click.style(
+                'Warning: The parallel option is only available for PettingZoo environments. '
+                + 'Ignoring --parallel.',
+                fg='red',
+                bold=True,
+            )
+        )
+        parallel = False
+
     config_dict = yaml.safe_load(config_file) if config_file else {}
 
     training_request = TrainingRequest.objects.create(

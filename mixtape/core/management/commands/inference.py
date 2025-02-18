@@ -6,6 +6,7 @@ import yaml
 from mixtape.core.models.checkpoint import Checkpoint
 from mixtape.core.models.inference_request import InferenceRequest
 from mixtape.core.ray_utils.constants import ExampleEnvs
+from mixtape.core.ray_utils.environments import is_gymnasium_env
 from mixtape.core.tasks.inference_tasks import run_inference_task
 
 
@@ -40,6 +41,17 @@ def inference(
     immediate: bool,
 ) -> None:
     """Run inference on the specified trained environment."""
+    if is_gymnasium_env(env_name) and parallel:
+        click.echo(
+            click.style(
+                'Warning: The parallel option is only available for PettingZoo environments. '
+                + 'Ignoring --parallel.',
+                fg='red',
+                bold=True,
+            )
+        )
+        parallel = False
+
     config_dict = yaml.safe_load(config_file) if config_file else {}
 
     checkpoint = Checkpoint.objects.get(pk=checkpoint_pk)
