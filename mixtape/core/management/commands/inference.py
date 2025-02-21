@@ -10,6 +10,21 @@ from mixtape.core.ray_utils.environments import is_gymnasium_env
 from mixtape.core.tasks.inference_tasks import run_inference_task
 
 
+def check_parallel(ctx: click.Context, param: str, parallel: bool) -> bool:
+    env_name = ctx.params['env_name']
+    if is_gymnasium_env(env_name) and parallel:
+        click.echo(
+            click.style(
+                'Warning: The parallel option is only available for PettingZoo environments. '
+                + 'Ignoring --parallel.',
+                fg='red',
+                bold=True,
+            )
+        )
+        return False
+    return parallel
+
+
 @click.command()
 @click.argument('checkpoint_pk', type=int)
 @click.option(
@@ -30,6 +45,7 @@ from mixtape.core.tasks.inference_tasks import run_inference_task
     '-p',
     '--parallel',
     is_flag=True,
+    callback=check_parallel,
     help='All agents have simultaneous actions and observations.',
 )
 @click.option('--immediate', is_flag=True, help='Run the task immediately.')
@@ -41,17 +57,6 @@ def inference(
     immediate: bool,
 ) -> None:
     """Run inference on the specified trained environment."""
-    if is_gymnasium_env(env_name) and parallel:
-        click.echo(
-            click.style(
-                'Warning: The parallel option is only available for PettingZoo environments. '
-                + 'Ignoring --parallel.',
-                fg='red',
-                bold=True,
-            )
-        )
-        parallel = False
-
     config_dict = yaml.safe_load(config_file) if config_file else {}
 
     checkpoint = Checkpoint.objects.get(pk=checkpoint_pk)

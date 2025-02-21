@@ -9,6 +9,35 @@ from mixtape.core.ray_utils.environments import is_gymnasium_env
 from mixtape.core.tasks.training_tasks import run_training_task
 
 
+def check_algo(ctx: click.Context, param: str, algorithm: SupportedAlgorithm) -> SupportedAlgorithm:
+    env_name = ctx.params['env_name']
+    if algorithm == SupportedAlgorithm.DQN and env_name == ExampleEnvs.PZ_Pistonball:
+        raise click.ClickException(
+            click.style(
+                'DQN is only available for discrete action spaces, but Pisontball has a '
+                + 'continuous action space. Please select another algorithm.',
+                fg='red',
+                bold=True,
+            )
+        )
+    return algorithm
+
+
+def check_parallel(ctx: click.Context, param: str, parallel: bool) -> bool:
+    env_name = ctx.params['env_name']
+    if is_gymnasium_env(env_name) and parallel:
+        click.echo(
+            click.style(
+                'Warning: The parallel option is only available for PettingZoo environments. '
+                + 'Ignoring --parallel.',
+                fg='red',
+                bold=True,
+            )
+        )
+        return False
+    return parallel
+
+
 @click.command()
 @click.option(
     '-e',
@@ -22,12 +51,14 @@ from mixtape.core.tasks.training_tasks import run_training_task
     '--algorithm',
     type=click.Choice([choice.value for choice in SupportedAlgorithm]),
     default=SupportedAlgorithm.PPO,
+    callback=check_algo,
     help='The RLlib algorithm to use.',
 )
 @click.option(
     '-p',
     '--parallel',
     is_flag=True,
+    callback=check_parallel,
     help='All agents have simultaneous actions and observations.',
 )
 @click.option('-g', '--num_gpus', type=float, default=0, help='Number of GPUs to use.')
@@ -56,27 +87,6 @@ def training(
     immediate: bool,
 ) -> None:
     """Run training on the specified environment."""
-    if is_gymnasium_env(env_name) and parallel:
-        click.echo(
-            click.style(
-                'Warning: The parallel option is only available for PettingZoo environments. '
-                + 'Ignoring --parallel.',
-                fg='red',
-                bold=True,
-            )
-        )
-        parallel = False
-
-    if algorithm == SupportedAlgorithm.DQN and env_name == ExampleEnvs.PZ_Pistonball:
-        raise click.ClickException(
-            click.style(
-                'DQN is only available for discrete action spaces, but Pisontball has a '
-                + 'continuous action space. Please select another algorithm.',
-                fg='red',
-                bold=True,
-            )
-        )
-
     config_dict = yaml.safe_load(config_file) if config_file else {}
 
     training_request = TrainingRequest.objects.create(
