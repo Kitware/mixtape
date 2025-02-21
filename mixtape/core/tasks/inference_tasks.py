@@ -108,10 +108,12 @@ def run_inference_task(inference_request_pk: int):
                     # Loop over agents in the environment using the agent iterator
                     for step, agent in enumerate(env.agent_iter()):
                         observation, reward, termination, truncation, info = env.last()
-                        if termination or truncation:
-                            action = None  # No action needed if the agent is done
-                        else:
-                            action = algorithm.compute_single_action(observation)
+                        action = (
+                            # No action needed if the agent is done
+                            None
+                            if termination or truncation
+                            else algorithm.compute_single_action(observation)
+                        )
                         env.step(action)  # Step the environment forward with the action
                         rgb_image_array = env.render()
                         assert isinstance(rgb_image_array, np.ndarray)
@@ -121,10 +123,11 @@ def run_inference_task(inference_request_pk: int):
                             step_model = Step.objects.create(
                                 episode=episode, number=step, image=image_file
                             )
-                        AgentStep.objects.create(
-                            agent=agent,
-                            step=step_model,
-                            action=action,
-                            reward=reward,
-                            observation_space=observation,
-                        )
+                        if action is not None:
+                            AgentStep.objects.create(
+                                agent=agent,
+                                step=step_model,
+                                action=action,
+                                reward=reward,
+                                observation_space=observation,
+                            )
