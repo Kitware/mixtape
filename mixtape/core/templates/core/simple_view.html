@@ -46,6 +46,16 @@
             display: flex;
         }
     </style>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const slider = document.getElementById("stepsRange");
+            const steps = document.querySelectorAll(".step");
+            slider.addEventListener("input", function () {
+                steps.forEach(step => step.classList.remove("active"));
+                steps[slider.value].classList.add("active");
+            });
+        });
+    </script>
 </head>
 <body>
     {% for step in steps %}
@@ -64,16 +74,6 @@
                     </p>
                     <p><strong>Observation Space</strong></p>
                     <p><pre>{{ agent_step.observation_space }}</pre></p>
-                    <script>
-                        document.addEventListener("DOMContentLoaded", function () {
-                            const slider = document.getElementById("stepsRange");
-                            const steps = document.querySelectorAll(".step");
-                            slider.addEventListener("input", function () {
-                                steps.forEach(step => step.classList.remove("active"));
-                                steps[slider.value].classList.add("active");
-                            });
-                        });
-                    </script>
                     <hr>
                 </div>
             {% empty %}
