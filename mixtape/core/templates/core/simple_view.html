@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Data Display</title>
+    <title>Inference Results</title>
     <style>
         .container {
             display: flex;
@@ -63,7 +63,7 @@
                         <span><strong>Reward:</strong> {{ data.reward }}</span>
                     </p>
                     <p><strong>Observation Space</strong></p>
-                    <p><pre>{{ data.observation_space }}</pre></p>
+                    <p><pre>{{ agent_step.observation_space }}</pre></p>
                     <script>
                         document.addEventListener("DOMContentLoaded", function () {
                             const slider = document.getElementById("stepsRange");
