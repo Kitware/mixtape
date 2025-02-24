@@ -9,7 +9,7 @@ class AgentStep(models.Model):
     class Meta:
         constraints = [models.UniqueConstraint(fields=['agent', 'step'], name='unique_agent_step')]
 
-    step = models.ForeignKey(Step, on_delete=models.CASCADE)
+    step = models.ForeignKey(Step, on_delete=models.CASCADE, related_name='agent_steps')
     agent = models.CharField(max_length=200)
 
     action = models.FloatField()
