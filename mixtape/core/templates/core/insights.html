@@ -6,6 +6,7 @@
 <div x-data="{ currentStep: 0 }">
   {% for step in steps %}
   <div
+    x-cloak
     x-show="currentStep === {{ forloop.counter0 }}"
     class="flex items-start gap-5 text-center h-[90vh]"
   >
