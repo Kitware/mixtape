@@ -3,49 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
     <title>Inference Results</title>
-    <style>
-        .container {
-            display: flex;
-            align-items: flex-start;
-            gap: 20px;
-            text-align: center;
-            height: 90vh;
-        }
-        .image-container {
-            margin: auto;
-            width: 50%;
-        }
-        .image-container img {
-            height: auto;
-            max-width: 100%;
-        }
-        .data-container {
-            border: 1px solid #ddd;
-            padding: 10px;
-            width: 50%;
-            margin: auto;
-            max-height: 80vh;
-            overflow-y: scroll;
-        }
-        pre {
-            background-color: #f4f4f4;
-            padding: 10px;
-            border-radius: 5px;
-            font-family: monospace;
-            white-space: pre-wrap;
-            text-align: justify;
-        }
-        .slidecontainer input {
-            width: 100%;
-        }
-        .step {
-            display: none;
-        }
-        .step.active {
-            display: flex;
-        }
-    </style>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const slider = document.getElementById("stepsRange");
@@ -59,21 +18,28 @@
 </head>
 <body>
     {% for step in steps %}
-    <div class="container step {% if forloop.first %}active{% endif %}" id="step-{{ forloop.counter0 }}">
-        <div class="image-container">
-            <img src="{{ step.image.url }}" alt="Step Image">
+    <div
+        class="{% if forloop.first %} flex items-start gap-5 text-center h-[90vh] {% else %} hidden {% endif %}"
+        id="step-{{ forloop.counter0 }}"
+    >
+        <div class="content-center w-1/2 h-full">
+            <img class="max-w-full h-auto" src="{{ step.image.url }}" alt="Step Image">
         </div>
-        <div class="data-container">
+        <div class="border border-gray-300 p-2 w-1/2 m-auto max-h-[80vh] overflow-y-scroll">
             <h2>Step {{ step.number }}</h2>
             {% for agent_step in step.agent_steps.all %}
-                <div class="data-entry">
-                    <p style="display: flex; justify-content: space-evenly;">
+                <div>
+                    <p class="flex justify-evenly">
                         <span><strong>Agent:</strong> {{ agent_step.agent }}</span>
                         <span><strong>Action:</strong> {{ agent_step.action }}</span>
                         <span><strong>Reward:</strong> {{ agent_step.reward }}</span>
                     </p>
                     <p><strong>Observation Space</strong></p>
-                    <p><pre>{{ agent_step.observation_space }}</pre></p>
+                    <p>
+                        <pre class="bg-gray-100 p-3 rounded-md font-mono whitespace-pre-wrap text-justify text-sm">
+                            {{ agent_step.observation_space }}
+                        </pre>
+                    </p>
                     <hr>
                 </div>
             {% empty %}
@@ -82,8 +48,8 @@
         </div>
     </div>
     {% endfor %}
-    <div class="slidecontainer">
-        <input type="range" id="stepsRange" min="0" max="{{ steps|length|add:'-1' }}" value="0" class="slider">
+    <div>
+        <input type="range" id="stepsRange" min="0" max="{{ steps|length|add:'-1' }}" value="0" class="w-full">
     </div>
 </body>
 </html>

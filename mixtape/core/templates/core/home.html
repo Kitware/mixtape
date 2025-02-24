@@ -3,28 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
     <title>All Inference Results</title>
-    <style>
-        .episodes-list {
-            column-width: 100px;
-            column-gap: 45px;
-            list-style-position: inside;
-            padding: 0;
-        }
-        .episode {
-            break-inside: avoid;
-            padding: 5px 0;
-        }
-    </style>
 </head>
 <body>
-    <h2 style="text-align: center;">Available Episodes</h2>
+    <div class="text-center text-xl">Explore Results</div>
     <div>
-        <ul class="episodes-list">
+        <ul class="list-disc columns-md list-inside">
         {% for episode in episodes %}
             {% url 'insights' episode.id  as episode_url %}
-            <li class="episode">
-                <a href="{{ episode_url }}">Episode {{ episode.id }} </a>
+            <li class="break-inside-avoid p-2">
+                <a class="underline text-blue-600 hover:text-blue-800 visited:text-purple-600" href="{{ episode_url }}">
+                    Episode {{ episode.id }}
+                </a>
             </li>
         {% endfor %}
         </ul>
