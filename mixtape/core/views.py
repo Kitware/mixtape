@@ -5,9 +5,7 @@ from mixtape.core.models.step import Step
 
 
 def insights(request, episode_id):
-    steps = get_list_or_404(
-        Step.objects.filter(episode_id=episode_id).prefetch_related('agent_steps')
-    )
+    steps = get_list_or_404(Step.objects.prefetch_related('agent_steps'), episode_id=episode_id)
     return render(request, 'core/insights.html', {'steps': steps})
 
 
