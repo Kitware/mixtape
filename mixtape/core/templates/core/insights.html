@@ -4,6 +4,7 @@
 
 {% block content %}
 <div x-data="{ currentStep: 0 }">
+  <h1 class="text-center text-2xl font-bold">Episode #{{ episode.pk }}</h1>
   {% for step in steps %}
   <div
     x-cloak
