@@ -3,26 +3,11 @@ from typing import TextIO
 import djclick as click
 import yaml
 
+from mixtape.core.management.commands._utils import check_parallel
 from mixtape.core.models.checkpoint import Checkpoint
 from mixtape.core.models.inference_request import InferenceRequest
 from mixtape.core.ray_utils.constants import ExampleEnvs
-from mixtape.core.ray_utils.environments import is_gymnasium_env
 from mixtape.core.tasks.inference_tasks import run_inference_task
-
-
-def check_parallel(ctx: click.Context, param: str, parallel: bool) -> bool:
-    env_name = ctx.params['env_name']
-    if is_gymnasium_env(env_name) and parallel:
-        click.echo(
-            click.style(
-                'Warning: The parallel option is only available for PettingZoo environments. '
-                + 'Ignoring --parallel.',
-                fg='red',
-                bold=True,
-            )
-        )
-        return False
-    return parallel
 
 
 @click.command()
