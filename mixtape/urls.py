@@ -5,7 +5,7 @@ from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions, routers
 
-from mixtape.core.views import insights
+from mixtape.core.views import home_page, insights
 
 router = routers.SimpleRouter()
 # OpenAPI generation
@@ -24,6 +24,7 @@ urlpatterns = [
     path('api/docs/redoc/', schema_view.with_ui('redoc'), name='docs-redoc'),
     path('api/docs/swagger/', schema_view.with_ui('swagger'), name='docs-swagger'),
     path('insights/<int:episode_id>/', insights, name='insights'),
+    path('', home_page, name='home'),
 ]
 
 if settings.DEBUG:
