@@ -49,9 +49,9 @@ class TrainingRequestAdmin(admin.ModelAdmin):
         last_checkpoint = training_request.checkpoints.filter(last=True).first()
         if last_checkpoint:
             last_checkpoint_url = reverse(
-                'admin:core_checkpoint_change', kwargs={'object_id': last_checkpoint.id}
+                'admin:core_checkpoint_change', kwargs={'object_id': last_checkpoint.pk}
             )
-            return format_html('<a href="{}">Edit {}</a>', last_checkpoint_url, last_checkpoint.id)
+            return format_html('<a href="{}">Edit {}</a>', last_checkpoint_url, last_checkpoint.pk)
         else:
             return '-'
 
