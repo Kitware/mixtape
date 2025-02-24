@@ -3,17 +3,17 @@
 {% block title %}MIXTAPE Home{% endblock %}
 
 {% block content %}
-    <div class="text-center text-xl">Explore Results</div>
-    <div>
-        <ul class="list-disc columns-md list-inside">
-        {% for episode in episodes %}
-            {% url 'insights' episode.id  as episode_url %}
-            <li class="break-inside-avoid p-2">
-                <a class="underline text-blue-600 hover:text-blue-800 visited:text-purple-600" href="{{ episode_url }}">
-                    Episode {{ episode.id }}
-                </a>
-            </li>
-        {% endfor %}
-        </ul>
-    </div>
+<div class="text-center text-xl">Explore Results</div>
+<div>
+  <ul class="list-disc columns-md list-inside">
+    {% for episode in episodes %}
+    <li class="break-inside-avoid p-2">
+      <a class="underline text-blue-600 hover:text-blue-800 visited:text-purple-600"
+        href="{% url 'insights' episode.id %}">
+        Episode {{ episode.id }}
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
 {% endblock %}

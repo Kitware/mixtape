@@ -4,47 +4,46 @@
 
 {% block content %}
 <div x-data="{ currentStep: 0 }">
-    {% for step in steps %}
-    <div
-        x-show="currentStep === {{ forloop.counter0 }}"
-        class="flex items-start gap-5 text-center h-[90vh]"
+  {% for step in steps %}
+  <div
+    x-show="currentStep === {{ forloop.counter0 }}"
+    class="flex items-start gap-5 text-center h-[90vh]"
+  >
+    <div class="content-center w-1/2 h-full min-h-full">
+      <img class="max-w-full h-auto" src="{{ step.image.url }}" alt="Step Image">
+    </div>
+    <div class="border border-gray-300 p-2 w-1/2 m-auto max-h-[80vh] overflow-y-scroll">
+      <p class="text-xl font-bold">Step {{ step.number }}</p>
+      {% for agent_step in step.agent_steps.all %}
+        <div>
+          <p class="flex justify-evenly">
+            <span><strong>Agent:</strong> {{ agent_step.agent }}</span>
+            <span><strong>Action:</strong> {{ agent_step.action }}</span>
+            <span><strong>Reward:</strong> {{ agent_step.reward }}</span>
+          </p>
+          <p><strong>Observation Space</strong></p>
+          <p>
+            {% load resonant_utils %}
+            <pre class="bg-gray-100 p-3 rounded-md font-mono whitespace-pre-wrap text-justify text-sm">{{ agent_step.observation_space|pprint }}</pre>
+          </p>
+          <hr>
+        </div>
+      {% empty %}
+        <p>End of episode</p>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+  <div>
+    <input
+      type="range"
+      id="stepsRange"
+      min="0"
+      max="{{ steps|length|add:'-1' }}"
+      value="0"
+      class="w-full"
+      x-model.number="currentStep"
     >
-        <div class="content-center w-1/2 h-full min-h-full">
-            <img class="max-w-full h-auto" src="{{ step.image.url }}" alt="Step Image">
-        </div>
-        <div class="border border-gray-300 p-2 w-1/2 m-auto max-h-[80vh] overflow-y-scroll">
-            <h2>Step {{ step.number }}</h2>
-            {% for agent_step in step.agent_steps.all %}
-                <div>
-                    <p class="flex justify-evenly">
-                        <span><strong>Agent:</strong> {{ agent_step.agent }}</span>
-                        <span><strong>Action:</strong> {{ agent_step.action }}</span>
-                        <span><strong>Reward:</strong> {{ agent_step.reward }}</span>
-                    </p>
-                    <p><strong>Observation Space</strong></p>
-                    <p>
-                        <pre class="bg-gray-100 p-3 rounded-md font-mono whitespace-pre-wrap text-justify text-sm">
-                            {{ agent_step.observation_space }}
-                        </pre>
-                    </p>
-                    <hr>
-                </div>
-            {% empty %}
-                <p>End of episode</p>
-            {% endfor %}
-        </div>
-    </div>
-    {% endfor %}
-    <div>
-        <input
-            type="range"
-            id="stepsRange"
-            min="0"
-            max="{{ steps|length|add:'-1' }}"
-            value="0"
-            class="w-full"
-            x-model.number="currentStep"
-        >
-    </div>
+  </div>
 </div>
 {% endblock %}
