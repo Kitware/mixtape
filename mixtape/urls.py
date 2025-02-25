@@ -25,6 +25,7 @@ urlpatterns = [
     path('api/docs/swagger/', schema_view.with_ui('swagger'), name='docs-swagger'),
     path('', views.home_page, name='home'),
     path('insights/<int:episode_pk>/', views.insights, name='insights'),
+    path('insights/<int:episode_pk>/step/', views.insights_step, name='insights-step'),
 ]
 
 if settings.DEBUG:
