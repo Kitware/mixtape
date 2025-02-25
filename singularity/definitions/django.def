@@ -20,4 +20,4 @@ From: python:3.11-slim
 %startscript
     cd /opt/django-project
     python manage.py migrate
-    python manage.py runserver 0.0.0.0:8000
+    gunicorn -w 4 --bind 0.0.0.0:$DJANGO_PORT mixtape.wsgi

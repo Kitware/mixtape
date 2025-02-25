@@ -18,4 +18,4 @@ From: python:3.11-slim
 
 %startscript
     cd /opt/django-project
-    celery --app mixtape.celery worker --loglevel INFO --without-heartbeat
+    REMAP_SIGTERM=SIGQUIT celery --app mixtape.celery worker --loglevel INFO --without-heartbeat
