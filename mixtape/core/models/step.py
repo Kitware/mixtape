@@ -11,7 +11,12 @@ from .episode import Episode
 
 
 class Step(models.Model):
-    episode = models.ForeignKey(Episode, on_delete=models.CASCADE)
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['episode', 'number'], name='unique_episode_number'),
+        ]
+
+    episode = models.ForeignKey(Episode, on_delete=models.CASCADE, related_name='steps')
 
     number = models.PositiveIntegerField()
     image = models.ImageField()
