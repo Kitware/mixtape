@@ -2,7 +2,7 @@ Bootstrap: docker
 From: python:3.11-slim
 
 %files
-    ../../pyproject.toml /opt/django-project/pyproject.toml
+    ../pyproject.toml /opt/django-project/pyproject.toml
 
 %environment
     export PYTHONPATH=/opt/django-project

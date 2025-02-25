@@ -2,7 +2,7 @@
 
 # Normalize script path, so it's the same regardless of where it's called from
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-PROJECT_DIR=$SCRIPT_DIR/../..
+PROJECT_DIR=$SCRIPT_DIR/..
 
 # Ensure bind mount directories exist
 VOLUME_DIR=$SCRIPT_DIR/volumes
@@ -33,11 +33,11 @@ singularity instance start --bind $MINIO_VOLUME:/data images/minio.sif minio
 # Run django first so that migrations are applied
 singularity instance start \
   --bind $PROJECT_DIR:/opt/django-project \
-  --env-file $PROJECT_DIR/dev/.env.docker-compose-native \
+  --env-file $SCRIPT_DIR/.env.singularity \
   images/django.sif django
 
 # Run celery
 singularity instance start \
   --bind $PROJECT_DIR:/opt/django-project \
-  --env-file $PROJECT_DIR/dev/.env.docker-compose-native \
+  --env-file $SCRIPT_DIR/.env.singularity \
   images/celery.sif celery

@@ -7,7 +7,7 @@ This directory contains scripts that will build a singularity deployment of the 
 First, ensure you're in the right directory
 
 ```
-cd dev/singularity
+cd singularity
 ```
 
 Then, you must build the singularity images.
