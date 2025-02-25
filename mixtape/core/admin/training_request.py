@@ -33,10 +33,12 @@ class TrainingRequestAdmin(admin.ModelAdmin):
         'iterations',
         'completed',
         'last_checkpoint',
+        'parallel',
     ]
     list_filter = [
         'environment',
         'algorithm',
+        'parallel',
         CompletedListFilter,
     ]
 

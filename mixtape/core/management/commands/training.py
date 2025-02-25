@@ -3,9 +3,24 @@ from typing import TextIO
 import djclick as click
 import yaml
 
+from mixtape.core.management.commands._utils import check_parallel
 from mixtape.core.models import TrainingRequest
 from mixtape.core.ray_utils.constants import ExampleEnvs, SupportedAlgorithm
 from mixtape.core.tasks.training_tasks import run_training_task
+
+
+def check_algo(ctx: click.Context, param: str, algorithm: SupportedAlgorithm) -> SupportedAlgorithm:
+    env_name = ctx.params['env_name']
+    if algorithm == SupportedAlgorithm.DQN and env_name == ExampleEnvs.PZ_Pistonball:
+        raise click.ClickException(
+            click.style(
+                'DQN is only available for discrete action spaces, but Pisontball has a '
+                + 'continuous action space. Please select another algorithm.',
+                fg='red',
+                bold=True,
+            )
+        )
+    return algorithm
 
 
 @click.command()
@@ -21,12 +36,14 @@ from mixtape.core.tasks.training_tasks import run_training_task
     '--algorithm',
     type=click.Choice([choice.value for choice in SupportedAlgorithm]),
     default=SupportedAlgorithm.PPO,
+    callback=check_algo,
     help='The RLlib algorithm to use.',
 )
 @click.option(
     '-p',
     '--parallel',
     is_flag=True,
+    callback=check_parallel,
     help='All agents have simultaneous actions and observations.',
 )
 @click.option('-g', '--num_gpus', type=float, default=0, help='Number of GPUs to use.')

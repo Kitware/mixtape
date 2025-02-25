@@ -3,6 +3,7 @@ from typing import TextIO
 import djclick as click
 import yaml
 
+from mixtape.core.management.commands._utils import check_parallel
 from mixtape.core.models.checkpoint import Checkpoint
 from mixtape.core.models.inference_request import InferenceRequest
 from mixtape.core.ray_utils.constants import ExampleEnvs
@@ -29,6 +30,7 @@ from mixtape.core.tasks.inference_tasks import run_inference_task
     '-p',
     '--parallel',
     is_flag=True,
+    callback=check_parallel,
     help='All agents have simultaneous actions and observations.',
 )
 @click.option('--immediate', is_flag=True, help='Run the task immediately.')
