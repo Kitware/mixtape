@@ -4,6 +4,8 @@ This directory contains scripts that will build a singularity deployment of the 
 
 ## Steps
 
+### Building Images
+
 First, ensure you're in the right directory
 
 ```
@@ -17,6 +19,17 @@ Then, you must build the singularity images.
 ```
 
 Note, if you've already run this before, it will prompt you to confirm or reject replacing the existing image. You can avoid this by first running `rm ./images/*`, or by specifically deleting the `.sif` file you want to rebuild.
+
+### Env vars
+
+The following env vars can be set in the `.env.singularity` file if desired, but have (insecure) defaults. If there is no connection to the external network, this is not a concern.
+
+- POSTGRES_DB - The name of the postgres database that django will use. Defaults to `django`.
+- POSTGRES_PASSWORD - The password for the `postgres` superuser. Defaults to `postgres`.
+- MINIO_ROOT_USER - The root minio user. Defaults to `minioAccessKey`.
+- MINIO_ROOT_PASSWORD - The password for the root minio user. Defaults to `minioSecretKey`.
+
+### Running the containers
 
 Now, you're ready to run the singularity containers. You can do this by simply running:
 

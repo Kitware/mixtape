@@ -2,6 +2,7 @@
 
 # Normalize script path, so it's the same regardless of where it's called from
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+ENV_FILE=$SCRIPT_DIR/.env.singularity
 PROJECT_DIR=$SCRIPT_DIR/..
 
 # Ensure bind mount directories exist
@@ -23,21 +24,27 @@ mkdir -p $MINIO_VOLUME
 singularity instance start \
   --bind $POSTGRES_VOLUME/data:/var/lib/postgresql/data:rw \
   --bind $POSTGRES_VOLUME/run:/var/run/postgresql:rw \
+  --env-file=$ENV_FILE \
   images/postgres.sif postgres
+
 # Run RabbitMQ
 singularity instance start --bind $RABBITMQ_VOLUME:/var/lib/rabbitmq images/rabbitmq.sif rabbitmq
+
 # Run MinIO
-singularity instance start --bind $MINIO_VOLUME:/data images/minio.sif minio
+singularity instance start \
+  --env-file $ENV_FILE \
+  --bind $MINIO_VOLUME:/data \
+  images/minio.sif minio
 
 # Run Django + Celery
 # Run django first so that migrations are applied
 singularity instance start \
   --bind $PROJECT_DIR:/opt/django-project \
-  --env-file $SCRIPT_DIR/.env.singularity \
+  --env-file $ENV_FILE \
   images/django.sif django
 
 # Run celery
 singularity instance start \
   --bind $PROJECT_DIR:/opt/django-project \
-  --env-file $SCRIPT_DIR/.env.singularity \
+  --env-file $ENV_FILE \
   images/celery.sif celery

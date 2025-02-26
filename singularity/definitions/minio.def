@@ -1,10 +1,6 @@
 Bootstrap: docker
 From: minio/minio:latest
 
-%environment
-    export MINIO_ROOT_USER=minioAccessKey
-    export MINIO_ROOT_PASSWORD=minioSecretKey
-
 %post
     mkdir -p /data
 
