@@ -39,6 +39,21 @@ Now, you're ready to run the singularity containers. You can do this by simply r
 
 This will run these containers in the background. You can see what is running with `singularity instance list`. Note that singularity has no internal network like `docker compose` does, and so any ports used by the application will be used on the host machine (and as such, is subject to conflict with other services you may have running locally).
 
+### Running commands
+
+To run simple commands, like creating the first admin user in the system, you can run a command like so (ran from the project root):
+
+```
+singularity exec \
+    --env-file singularity/.env.singularity \
+    instance://django \
+    ./manage.py createsuperuser
+```
+
+The command `./manage.py createsuperuser` is used as an example, but that may be substituted with any available command.
+
+### Stopping the containers
+
 Once you're done, you can stop the running instances with
 
 ```
