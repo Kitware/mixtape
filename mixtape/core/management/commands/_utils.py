@@ -7,7 +7,6 @@ from mixtape.core.ray_utils.environments import is_gymnasium_env
 def check_parallel(
     ctx: click.Context, param: click.Option, value: bool | ExampleEnvs
 ) -> bool | ExampleEnvs:
-    print(param.type)
     env_name = value if param.name == 'env_name' else ctx.params.get('env_name')
     parallel = value if param.name == 'parallel' else ctx.params.get('parallel', False)
     if env_name and is_gymnasium_env(env_name) and parallel:  # type: ignore
