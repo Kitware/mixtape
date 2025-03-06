@@ -1,0 +1,21 @@
+Bootstrap: docker
+From: python:3.11-slim
+
+%files
+    ../pyproject.toml /opt/django-project/pyproject.toml
+
+%environment
+    export PYTHONPATH=/opt/django-project
+
+%post
+    apt-get update && apt-get install -y \
+        build-essential \
+        libpq-dev \
+        && rm -rf /var/lib/apt/lists/*
+
+    cd /opt/django-project
+    pip install -e .[dev]
+
+%startscript
+    cd /opt/django-project
+    REMAP_SIGTERM=SIGQUIT celery --app mixtape.celery worker --loglevel INFO --without-heartbeat

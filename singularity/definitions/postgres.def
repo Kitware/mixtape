@@ -1,0 +1,5 @@
+Bootstrap: docker
+From: postgres:alpine
+
+%startscript
+    docker-entrypoint.sh postgres

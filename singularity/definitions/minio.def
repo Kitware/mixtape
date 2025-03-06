@@ -1,0 +1,8 @@
+Bootstrap: docker
+From: minio/minio:latest
+
+%post
+    mkdir -p /data
+
+%startscript
+    minio server /data --console-address :9001
