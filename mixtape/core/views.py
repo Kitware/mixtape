@@ -33,10 +33,21 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
         plot_data['action_v_frequency'].setdefault(entry['action'], 0)
         plot_data['action_v_frequency'][entry['action']] += entry['action_frequency']
 
+    key_steps = (
+        steps.values('number')
+        .annotate(total_rewards=Sum('agent_steps__reward', default=0))
+        .order_by('number')
+    )
+
     return render(
         request,
         'core/insights.html',
-        {'episode': episode, 'steps': steps, 'plot_data_json': json.dumps(plot_data)},
+        {
+            'episode': episode,
+            'steps': steps,
+            'plot_data_json': json.dumps(plot_data),
+            'key_steps': key_steps.filter(total_rewards__gt=0),
+        },
     )
 
 

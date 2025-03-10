@@ -5,7 +5,21 @@
 {% block content %}
 <div x-data="{
   currentStep: 0,
-  plotData: JSON.parse('{{ plot_data_json|escapejs }}')
+  plotData: JSON.parse('{{ plot_data_json|escapejs }}'),
+  playing: false,
+  maxSteps: {{ steps|length|add:'-1' }},
+  stepForward() {
+    if (!this.playing) return;
+    if (this.currentStep < this.maxSteps) {
+      setTimeout(() => {
+        this.currentStep++;
+        this.stepForward()
+      }, 100);
+    } else {
+      this.playing = false;
+      this.currentStep = 0;
+    }
+  }
 }">
   <h1 class="text-center text-2xl font-bold">Episode #{{ episode.pk }}</h1>
   <div class="grid grid-cols-12">
@@ -60,42 +74,111 @@
       <div x-ref="actionsFrequency"></div>
     </div>
   </div>
-  {% for step in steps %}
-  <h1 x-cloak x-show="currentStep === {{ forloop.counter0 }}" class="text-xl font-bold text-center">Step {{ step.number }}</h1>
-  <div x-cloak x-show="currentStep === {{ forloop.counter0 }}" class="grid grid-cols-12">
-    <div class="col-span-6 content-center m-2">
-      <img class="max-h-[45vh]" src="{{ step.image.url }}" alt="Step Image">
-    </div>
-    <div class="col-span-6 border-gray-300 p-2 max-h-[45vh] overflow-y-scroll">
-      {% for agent_step in step.agent_steps.all %}
-        <div>
-          <p class="flex justify-evenly">
-            <span><strong>Agent:</strong> {{ agent_step.agent }}</span>
-            <span><strong>Action:</strong> {{ agent_step.action }}</span>
-            <span><strong>Reward:</strong> {{ agent_step.reward }}</span>
-          </p>
-          <p><strong>Observation Space</strong></p>
-          <p>
-            <pre class="bg-gray-100 p-3 rounded-md font-mono whitespace-pre text-justify text-sm">{{ agent_step.observation_space|pprint }}</pre>
-          </p>
-          <hr>
+  <div class="grid grid-cols-12">
+    <div class="col-span-6">
+      {% for step in steps %}
+      <h1 x-cloak x-show="currentStep === {{ forloop.counter0 }}" class="text-xl font-bold text-center">Step {{ step.number }}</h1>
+      <div x-cloak x-show="currentStep === {{ forloop.counter0 }}" class="grid grid-cols-12 h-[45vh]">
+        <div class="col-span-9 content-center m-2 h-[inherit]">
+          <img class="max-h-4/5 m-auto" src="{{ step.image.url }}" alt="Step Image">
+          <div class="flex w-1/2 justify-evenly justify-self-center border border-black rounded-lg my-2 mx-5 py-1">
+            <button
+              type="button"
+              class="cursor-pointer text-blue-500 hover:text-blue-800 focus:ring-3 focus:ring-blue-800 focus:text-blue-800 rounded-lg p-1 text-center disabled:text-gray-300"
+              :disabled="currentStep === 0"
+              @click="currentStep = 0"
+            >
+              <!-- Rewind Icon -->
+              <svg class="w-6 h-6" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m17 16-4-4 4-4m-6 8-4-4 4-4"/>
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="cursor-pointer text-blue-500 hover:text-blue-800 focus:ring-3 focus:ring-blue-800 focus:text-blue-800 rounded-lg p-1 text-center disabled:text-gray-300"
+              :disabled="currentStep === 0"
+              @click="currentStep--"
+            >
+              <!-- Step Backward Icon -->
+              <svg class="w-6 h-6" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m14 8-4 4 4 4"/>
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="cursor-pointer text-blue-500 hover:text-blue-800 focus:ring-3 focus:ring-blue-800 focus:text-blue-800 rounded-lg p-1 text-center disabled:text-gray-300"
+              @click="playing = !playing; if (playing) stepForward()"
+            >
+              <!-- Play Icon -->
+              <svg x-show="!playing" class="w-6 h-6" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 18V6l8 6-8 6Z"/>
+              </svg>
+              <!-- Pause Icon -->
+              <svg x-show="playing" class="w-6 h-6" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 6H8a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1Zm7 0h-1a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1Z"/>
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="cursor-pointer text-blue-500 hover:text-blue-800 focus:ring-3 focus:ring-blue-800 focus:text-blue-800 rounded-lg p-1 text-center disabled:text-gray-300"
+              :disabled="currentStep === maxSteps"
+              @click="currentStep++"
+            >
+              <!-- Step Forward Icon -->
+              <svg class="w-6 h-6" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m10 16 4-4-4-4"/>
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="cursor-pointer text-blue-500 hover:text-blue-800 focus:ring-3 focus:ring-blue-800 focus:text-blue-800 rounded-lg p-1 text-center disabled:text-gray-300"
+              :disabled="currentStep === maxSteps"
+              @click="currentStep = maxSteps"
+            >
+              <!-- Fast Forward Icon -->
+              <svg class="w-6 h-6" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m7 16 4-4-4-4m6 8 4-4-4-4"/>
+              </svg>
+            </button>
+          </div>
         </div>
-      {% empty %}
-        <p>End of episode</p>
+        <div class="col-span-3 flex flex-col justify-evenly">
+          {% for agent_step in step.agent_steps.all %}
+            <div class="border border-gray-900 rounded-lg m-1 p-1">
+              <p class="flex justify-evenly">
+                <p><strong>Agent:</strong> {{ agent_step.agent }}</p>
+                <p><strong>Action:</strong> {{ agent_step.action_string }}</p>
+                <p><strong>Reward:</strong> {{ agent_step.reward }}</p>
+              </p>
+            </div>
+          {% empty %}
+            <p>End of episode</p>
+          {% endfor %}
+        </div>
+      </div>
       {% endfor %}
+      <div class="bg-gray-100 rounded-lg">
+        <ol class="items-center flex p-2">
+          <div class="flex w-5 bg-gray-700 h-6 self-start ml-2 mb-4"></div>
+          {% for ks in key_steps %}
+          <li x-show="{{ ks.total_rewards }} > 0" class="relative w-full">
+            <div class="flex items-center">
+                <div class="flex w-full bg-gray-700 h-0.5"></div>
+                <button
+                  type="button"
+                  class="cursor-pointer z-10 flex items-center justify-center w-2 h-2 rounded-full ring-4 ring-blue-700 shrink-0 text-blue-500 bg-blue-500 focus:ring-yellow-500"
+                  @click="currentStep = {{ ks.number }}"
+                >
+                </button>
+                <div class="flex w-full bg-gray-700 h-0.5"></div>
+            </div>
+            <p class="text-sm text-gray-900 text-center">{{ ks.total_rewards }}</p>
+          </li>
+          {% endfor %}
+          <div class="flex w-5 bg-gray-700 h-6 self-start mr-2 mb-4"></div>
+        </ol>
+      </div>
     </div>
-  </div>
-  {% endfor %}
-  <div>
-    <input
-      type="range"
-      id="stepsRange"
-      min="0"
-      max="{{ steps|length|add:'-1' }}"
-      value="0"
-      class="w-full"
-      x-model.number="currentStep"
-    >
   </div>
 </div>
 {% endblock %}
