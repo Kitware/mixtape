@@ -3,19 +3,70 @@
 {% block title %}Inference Results{% endblock %}
 
 {% block content %}
-<div x-data="{ currentStep: 0 }">
+<div x-data="{
+  currentStep: 0,
+  plotData: JSON.parse('{{ plot_data_json|escapejs }}')
+}">
   <h1 class="text-center text-2xl font-bold">Episode #{{ episode.pk }}</h1>
-  {% for step in steps %}
-  <div
-    x-cloak
-    x-show="currentStep === {{ forloop.counter0 }}"
-    class="flex items-start gap-5 text-center h-[90vh]"
-  >
-    <div class="content-center w-1/2 h-full min-h-full">
-      <img class="max-w-full h-auto" src="{{ step.image.url }}" alt="Step Image">
+  <div class="grid grid-cols-12">
+    <div class="col-span-3 content-center" x-data="{
+        data: [],
+        layout: {
+          title: {text: 'Actions VS Reward Frequency'},
+          xaxis: {title: {text: 'Action'}},
+          yaxis: {title: {text: 'Reward Frequency'}},
+          autosize: true,
+          barmode: 'group',
+        },
+        plot: null,
+      }"
+      x-init="
+        data = Object.entries(plotData.action_v_reward).reduce((acc, [key, val], idx) => {
+          acc.push({ x: Object.keys(val), y: Object.values(val), type: 'bar', name: key });
+          return acc;
+        }, []);
+        plot = Plotly.newPlot($refs.actionsRewards, data, layout)"
+    >
+      <div x-ref="actionsRewards"></div>
     </div>
-    <div class="border border-gray-300 p-2 w-1/2 m-auto max-h-[80vh] overflow-y-scroll">
-      <p class="text-xl font-bold">Step {{ step.number }}</p>
+    <div class="col-span-3 content-center" x-data="{
+        data: [],
+        layout: {
+          title: {text: 'Rewards VS Frequency'},
+          xaxis: {title: {text: 'Reward'}},
+          yaxis: {title: {text: 'Frequency'}},
+          autosize: true
+        },
+        plot: null,
+      }"
+      x-init="
+        data = [{x: plotData.reward_histogram, type: 'histogram'}];
+        plot = Plotly.newPlot($refs.rewardsFrequency, data, layout)"
+    >
+      <div x-ref="rewardsFrequency"></div>
+    </div>
+    <div class="col-span-3 content-center" x-data="{
+        data: [],
+        layout: {
+          title: {text: 'Actions VS Frequency'},
+          autosize: true
+        },
+        plot: null,
+      }"
+      x-init="
+        data = [{labels: Object.keys(plotData.action_v_frequency), values: Object.values(plotData.action_v_frequency), type: 'pie'}];
+        plot = Plotly.newPlot($refs.actionsFrequency, data, layout)"
+    >
+      <div x-ref="actionsFrequency"></div>
+    </div>
+  </div>
+  {% for step in steps %}
+  <h1 x-cloak x-show="currentStep === {{ forloop.counter0 }}" class="text-xl font-bold text-center">Step {{ step.number }}</h1>
+  <div x-cloak x-show="currentStep === {{ forloop.counter0 }}" class="grid grid-cols-12">
+    <div class="col-span-6 content-center m-2">
+      <img class="max-h-[45vh]" src="{{ step.image.url }}" alt="Step Image">
+    </div>
+    <div class="col-span-6 border-gray-300 p-2 max-h-[45vh] overflow-y-scroll">
       {% for agent_step in step.agent_steps.all %}
         <div>
           <p class="flex justify-evenly">
