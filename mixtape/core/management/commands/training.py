@@ -9,8 +9,11 @@ from mixtape.core.ray_utils.constants import ExampleEnvs, SupportedAlgorithm
 from mixtape.core.tasks.training_tasks import run_training_task
 
 
-def check_algo(ctx: click.Context, param: str, algorithm: SupportedAlgorithm) -> SupportedAlgorithm:
-    env_name = ctx.params['env_name']
+def check_algo(
+    ctx: click.Context, param: click.Option, value: SupportedAlgorithm | ExampleEnvs
+) -> SupportedAlgorithm | ExampleEnvs:
+    env_name = value if param.name == 'env_name' else ctx.params.get('env_name')
+    algorithm = value if param.name == 'algorithm' else ctx.params.get('algorithm')
     if algorithm == SupportedAlgorithm.DQN and env_name == ExampleEnvs.PZ_Pistonball:
         raise click.ClickException(
             click.style(
@@ -20,7 +23,15 @@ def check_algo(ctx: click.Context, param: str, algorithm: SupportedAlgorithm) ->
                 bold=True,
             )
         )
-    return algorithm
+    return value
+
+
+def check_parallel_and_algo(
+    ctx: click.Context, param: click.Option, value: ExampleEnvs
+) -> ExampleEnvs:
+    check_parallel(ctx, param, value)
+    check_algo(ctx, param, value)
+    return value
 
 
 @click.command()
@@ -29,6 +40,7 @@ def check_algo(ctx: click.Context, param: str, algorithm: SupportedAlgorithm) ->
     '--env_name',
     type=click.Choice([choice.value for choice in ExampleEnvs]),
     default=ExampleEnvs.PZ_KnightsArchersZombies,
+    callback=check_parallel_and_algo,
     help='The PettingZoo or Gymnasium environment to use.',
 )
 @click.option(

@@ -17,6 +17,7 @@ from mixtape.core.tasks.inference_tasks import run_inference_task
     '--env_name',
     type=click.Choice([choice.value for choice in ExampleEnvs]),
     default=ExampleEnvs.PZ_KnightsArchersZombies,
+    callback=check_parallel,
     help='The PettingZoo or Gymnasium environment to use.',
 )
 @click.option(
