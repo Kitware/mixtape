@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404, render
 from mixtape.core.models.agent_step import AgentStep
 from mixtape.core.models.episode import Episode
 from mixtape.core.models.step import Step
+from mixtape.environments.mappings import actions
 
 
 def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
@@ -21,17 +22,19 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
         action_frequency=Count('action'),
     ).order_by('action', 'reward')
 
+    environment = episode.inference_request.checkpoint.training_request.environment
     plot_data = {
         'action_v_reward': {},
         'reward_histogram': [v['reward'] for v in values],
         'action_v_frequency': {},
     }
     for entry in results:
+        action = actions[environment][entry['action']]
         plot_data['action_v_reward'].setdefault(entry['agent'], {})
-        plot_data['action_v_reward'][entry['agent']].setdefault(entry['action'], 0)
-        plot_data['action_v_reward'][entry['agent']][entry['action']] += entry['total_rewards']
-        plot_data['action_v_frequency'].setdefault(entry['action'], 0)
-        plot_data['action_v_frequency'][entry['action']] += entry['action_frequency']
+        plot_data['action_v_reward'][entry['agent']].setdefault(action, 0)
+        plot_data['action_v_reward'][entry['agent']][action] += entry['total_rewards']
+        plot_data['action_v_frequency'].setdefault(action, 0)
+        plot_data['action_v_frequency'][action] += entry['action_frequency']
 
     key_steps = (
         steps.values('number')

@@ -1,6 +1,7 @@
 from django.db import models
 
 from mixtape.core.ray_utils.logger import NumpyJSONEncoder
+from mixtape.environments.mappings import actions
 
 from .step import Step
 
@@ -15,3 +16,8 @@ class AgentStep(models.Model):
     action = models.FloatField()
     reward = models.FloatField()
     observation_space = models.JSONField(encoder=NumpyJSONEncoder)
+
+    @property
+    def action_string(self) -> str:
+        environment = self.step.episode.inference_request.checkpoint.training_request.environment
+        return actions[environment].get(self.action, self.action)
