@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 from django.db.models import Count, Sum
 from django.http import HttpRequest, HttpResponse
@@ -23,7 +24,7 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
     ).order_by('action', 'reward')
 
     environment = episode.inference_request.checkpoint.training_request.environment
-    plot_data = {
+    plot_data: dict[str, Any] = {
         'action_v_reward': {},
         'reward_histogram': [v['reward'] for v in values],
         'action_v_frequency': {},

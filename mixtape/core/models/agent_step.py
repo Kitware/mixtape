@@ -20,4 +20,4 @@ class AgentStep(models.Model):
     @property
     def action_string(self) -> str:
         environment = self.step.episode.inference_request.checkpoint.training_request.environment
-        return actions[environment].get(self.action, self.action)
+        return actions[environment].get(int(self.action), f'{self.action}')
