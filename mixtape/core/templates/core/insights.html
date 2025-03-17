@@ -73,6 +73,20 @@
     >
       <div x-ref="actionsFrequency"></div>
     </div>
+    <div class="col-span-3 content-center" x-data="{
+        data: [],
+        layout: {
+          title: {text: 'Rewards Over Time'},
+          autosize: true
+        },
+        plot: null,
+      }"
+      x-init="
+        data = [{x: plotData.rewards_over_time.length, y: plotData.rewards_over_time, type: 'scatter'}];
+        plot = Plotly.newPlot($refs.rewardsOverTime, data, layout)"
+    >
+      <div x-ref="rewardsOverTime"></div>
+    </div>
   </div>
   <div class="grid grid-cols-12">
     <div class="col-span-6">

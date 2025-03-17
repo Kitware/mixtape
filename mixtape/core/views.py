@@ -38,6 +38,10 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
         .annotate(total_rewards=Sum('agent_steps__reward', default=0))
         .order_by('number')
     )
+    plot_data['rewards_over_time'] = []
+    for i, ks in enumerate(key_steps):
+        prev = plot_data['rewards_over_time'][i - 1] if i > 0 else 0
+        plot_data['rewards_over_time'].append(ks['total_rewards'] + prev)
 
     return render(
         request,
