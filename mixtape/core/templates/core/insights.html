@@ -158,13 +158,13 @@
             </button>
           </div>
         </div>
-        <div class="col-span-3 flex flex-col justify-evenly">
-          {% for agent_step in step.agent_steps.all %}
+        <div class="col-span-3 flex flex-col justify-evenly overflow-y-auto h-9/10">
+          {% for agent_step in step.agent_steps.all|dictsortreversed:"reward" %}
             <div class="border border-gray-900 rounded-lg m-1 p-1">
               <p class="flex justify-evenly">
                 <p><strong>Agent:</strong> {{ agent_step.agent }}</p>
                 <p><strong>Action:</strong> {{ agent_step.action_string }}</p>
-                <p><strong>Reward:</strong> {{ agent_step.reward }}</p>
+                <p><strong>Reward:</strong> {{ agent_step.reward|floatformat }}</p>
               </p>
             </div>
           {% empty %}
@@ -178,6 +178,9 @@
           <div class="flex w-5 bg-gray-700 h-6 self-start ml-2 mb-4"></div>
           {% for ks in key_steps %}
           <li x-show="{{ ks.total_rewards }} > 0" class="relative w-full">
+            <template x-if="{{ forloop.counter0 }} % 2 === 0">
+              <p class="text-sm text-gray-900 text-center -mt-7">{{ ks.total_rewards|floatformat }}</p>
+            </template>
             <div class="flex items-center">
                 <div class="flex w-full bg-gray-700 h-0.5"></div>
                 <button
@@ -188,7 +191,9 @@
                 </button>
                 <div class="flex w-full bg-gray-700 h-0.5"></div>
             </div>
-            <p class="text-sm text-gray-900 text-center">{{ ks.total_rewards }}</p>
+            <template x-if="{{ forloop.counter0 }} % 2 !== 0">
+              <p class="text-sm text-gray-900 text-center -mb-3">{{ ks.total_rewards|floatformat }}</p>
+            </template>
           </li>
           {% endfor %}
           <div class="flex w-5 bg-gray-700 h-6 self-start mr-2 mb-4"></div>
