@@ -3,9 +3,12 @@
 {% block title %}Inference Results{% endblock %}
 
 {% block content %}
+
+{{ plot_data|json_script:"plot_data_json" }}
+
 <div x-data="{
+  plotData: JSON.parse(document.getElementById('plot_data_json').textContent),
   currentStep: 0,
-  plotData: JSON.parse('{{ plot_data_json|escapejs }}'),
   playing: false,
   maxSteps: {{ steps|length|add:'-1' }},
   stepForward() {

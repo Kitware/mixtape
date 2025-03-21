@@ -1,6 +1,5 @@
 from collections import defaultdict
 from itertools import accumulate
-import json
 from typing import Any
 
 from django.db.models import Count, Sum
@@ -51,7 +50,7 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
         {
             'episode': episode,
             'steps': steps,
-            'plot_data_json': json.dumps(plot_data),
+            'plot_data': plot_data,
             'timeline_steps': timeline_steps,
         },
     )
