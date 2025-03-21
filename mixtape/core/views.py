@@ -1,3 +1,5 @@
+from collections import defaultdict
+from itertools import accumulate
 import json
 from typing import Any
 
@@ -14,10 +16,8 @@ from mixtape.environments.mappings import actions
 def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
     episode = get_object_or_404(Episode, pk=episode_pk)
     steps = Step.objects.prefetch_related('agent_steps').filter(episode=episode_pk)
-    values = AgentStep.objects.filter(step__episode_id=episode_pk).values(
-        'action', 'reward', 'agent'
-    )
-    results = values.annotate(
+    agent_steps = AgentStep.objects.filter(step__episode_id=episode_pk)
+    agent_steps_aggregation = agent_steps.annotate(
         total_rewards=Sum('reward'),
         reward_frequency=Count('reward'),
         action_frequency=Count('action'),
@@ -25,27 +25,25 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
 
     environment = episode.inference_request.checkpoint.training_request.environment
     plot_data: dict[str, Any] = {
-        'action_v_reward': {},
-        'reward_histogram': [v['reward'] for v in values],
-        'action_v_frequency': {},
+        # dict mapping agent (str) to action (str) to total reward (float)
+        'action_v_reward': defaultdict(lambda: defaultdict(float)),
+        # all reward values received over the episode (list of floats)
+        'reward_histogram': [a.reward for a in agent_steps],
+        # dict mapping action (str) to freuency of action (int)
+        'action_v_frequency': defaultdict(int),
     }
-    for entry in results:
-        action = actions[environment][entry['action']]
-        plot_data['action_v_reward'].setdefault(entry['agent'], {})
-        plot_data['action_v_reward'][entry['agent']].setdefault(action, 0)
-        plot_data['action_v_reward'][entry['agent']][action] += entry['total_rewards']
-        plot_data['action_v_frequency'].setdefault(action, 0)
-        plot_data['action_v_frequency'][action] += entry['action_frequency']
 
-    key_steps = (
-        steps.values('number')
-        .annotate(total_rewards=Sum('agent_steps__reward', default=0))
-        .order_by('number')
+    action_map = actions.get(environment, {})
+    for entry in agent_steps_aggregation:
+        action = action_map.get(int(entry.action), f'{entry.action}')
+        plot_data['action_v_reward'][entry.agent][action] += entry.total_rewards
+        plot_data['action_v_frequency'][action] += entry.action_frequency
+
+    key_steps = steps.annotate(total_rewards=Sum('agent_steps__reward', default=0)).order_by(
+        'number'
     )
-    plot_data['rewards_over_time'] = []
-    for i, ks in enumerate(key_steps):
-        prev = plot_data['rewards_over_time'][i - 1] if i > 0 else 0
-        plot_data['rewards_over_time'].append(ks['total_rewards'] + prev)
+    plot_data['rewards_over_time'] = list(accumulate(ks.total_rewards for ks in key_steps))
+    timeline_steps = key_steps.filter(total_rewards__gt=0)
 
     return render(
         request,
@@ -54,7 +52,7 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
             'episode': episode,
             'steps': steps,
             'plot_data_json': json.dumps(plot_data),
-            'key_steps': key_steps.filter(total_rewards__gt=0),
+            'timeline_steps': timeline_steps,
         },
     )
 
