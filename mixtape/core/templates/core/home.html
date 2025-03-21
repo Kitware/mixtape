@@ -5,15 +5,25 @@
 {% block content %}
 <div class="text-center text-xl">Explore Results</div>
 <div>
-  <ul class="list-disc columns-md list-inside">
+  <ol class="columns-2 list-inside">
     {% for episode in episodes %}
-    <li class="break-inside-avoid p-2">
-      <a class="underline text-blue-600 hover:text-blue-800 visited:text-purple-600"
-        href="{% url 'insights' episode.pk %}">
-        Episode #{{ episode.pk }}
-      </a>
-    </li>
+    <a href="{% url 'insights' episode.pk %}">
+      <li class="break-inside-avoid block p-4 m-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-100">
+        <span class="text-gray-900 font-bold">{{ episode.inference.checkpoint.training.environment }}</span>
+        <span class="text-gray-500 italic">
+          {{ episode.inference.created|date:"D d M Y" }}
+          {{ episode.inference.created|time:"H:i" }}
+        </span>
+        <div class="ml-4 text-gray-700">
+          <span>{{ episode.inference.checkpoint.training.algorithm }}</span>
+          <span>{{ episode.inference.checkpoint.training.iterations }} Iterations</span>
+          {% if episode.inference.checkpoint.training.parallel %}
+            <span>Parallel</span>
+          {% endif %}
+        </div>
+      </li>
+    </a>
     {% endfor %}
-  </ul>
+  </ol>
 </div>
 {% endblock %}
