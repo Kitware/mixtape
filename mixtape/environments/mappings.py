@@ -1,4 +1,4 @@
-actions = {
+action_maps = {
     'knights_archers_zombies_v10': {
         0: 'Front',
         1: 'Back',

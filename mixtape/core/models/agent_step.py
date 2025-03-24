@@ -1,7 +1,7 @@
 from django.db import models
 
 from mixtape.core.ray_utils.logger import NumpyJSONEncoder
-from mixtape.environments.mappings import actions
+from mixtape.environments.mappings import action_maps
 
 from .step import Step
 
@@ -19,5 +19,7 @@ class AgentStep(models.Model):
 
     @property
     def action_string(self) -> str:
+        # Note: "prefetch_related" should be called on any AgentStep where this is used, otherwise
+        # this property can create very inefficient queries
         environment = self.step.episode.inference_request.checkpoint.training_request.environment
-        return actions[environment].get(int(self.action), f'{self.action}')
+        return action_maps[environment].get(int(self.action), f'{self.action}')

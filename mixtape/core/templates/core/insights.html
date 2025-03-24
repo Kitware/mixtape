@@ -38,10 +38,12 @@
         plot: null,
       }"
       x-init="
-        data = Object.entries(plotData.action_v_reward).reduce((acc, [key, val], idx) => {
-          acc.push({ x: Object.keys(val), y: Object.values(val), type: 'bar', name: key });
-          return acc;
-        }, []);
+        data = Object.entries(plotData.action_v_reward).map(([agent, actions]) => ({
+          x: Object.keys(actions),
+          y: Object.values(actions),
+          type: 'bar',
+          name: agent
+        }));
         plot = Plotly.newPlot($refs.actionsRewards, data, layout)"
     >
       <div x-ref="actionsRewards"></div>
@@ -102,7 +104,6 @@
           <img class="max-h-4/5 m-auto" src="{{ step.image.url }}" alt="Step Image">
           <div class="flex w-1/2 justify-evenly justify-self-center border border-black rounded-lg my-2 mx-5 py-1">
             <button
-              type="button"
               class="cursor-pointer text-blue-500 hover:text-blue-800 focus:ring-3 focus:ring-blue-800 focus:text-blue-800 rounded-lg p-1 text-center disabled:text-gray-300"
               :disabled="currentStep === 0"
               @click="currentStep = 0"
@@ -113,7 +114,6 @@
               </svg>
             </button>
             <button
-              type="button"
               class="cursor-pointer text-blue-500 hover:text-blue-800 focus:ring-3 focus:ring-blue-800 focus:text-blue-800 rounded-lg p-1 text-center disabled:text-gray-300"
               :disabled="currentStep === 0"
               @click="currentStep--"
@@ -124,7 +124,6 @@
               </svg>
             </button>
             <button
-              type="button"
               class="cursor-pointer text-blue-500 hover:text-blue-800 focus:ring-3 focus:ring-blue-800 focus:text-blue-800 rounded-lg p-1 text-center disabled:text-gray-300"
               @click="playing = !playing; if (playing) stepForward()"
             >
@@ -138,7 +137,6 @@
               </svg>
             </button>
             <button
-              type="button"
               class="cursor-pointer text-blue-500 hover:text-blue-800 focus:ring-3 focus:ring-blue-800 focus:text-blue-800 rounded-lg p-1 text-center disabled:text-gray-300"
               :disabled="currentStep === maxSteps"
               @click="currentStep++"
@@ -149,7 +147,6 @@
               </svg>
             </button>
             <button
-              type="button"
               class="cursor-pointer text-blue-500 hover:text-blue-800 focus:ring-3 focus:ring-blue-800 focus:text-blue-800 rounded-lg p-1 text-center disabled:text-gray-300"
               :disabled="currentStep === maxSteps"
               @click="currentStep = maxSteps"

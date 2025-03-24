@@ -9,12 +9,12 @@ from django.shortcuts import get_object_or_404, render
 from mixtape.core.models.agent_step import AgentStep
 from mixtape.core.models.episode import Episode
 from mixtape.core.models.step import Step
-from mixtape.environments.mappings import actions
+from mixtape.environments.mappings import action_maps
 
 
 def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
     episode = get_object_or_404(Episode, pk=episode_pk)
-    steps = Step.objects.prefetch_related('agent_steps').filter(episode=episode_pk)
+    steps = Step.objects.prefetch_related('agent_steps').filter(episode=episode)
     agent_steps = AgentStep.objects.filter(step__episode_id=episode_pk)
     agent_steps_aggregation = agent_steps.annotate(
         total_rewards=Sum('reward'),
@@ -22,7 +22,7 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
         action_frequency=Count('action'),
     ).order_by('action', 'reward')
 
-    environment = episode.inference_request.checkpoint.training_request.environment
+    env_name = episode.inference_request.checkpoint.training_request.environment
     plot_data: dict[str, Any] = {
         # dict mapping agent (str) to action (str) to total reward (float)
         'action_v_reward': defaultdict(lambda: defaultdict(float)),
@@ -32,7 +32,7 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
         'action_v_frequency': defaultdict(int),
     }
 
-    action_map = actions.get(environment, {})
+    action_map = action_maps.get(env_name, {})
     for entry in agent_steps_aggregation:
         action = action_map.get(int(entry.action), f'{entry.action}')
         plot_data['action_v_reward'][entry.agent][action] += entry.total_rewards
