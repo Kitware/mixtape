@@ -175,28 +175,24 @@
       {% endfor %}
       <div class="bg-gray-100 rounded-lg">
         <ol class="items-center flex p-2">
-          <div class="flex w-5 bg-gray-700 h-6 self-start ml-2 mb-4"></div>
+          <div class="flex w-5 bg-gray-700 h-6 ml-2"></div>
           {% for ts in timeline_steps %}
-          <li x-show="{{ ts.total_rewards }} > 0" class="relative w-full">
-            <template x-if="{{ forloop.counter0 }} % 2 === 0">
-              <p class="text-sm text-gray-900 text-center -mt-7">{{ ts.total_rewards|floatformat }}</p>
-            </template>
+          <li x-show="{{ ts.total_rewards }} > 0" class="relative w-full flex even:flex-col odd:flex-col-reverse even:mb-5 odd:mt-5">
+            <p class="text-sm text-gray-900 text-center">
+              {{ ts.total_rewards|floatformat }}
+            </p>
             <div class="flex items-center">
                 <div class="flex w-full bg-gray-700 h-0.5"></div>
                 <button
-                  type="button"
                   class="cursor-pointer z-10 flex items-center justify-center w-2 h-2 rounded-full ring-4 ring-blue-700 shrink-0 text-blue-500 bg-blue-500 focus:ring-yellow-500"
                   @click="currentStep = {{ ts.number }}"
                 >
                 </button>
                 <div class="flex w-full bg-gray-700 h-0.5"></div>
             </div>
-            <template x-if="{{ forloop.counter0 }} % 2 !== 0">
-              <p class="text-sm text-gray-900 text-center -mb-3">{{ ts.total_rewards|floatformat }}</p>
-            </template>
           </li>
           {% endfor %}
-          <div class="flex w-5 bg-gray-700 h-6 self-start mr-2 mb-4"></div>
+          <div class="flex w-5 bg-gray-700 h-6 mr-2"></div>
         </ol>
       </div>
     </div>
