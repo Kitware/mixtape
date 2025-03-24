@@ -13,7 +13,10 @@ from mixtape.environments.mappings import action_maps
 
 
 def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
-    episode = get_object_or_404(Episode, pk=episode_pk)
+    episode = get_object_or_404(
+        Episode.objects.select_related('inference_request__checkpoint__training_request'),
+        pk=episode_pk,
+    )
     steps = Step.objects.prefetch_related('agent_steps').filter(episode=episode)
     agent_steps = AgentStep.objects.filter(step__episode_id=episode_pk)
     agent_steps_aggregation = agent_steps.annotate(
@@ -57,5 +60,7 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
 
 
 def home_page(request: HttpRequest) -> HttpResponse:
-    episodes = Episode.objects.all()
+    episodes = Episode.objects.select_related(
+        'inference_request__checkpoint__training_request'
+    ).all()
     return render(request, 'core/home.html', {'episodes': episodes})

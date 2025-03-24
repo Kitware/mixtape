@@ -1,4 +1,4 @@
-action_maps = {
+action_maps: dict[str, dict[int, str]] = {
     'knights_archers_zombies_v10': {
         0: 'Front',
         1: 'Back',
