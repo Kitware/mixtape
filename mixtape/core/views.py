@@ -20,8 +20,6 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
     )
 
     # Prepare step data
-    steps = list(episode.steps.all())
-    agent_steps = [agent_step for step in steps for agent_step in step.agent_steps.all()]
     step_data = {
         step.number: {
             'image_url': step.image.url,
@@ -29,12 +27,12 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
                 {
                     'agent': agent_step.agent,
                     'action': agent_step.action_string,
-                    'reward': agent_step.reward
+                    'reward': agent_step.reward,
                 }
-                for agent_step in agent_steps
-            ]
+                for agent_step in step.agent_steps.all()
+            ],
         }
-        for step in steps
+        for step in episode.steps.all()
     }
 
     # Prepare plot data
@@ -43,15 +41,18 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
         # dict mapping agent (str) to action (str) to total reward (float)
         'action_v_reward': defaultdict(lambda: defaultdict(float)),
         # all reward values received over the episode (list of floats)
-        'reward_histogram': [a.reward for a in agent_steps],
+        'reward_histogram': [
+            a.reward for step in episode.steps.all() for a in step.agent_steps.all()
+        ],
         # dict mapping action (str) to freuency of action (int)
         'action_v_frequency': defaultdict(int),
     }
     action_map = action_maps.get(env_name, {})
-    for agent_step in agent_steps:
-        action = action_map.get(int(agent_step.action), f'{agent_step.action}')
-        plot_data['action_v_reward'][agent_step.agent][action] += agent_step.reward
-        plot_data['action_v_frequency'][action] += 1
+    for step in episode.steps.all():
+        for agent_step in step.agent_steps.all():
+            action = action_map.get(int(agent_step.action), f'{agent_step.action}')
+            plot_data['action_v_reward'][agent_step.agent][action] += agent_step.reward
+            plot_data['action_v_frequency'][action] += 1
 
     key_steps = (
         episode.steps.all()
@@ -70,7 +71,7 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
         'core/insights.html',
         {
             'episode': episode,
-            'steps': steps,
+            'steps': episode.steps.all(),
             'plot_data': plot_data,
             'timeline_steps': timeline_steps,
             'step_data': step_data,
