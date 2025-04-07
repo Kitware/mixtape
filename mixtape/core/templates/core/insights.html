@@ -5,9 +5,11 @@
 {% block content %}
 
 {{ plot_data|json_script:"plot_data_json" }}
+{{ step_data|json_script:"step_data_json" }}
 
 <div x-data="{
   plotData: JSON.parse(document.getElementById('plot_data_json').textContent),
+  stepData: JSON.parse(document.getElementById('step_data_json').textContent),
   currentStep: 0,
   playing: false,
   maxSteps: {{ steps|length|add:'-1' }},
@@ -41,11 +43,10 @@
   </div>
   <div class="grid grid-cols-12">
     <div class="col-span-6">
-      {% for step in steps %}
-      <h1 x-cloak x-show="currentStep === {{ forloop.counter0 }}" class="text-xl font-bold text-center">Step {{ step.number }}</h1>
-      <div x-cloak x-show="currentStep === {{ forloop.counter0 }}" class="grid grid-cols-12 h-[45vh] {% if step.image %}content-center{% endif %}">
-        <div x-show="{{ step.image|yesno:'true,false' }}" class="col-span-9 content-center m-2 h-[inherit]">
-          <img class="max-h-4/5 m-auto" src="{{ step.image.url }}" alt="Step Image">
+      <h1 class="text-xl font-bold text-center">Step <span x-text="currentStep"></span></h1>
+      <div class="grid grid-cols-12 h-[45vh] {% if step.image %}content-center{% endif %}">
+        <div x-show="{{ step.image|yesno:'false,true' }}" class="col-span-9 content-center m-2 h-[inherit]">
+          <img class="max-h-4/5 m-auto" :src="stepData[currentStep].image_url" alt="Step Image">
           <div class="flex w-1/2 justify-evenly justify-self-center border border-black rounded-lg my-2 mx-5 py-1">
             <button
               class="cursor-pointer text-blue-500 hover:text-blue-800 focus:ring-3 focus:ring-blue-800 focus:text-blue-800 rounded-lg p-1 text-center disabled:text-gray-300"
@@ -84,21 +85,19 @@
             </button>
           </div>
         </div>
-        <div class="flex justify-evenly {% if step.image %}col-span-3 flex-col overflow-y-auto h-9/10{% else %}col-span-12 flex-row h-fit{% endif %}">
-          {% for agent_step in step.agent_steps.all|dictsortreversed:"reward" %}
+        <div class="col-span-3 flex flex-col justify-evenly overflow-y-auto h-9/10">
+          <template x-for="agent_step in stepData[currentStep].agent_steps || []">
             <div class="border border-gray-900 rounded-lg m-1 p-1">
               <p class="flex justify-evenly">
-                <p><strong>Agent:</strong> {{ agent_step.agent }}</p>
-                <p><strong>Action:</strong> {{ agent_step.action_string }}</p>
-                <p><strong>Reward:</strong> {{ agent_step.reward|floatformat }}</p>
+                <p><strong>Agent:</strong> <span x-text="agent_step.agent"></span></p>
+                <p><strong>Action:</strong> <span x-text="agent_step.action"></span></p>
+                <p><strong>Reward:</strong> <span x-text="agent_step.reward"></span></p>
               </p>
             </div>
-          {% empty %}
-            <p>End of episode</p>
-          {% endfor %}
+          </template>
+          <p x-show="!stepData[currentStep]?.agent_steps?.length" class="text-center">End of episode</p>
         </div>
       </div>
-      {% endfor %}
       <div class="bg-gray-100 rounded-lg">
         <ol class="items-center flex p-2">
           <div class="flex w-5 bg-gray-700 h-6 ml-2"></div>
