@@ -1,6 +1,6 @@
 import iptools
 
-from .testing import *
+from .base import *
 
 # Import these afterwards, to override
 from resonant_settings.development.celery import *  # isort: skip
@@ -29,15 +29,22 @@ MIDDLEWARE += [
 # to add new settings as individual feature flags.
 DEBUG = True
 
+SECRET_KEY = 'insecure-secret'
+
 # This is typically only overridden when running from Docker.
 INTERNAL_IPS = iptools.IpRangeList(
     *env.list('DJANGO_INTERNAL_IPS', cast=str, default=['127.0.0.1'])
 )
-CORS_ORIGIN_REGEX_WHITELIST = env.list(
-    'DJANGO_CORS_ORIGIN_REGEX_WHITELIST',
+CORS_ALLOWED_ORIGIN_REGEXES = env.list(
+    'DJANGO_CORS_ALLOWED_ORIGIN_REGEXES',
     cast=str,
     default=[r'^http://localhost:\d+$', r'^http://127\.0\.0\.1:\d+$'],
 )
+
+STORAGES['default'] = {
+    'BACKEND': 'minio_storage.storage.MinioMediaStorage',
+}
+from resonant_settings.testing.minio_storage import *  # isort: skip
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
