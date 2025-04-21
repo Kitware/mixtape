@@ -1,0 +1,16 @@
+<div x-data="{
+    data: [],
+    layout: {
+      title: {text: 'Rewards Over Time'},
+      xaxis: {title: {text: 'Time Step'}},
+      yaxis: {title: {text: 'Cumulative Reward'}},
+      autosize: true
+    },
+    plot: null,
+  }"
+  x-init="
+    data = [{x: plotData.rewards_over_time.length, y: plotData.rewards_over_time, type: 'scatter'}];
+    plot = Plotly.newPlot($refs.rewardsOverTime, data, layout)"
+>
+  <div x-ref="rewardsOverTime"></div>
+</div>

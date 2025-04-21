@@ -26,73 +26,17 @@
 }">
   <h1 class="text-center text-2xl font-bold">Episode #{{ episode.pk }}</h1>
   <div class="grid grid-cols-12">
-    <div class="col-span-3 content-center" x-data="{
-        data: [],
-        layout: {
-          title: {text: 'Actions VS Reward Frequency'},
-          xaxis: {title: {text: 'Action'}},
-          yaxis: {title: {text: 'Reward Frequency'}},
-          autosize: true,
-          barmode: 'group',
-        },
-        plot: null,
-      }"
-      x-init="
-        data = Object.entries(plotData.action_v_reward).map(([agent, actions]) => ({
-          x: Object.keys(actions),
-          y: Object.values(actions),
-          type: 'bar',
-          name: agent
-        }));
-        plot = Plotly.newPlot($refs.actionsRewards, data, layout)"
-    >
-      <div x-ref="actionsRewards"></div>
+    <div class="col-span-3 content-center">
+      {% include "core/action_v_reward_frequency.html" with plot_data=plot_data %}
     </div>
-    <div class="col-span-3 content-center" x-data="{
-        data: [],
-        layout: {
-          title: {text: 'Rewards VS Frequency'},
-          xaxis: {title: {text: 'Reward'}},
-          yaxis: {title: {text: 'Frequency'}},
-          autosize: true
-        },
-        plot: null,
-      }"
-      x-init="
-        data = [{x: plotData.reward_histogram, type: 'histogram'}];
-        plot = Plotly.newPlot($refs.rewardsFrequency, data, layout)"
-    >
-      <div x-ref="rewardsFrequency"></div>
+    <div class="col-span-3 content-center">
+      {% include "core/reward_v_frequency.html" with plot_data=plot_data %}
     </div>
-    <div class="col-span-3 content-center" x-data="{
-        data: [],
-        layout: {
-          title: {text: 'Actions VS Frequency'},
-          autosize: true
-        },
-        plot: null,
-      }"
-      x-init="
-        data = [{labels: Object.keys(plotData.action_v_frequency), values: Object.values(plotData.action_v_frequency), type: 'pie'}];
-        plot = Plotly.newPlot($refs.actionsFrequency, data, layout)"
-    >
-      <div x-ref="actionsFrequency"></div>
+    <div class="col-span-3 content-center">
+      {% include "core/action_v_frequency.html" with plot_data=plot_data %}
     </div>
-    <div class="col-span-3 content-center" x-data="{
-        data: [],
-        layout: {
-          title: {text: 'Rewards Over Time'},
-          xaxis: {title: {text: 'Time Step'}},
-          yaxis: {title: {text: 'Cumulative Reward'}},
-          autosize: true
-        },
-        plot: null,
-      }"
-      x-init="
-        data = [{x: plotData.rewards_over_time.length, y: plotData.rewards_over_time, type: 'scatter'}];
-        plot = Plotly.newPlot($refs.rewardsOverTime, data, layout)"
-    >
-      <div x-ref="rewardsOverTime"></div>
+    <div class="col-span-3 content-center">
+      {% include "core/rewards_over_time.html" with plot_data=plot_data %}
     </div>
   </div>
   <div class="grid grid-cols-12">

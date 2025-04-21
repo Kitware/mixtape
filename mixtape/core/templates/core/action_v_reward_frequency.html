@@ -1,0 +1,22 @@
+<div x-data="{
+    data: [],
+    layout: {
+      title: {text: 'Actions VS Reward Frequency'},
+      xaxis: {title: {text: 'Action'}},
+      yaxis: {title: {text: 'Reward Frequency'}},
+      autosize: true,
+      barmode: 'group',
+    },
+    plot: null,
+  }"
+  x-init="
+    data = Object.entries(plotData.action_v_reward).map(([agent, actions]) => ({
+      x: Object.keys(actions),
+      y: Object.values(actions),
+      type: 'bar',
+      name: agent
+    }));
+    plot = Plotly.newPlot($refs.actionsRewards, data, layout)"
+>
+  <div x-ref="actionsRewards"></div>
+</div>
