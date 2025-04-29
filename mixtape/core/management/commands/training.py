@@ -38,7 +38,7 @@ def check_parallel_and_algo(
 @click.option(
     '-e',
     '--env_name',
-    type=click.Choice([choice.value for choice in ExampleEnvs]),
+    type=click.Choice([choice.value for choice in ExampleEnvs]),  # type: ignore
     default=ExampleEnvs.PZ_KnightsArchersZombies,
     callback=check_parallel_and_algo,
     help='The PettingZoo or Gymnasium environment to use.',
@@ -46,7 +46,7 @@ def check_parallel_and_algo(
 @click.option(
     '-a',
     '--algorithm',
-    type=click.Choice([choice.value for choice in SupportedAlgorithm]),
+    type=click.Choice([choice.value for choice in SupportedAlgorithm]),  # type: ignore
     default=SupportedAlgorithm.PPO,
     callback=check_algo,
     help='The RLlib algorithm to use.',
