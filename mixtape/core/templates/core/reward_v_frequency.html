@@ -1,0 +1,16 @@
+<div x-data="{
+  data: [],
+  layout: {
+    title: {text: 'Rewards VS Frequency'},
+    xaxis: {title: {text: 'Reward'}},
+    yaxis: {title: {text: 'Frequency'}},
+    autosize: true
+  },
+  plot: null,
+}"
+x-init="
+  data = [{x: plotData.reward_histogram, type: 'histogram'}];
+  plot = Plotly.newPlot($refs.rewardsFrequency, data, layout)"
+>
+  <div x-ref="rewardsFrequency"></div>
+</div>
