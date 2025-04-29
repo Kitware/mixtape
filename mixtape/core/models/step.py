@@ -19,7 +19,7 @@ class Step(models.Model):
     episode = models.ForeignKey(Episode, on_delete=models.CASCADE, related_name='steps')
 
     number = models.PositiveIntegerField()
-    image = models.ImageField()
+    image = models.ImageField(null=True, blank=True)
 
     @contextmanager
     @staticmethod

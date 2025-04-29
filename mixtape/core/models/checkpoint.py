@@ -22,7 +22,6 @@ class Checkpoint(models.Model):
             models.UniqueConstraint(
                 fields=['training_request', 'last'], name='unique_checkpoint_last'
             ),
-            models.CheckConstraint(condition=Q(best=True) | Q(last=True), name='best_or_last'),
         ]
 
     created = models.DateTimeField(auto_now_add=True)
@@ -32,11 +31,14 @@ class Checkpoint(models.Model):
     )
     best = models.BooleanField(default=False)
     last = models.BooleanField(default=False)
-    archive = models.FileField()
+    archive = models.FileField(null=True, blank=True)
 
     @contextmanager
     def archive_path(self) -> Generator[Path]:
         """Yield the archive as a directory on disk."""
+        if not self.archive:
+            raise ValueError('Checkpoint has no archive.')
+
         with TemporaryDirectory() as tmp_archive_dir:
             archive_dir = Path(tmp_archive_dir)
             with NamedTemporaryFile() as archive_file_stream:
