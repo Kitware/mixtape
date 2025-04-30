@@ -86,14 +86,17 @@ def training(
     """Run training on the specified environment."""
     config_dict = yaml.safe_load(config_file) if config_file else {}
 
-    training_request = TrainingRequest.objects.create(
+    training_request = TrainingRequest(
         environment=env_name,
         algorithm=algorithm,
         parallel=parallel,
         num_gpus=num_gpus,
         iterations=training_iteration,
         config=config_dict,
+        is_external=False,
     )
+    training_request.full_clean()
+    training_request.save()
 
     task = run_training_task.s(training_request_pk=training_request.pk)
     if immediate:

@@ -22,4 +22,4 @@ class AgentStep(models.Model):
         # Note: "select_related" should be called on any AgentStep where this is used, otherwise
         # this property can create very inefficient queries
         environment = self.step.episode.inference_request.checkpoint.training_request.environment
-        return action_maps[environment].get(int(self.action), f'{self.action}')
+        return action_maps.get(environment, {}).get(int(self.action), f'{self.action}')
