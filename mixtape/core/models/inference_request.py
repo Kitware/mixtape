@@ -8,4 +8,4 @@ class InferenceRequest(models.Model):
 
     checkpoint = models.ForeignKey(Checkpoint, on_delete=models.CASCADE)
     parallel = models.BooleanField()
-    config = models.JSONField()
+    config = models.JSONField(default=dict, blank=True, null=True)

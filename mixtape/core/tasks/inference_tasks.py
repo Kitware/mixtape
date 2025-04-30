@@ -23,7 +23,7 @@ def run_inference_task(inference_request_pk: int):
     inference_request = InferenceRequest.objects.select_related('checkpoint__training_request').get(
         pk=inference_request_pk
     )
-    env_config = inference_request.config.get('env_config', {})
+    env_config = (inference_request.config or {}).get('env_config', {})
 
     with contextlib.closing(
         register_environment(

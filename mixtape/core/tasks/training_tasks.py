@@ -16,7 +16,8 @@ from mixtape.core.ray_utils.environments import is_gymnasium_env, register_envir
 def run_training_task(training_request_pk: int):
     training_request = TrainingRequest.objects.get(pk=training_request_pk)
 
-    env_config = training_request.config.get('env_config', {})
+    training_request_config = training_request.config or {}
+    env_config = training_request_config.get('env_config', {})
 
     parallel = (
         False if is_gymnasium_env(training_request.environment) else training_request.parallel
@@ -29,10 +30,10 @@ def run_training_task(training_request_pk: int):
         'train_batch_size': 512,
         'lr': 2e-5,
         'gamma': 0.99,
-        **training_request.config.get('training_args', {}),
+        **training_request_config.get('training_args', {}),
     }
-    env_args = training_request.config.get('env_args', {})
-    framework_args = training_request.config.get('framework_args', {})
+    env_args = training_request_config.get('env_args', {})
+    framework_args = training_request_config.get('framework_args', {})
 
     # Set algorithm specific defaults
     if training_request.algorithm == SupportedAlgorithm.PPO:
@@ -69,7 +70,7 @@ def run_training_task(training_request_pk: int):
         'checkpoint_freq': 10,
         'checkpoint_at_end': True,
         'config': config.to_dict(),
-        **training_request.config.get('run_args', {}),
+        **training_request_config.get('run_args', {}),
     }
 
     if 'storage_path' not in run_args:
