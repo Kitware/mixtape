@@ -22,7 +22,7 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
     # Prepare step data
     step_data = {
         step.number: {
-            'image_url': step.image.url,
+            'image_url': step.image.url if step.image else None,
             'agent_steps': [
                 {
                     'agent': agent_step.agent,
