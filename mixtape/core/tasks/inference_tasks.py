@@ -13,32 +13,32 @@ from pettingzoo import AECEnv
 from pettingzoo.utils import ParallelEnv
 from ray.rllib.algorithms.algorithm import Algorithm
 
-from mixtape.core.models import AgentStep, Episode, InferenceRequest
+from mixtape.core.models import AgentStep, Episode, Inference
 from mixtape.core.models.step import Step
 from mixtape.core.ray_utils.environments import register_environment
 
 
 @shared_task
-def run_inference_task(inference_request_pk: int):
-    inference_request = InferenceRequest.objects.select_related('checkpoint__training_request').get(
-        pk=inference_request_pk
+def run_inference_task(inference_pk: int):
+    inference = Inference.objects.select_related('checkpoint__training').get(
+        pk=inference_pk
     )
-    env_config = (inference_request.config or {}).get('env_config', {})
+    env_config = (inference.config or {}).get('env_config', {})
 
     with contextlib.closing(
         register_environment(
-            inference_request.checkpoint.training_request.environment,
+            inference.checkpoint.training.environment,
             env_config,
-            inference_request.parallel,
+            inference.parallel,
         )
     ) as env:
 
-        with inference_request.checkpoint.archive_path() as checkpoint_dir:
+        with inference.checkpoint.archive_path() as checkpoint_dir:
             algorithm = Algorithm.from_checkpoint(checkpoint_dir)
 
             # Create the Episode early, as AgentSteps need to reference it
             with transaction.atomic():
-                episode = Episode.objects.create(inference_request=inference_request)
+                episode = Episode.objects.create(inference=inference)
 
                 if isinstance(env, gym.Env):
                     env = AtariPreprocessing(env, grayscale_obs=True, scale_obs=False, frame_skip=1)

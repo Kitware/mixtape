@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import reverse
 from django.utils.html import format_html
 
-from mixtape.core.models import TrainingRequest
+from mixtape.core.models import Training
 
 
 class CompletedListFilter(admin.SimpleListFilter):
@@ -23,8 +23,8 @@ class CompletedListFilter(admin.SimpleListFilter):
         return queryset
 
 
-@admin.register(TrainingRequest)
-class TrainingRequestAdmin(admin.ModelAdmin):
+@admin.register(Training)
+class TrainingAdmin(admin.ModelAdmin):
     list_display = [
         'id',
         'created',
@@ -43,12 +43,12 @@ class TrainingRequestAdmin(admin.ModelAdmin):
     ]
 
     @admin.display(description='Completed', boolean=True, ordering='checkpoints')
-    def completed(self, training_request: TrainingRequest) -> bool:
-        return training_request.checkpoints.exists()
+    def completed(self, training: Training) -> bool:
+        return training.checkpoints.exists()
 
     @admin.display(description='Last Checkpoint', ordering='checkpoints')
-    def last_checkpoint(self, training_request: TrainingRequest):
-        last_checkpoint = training_request.checkpoints.filter(last=True).first()
+    def last_checkpoint(self, training: Training):
+        last_checkpoint = training.checkpoints.filter(last=True).first()
         if last_checkpoint:
             last_checkpoint_url = reverse(
                 'admin:core_checkpoint_change', kwargs={'object_id': last_checkpoint.pk}

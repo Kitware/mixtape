@@ -1,7 +1,7 @@
 from django.db import models
 
-from .inference_request import InferenceRequest
+from .inference import Inference
 
 
 class Episode(models.Model):
-    inference_request = models.ForeignKey(InferenceRequest, on_delete=models.CASCADE)
+    inference = models.ForeignKey(Inference, on_delete=models.CASCADE)

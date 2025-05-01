@@ -14,7 +14,7 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
     # Prefetch all related data in a single query
     episode = get_object_or_404(
         Episode.objects.select_related(
-            'inference_request__checkpoint__training_request'
+            'inference__checkpoint__training'
         ).prefetch_related('steps', 'steps__agent_steps'),
         pk=episode_pk,
     )
@@ -36,7 +36,7 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
     }
 
     # Prepare plot data
-    env_name = episode.inference_request.checkpoint.training_request.environment
+    env_name = episode.inference.checkpoint.training.environment
     plot_data: dict[str, Any] = {
         # dict mapping agent (str) to action (str) to total reward (float)
         'action_v_reward': defaultdict(lambda: defaultdict(float)),
@@ -81,6 +81,6 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
 
 def home_page(request: HttpRequest) -> HttpResponse:
     episodes = Episode.objects.select_related(
-        'inference_request__checkpoint__training_request'
+        'inference__checkpoint__training'
     ).all()
     return render(request, 'core/home.html', {'episodes': episodes})

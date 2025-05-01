@@ -10,11 +10,11 @@ from mixtape.core.models import (
     AgentStep,
     Episode,
     Step,
-    TrainingRequest,
+    Training,
 )
 from mixtape.core.models.checkpoint import Checkpoint
 from mixtape.core.ingest.models.external_episode import ExternalImport
-from mixtape.core.models.inference_request import InferenceRequest
+from mixtape.core.models.inference import Inference
 
 
 @click.command()
@@ -30,7 +30,7 @@ def ingest_episode(json_file: TextIO) -> None:
 
     with transaction.atomic():
         # Create the training request
-        training_request = TrainingRequest(
+        training = Training(
             environment=external_training.environment,
             algorithm=external_training.algorithm,
             parallel=external_training.parallel,
@@ -39,18 +39,18 @@ def ingest_episode(json_file: TextIO) -> None:
             config=external_training.config,
             is_external=True,
         )
-        training_request.full_clean()
-        training_request.save()
+        training.full_clean()
+        training.save()
 
         # Create the checkpoint
         checkpoint = Checkpoint.objects.create(
-            training_request=training_request,
+            training=training,
             best=False,
             last=False,
         )
 
         # Create the inference request
-        inference_request = InferenceRequest.objects.create(
+        inference = Inference.objects.create(
             checkpoint=checkpoint,
             parallel=external_inference.parallel,
             config=external_inference.config,
@@ -58,7 +58,7 @@ def ingest_episode(json_file: TextIO) -> None:
 
         # Create the episode
         episode = Episode.objects.create(
-            inference_request=inference_request,
+            inference=inference,
         )
 
         # Create the steps and agent steps
