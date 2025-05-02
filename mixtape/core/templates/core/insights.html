@@ -102,7 +102,7 @@
         <ol class="items-center flex p-2">
           <div class="flex w-5 bg-gray-700 h-6 ml-2"></div>
           {% for ts in timeline_steps %}
-          <li x-show="{{ ts.total_rewards }} > 0" class="relative w-full flex even:flex-col odd:flex-col-reverse even:mb-5 odd:mt-5">
+          <li class="relative w-full flex even:flex-col odd:flex-col-reverse even:mb-5 odd:mt-5">
             <p class="text-sm text-gray-900 text-center">
               {{ ts.total_rewards|floatformat }}
             </p>
