@@ -44,6 +44,75 @@ but allows developers to run Python code on their native system.
 4. When finished, run `docker compose stop`
 5. To destroy the stack and start fresh, run `docker compose down -v`
 
+## Add data
+
+### Training
+Start by training an environment of your choice:
+```bash
+Usage: manage.py training [OPTIONS]
+
+  Run training on the specified environment.
+
+Options:
+  --version                       Show the version and exit.
+  -h, --help                      Show this message and exit.
+  -e, --env_name [knights_archers_zombies_v10|pistonball_v6|cooperative_pong_v5|BattleZone-v5|Berzerk-v5|ChopperCommand-v5]
+                                  The PettingZoo or Gymnasium environment to
+                                  use.
+  -a, --algorithm [PPO|DQN]       The RLlib algorithm to use.
+  -p, --parallel                  All agents have simultaneous actions and
+                                  observations.
+  -g, --num_gpus FLOAT            Number of GPUs to use.
+  -t, --training_iteration INTEGER
+                                  Number of training iterations to run.
+  -f, --config_file FILENAME      Arguments to configure the environment.
+  --immediate                     Run the task immediately.
+```
+
+For example:
+```bash
+# This will use all of the default values (with the exception of parallel):
+# environment: 'knights_archers_zombies_v10'
+# algorithm: 'PPO'
+# parallel: True
+# training_iteration: 100
+# config_file: None
+python manage.py training -p
+```
+
+### Inference
+
+Select an existing checkpoint to run inference:
+```bash
+Usage: manage.py inference [OPTIONS] CHECKPOINT_PK
+
+  Run inference on the specified trained environment.
+
+Options:
+  --version                       Show the version and exit.
+  -h, --help                      Show this message and exit.
+  -e, --env_name [knights_archers_zombies_v10|pistonball_v6|cooperative_pong_v5|BattleZone-v5|Berzerk-v5|ChopperCommand-v5]
+                                  The PettingZoo or Gymnasium environment to
+                                  use.
+  -f, --config_file FILENAME      Arguments to configure the environment.
+  -p, --parallel                  All agents have simultaneous actions and
+                                  observations.
+  --immediate                     Run the task immediately.
+```
+
+For example:
+```bash
+# This will use the checkpoint with ID 1 and will use the
+# parallel environment if it is a PettingZoo environment
+python manage.py inference 1 -p
+```
+
+To see all available checkpoints visit http://localhost:8000/admin/core/checkpoint/.
+
+### Ingest existing episode(s)
+
+See the [ingest documentation](./mixtape/core/ingest/README.md)
+
 ## Testing
 ### Initial Setup
 tox is used to execute all tests.
