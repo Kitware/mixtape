@@ -15,6 +15,7 @@ from mixtape.core.models import (
 )
 from mixtape.core.models.checkpoint import Checkpoint
 from mixtape.core.models.inference import Inference
+from mixtape.core.models.action_mapping import ActionMapping
 
 
 @click.command()
@@ -23,10 +24,18 @@ def ingest_episode(json_file: TextIO) -> None:
     """Ingest an external episode from a JSON file."""
     data = json.load(json_file)
 
-    # Validate the data using our Pydantic model
+    # Validate the data
     external_import = ExternalImport(**data)
     external_training = external_import.training
     external_inference = external_import.inference
+
+    if external_import.action_mapping:
+        # Create new custom mapping
+        environment = external_training.environment
+        ActionMapping.objects.create(
+            environment=environment,
+            mapping=external_import.action_mapping,
+        )
 
     with transaction.atomic():
         # Create the training request

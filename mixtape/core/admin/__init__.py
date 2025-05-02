@@ -1,3 +1,4 @@
+from .action_mapping import ActionMapping
 from .agent_step import AgentStep
 from .checkpoint import Checkpoint
 from .episode import Episode
@@ -12,4 +13,5 @@ __all__ = [
     'Episode',
     'Inference',
     'Step',
+    'ActionMapping',
 ]

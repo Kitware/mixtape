@@ -1,6 +1,6 @@
 from typing import List, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class ExternalAgentStep(BaseModel):
@@ -34,3 +34,21 @@ class ExternalTraining(BaseModel):
 class ExternalImport(BaseModel):
     training: ExternalTraining
     inference: ExternalInference
+    action_mapping: dict[int, str] | None = None
+
+    @field_validator('action_mapping')
+    @classmethod
+    def validate_action_mapping(cls, v: dict[int, str] | None) -> dict[int, str] | None:
+        if v is None:
+            return v
+
+        if not isinstance(v, dict):
+            raise ValueError('Mapping must be a dictionary')
+
+        for action, label in v.items():
+            if not isinstance(action, int):
+                raise ValueError('Action keys must be integers')
+            if not isinstance(label, str):
+                raise ValueError('Action labels must be strings')
+
+        return v
