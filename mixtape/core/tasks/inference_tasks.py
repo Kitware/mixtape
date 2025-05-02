@@ -20,9 +20,7 @@ from mixtape.core.ray_utils.environments import register_environment
 
 @shared_task
 def run_inference_task(inference_pk: int):
-    inference = Inference.objects.select_related('checkpoint__training').get(
-        pk=inference_pk
-    )
+    inference = Inference.objects.select_related('checkpoint__training').get(pk=inference_pk)
     env_config = (inference.config or {}).get('env_config', {})
 
     with contextlib.closing(

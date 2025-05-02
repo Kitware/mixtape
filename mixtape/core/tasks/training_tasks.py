@@ -19,9 +19,7 @@ def run_training_task(training_pk: int):
     training_config = training.config or {}
     env_config = training_config.get('env_config', {})
 
-    parallel = (
-        False if is_gymnasium_env(training.environment) else training.parallel
-    )
+    parallel = False if is_gymnasium_env(training.environment) else training.parallel
     register_environment(training.environment, env_config, parallel)
 
     # Ensure all arguments default to empty dict, not None

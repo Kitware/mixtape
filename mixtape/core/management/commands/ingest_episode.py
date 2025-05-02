@@ -6,6 +6,7 @@ from django.core.files.base import ContentFile
 from django.db import transaction
 import djclick as click
 
+from mixtape.core.ingest.models.external_episode import ExternalImport
 from mixtape.core.models import (
     AgentStep,
     Episode,
@@ -13,7 +14,6 @@ from mixtape.core.models import (
     Training,
 )
 from mixtape.core.models.checkpoint import Checkpoint
-from mixtape.core.ingest.models.external_episode import ExternalImport
 from mixtape.core.models.inference import Inference
 
 
