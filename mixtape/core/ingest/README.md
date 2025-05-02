@@ -8,6 +8,10 @@ The JSON file is required to contain information about both the training as well
 
 ```jsonc
 {
+    "agent_mapping": {                             // Optional, defaults to using integer action values
+        "0": "string",
+        "1": "string"
+    },
     "training": {
         "environment": "string",                   // Required, max length 200 chars
         "algorithm": "string",                     // Required, max length 200 chars
@@ -38,6 +42,9 @@ The JSON file is required to contain information about both the training as well
 ```
 
 ### Notes on Fields
+
+- **Agent Mapping**:
+  - Each action in the action space can be mapped to a string value. This is used in the UI for improved labeling of results.
 
 - **Training**:
   - `environment` and `algorithm` are required string fields
