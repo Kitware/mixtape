@@ -1,7 +1,6 @@
 from django.db import models
 
-from mixtape.core.ray_utils.logger import NumpyJSONEncoder
-from mixtape.environments.mappings import action_maps
+from mixtape.core.ray_utils.utility_functions import NumpyJSONEncoder, get_environment_mapping
 
 from .step import Step
 
@@ -22,4 +21,5 @@ class AgentStep(models.Model):
         # Note: "select_related" should be called on any AgentStep where this is used, otherwise
         # this property can create very inefficient queries
         environment = self.step.episode.inference.checkpoint.training.environment
-        return action_maps.get(environment, {}).get(int(self.action), f'{self.action}')
+        mapping = get_environment_mapping(environment)
+        return mapping.get(f'{int(self.action)}', f'{self.action}')

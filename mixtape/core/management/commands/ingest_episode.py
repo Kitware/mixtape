@@ -13,9 +13,36 @@ from mixtape.core.models import (
     Step,
     Training,
 )
+from mixtape.core.models.action_mapping import ActionMapping
 from mixtape.core.models.checkpoint import Checkpoint
 from mixtape.core.models.inference import Inference
-from mixtape.core.models.action_mapping import ActionMapping
+from mixtape.core.ray_utils.utility_functions import get_environment_mapping
+
+
+def resolve_conflict(existing_mapping: dict) -> bool:
+    click.echo(
+        click.style(
+            'Warning: This environment already has a custom action mapping defined:'
+            + '\n'
+            + '\n'.join([f'{k}: {v}' for k, v in existing_mapping.items()]),
+            fg='red',
+            bold=True,
+        )
+    )
+    while True:
+        choice = click.prompt(
+            'Options: '
+            + '\n1. Use existing mapping (ignore new mapping)'
+            + '\n2. Quit and rename environment',
+            type=int,
+        )
+        if choice == 1:
+            return True
+        elif choice == 2:
+            click.echo('\nPlease rename your environment and try again.')
+            return False
+        else:
+            click.echo('Invalid choice. Please enter 1 or 2.')
 
 
 @click.command()
@@ -30,12 +57,19 @@ def ingest_episode(json_file: TextIO) -> None:
     external_inference = external_import.inference
 
     if external_import.action_mapping:
-        # Create new custom mapping
         environment = external_training.environment
-        ActionMapping.objects.create(
-            environment=environment,
-            mapping=external_import.action_mapping,
-        )
+        existing_mapping = get_environment_mapping(environment)
+
+        if existing_mapping and existing_mapping != external_import.action_mapping:
+            if not resolve_conflict(existing_mapping):
+                # User chose to quit
+                return
+        elif not existing_mapping:
+            # Create new custom mapping
+            ActionMapping.objects.create(
+                environment=environment,
+                mapping=external_import.action_mapping,
+            )
 
     with transaction.atomic():
         # Create the training request

@@ -7,7 +7,7 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 
 from mixtape.core.models.episode import Episode
-from mixtape.environments.mappings import action_maps
+from mixtape.core.ray_utils.utility_functions import get_environment_mapping
 
 
 def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
@@ -47,10 +47,10 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
         # dict mapping action (str) to freuency of action (int)
         'action_v_frequency': defaultdict(int),
     }
-    action_map = action_maps.get(env_name, {})
+    action_map = get_environment_mapping(env_name)
     for step in episode.steps.all():
         for agent_step in step.agent_steps.all():
-            action = action_map.get(int(agent_step.action), f'{agent_step.action}')
+            action = action_map.get(f'{int(agent_step.action)}', f'{agent_step.action}')
             plot_data['action_v_reward'][agent_step.agent][action] += agent_step.reward
             plot_data['action_v_frequency'][action] += 1
 
