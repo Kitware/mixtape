@@ -138,6 +138,18 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
         pk=episode_pk,
     )
 
+    # Run clustering task for this episode
+    episode_clusters, episode_manifolds, all_clusters, all_manifolds = cluster_episode(
+        episode_pk,
+        umap_n_neighbors=30,
+        umap_min_dist=0.5,
+        umap_n_components=20,
+        pca_n_components=2,
+        kmeans_n_clusters=10,
+        feature_name='obs',
+        feature_dimensions='episode time agent',
+    )
+
     # Prepare step data
     step_data = {
         step.number: {
@@ -165,7 +177,16 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
         ],
         # dict mapping agent (str) to action (str) to frequency of action (int)
         'action_v_frequency': defaultdict(lambda: defaultdict(int)),
+        # clustering results
+        'clustering': {
+            'all_manifolds_x': all_manifolds[:, 0].tolist(),
+            'all_manifolds_y': all_manifolds[:, 1].tolist(),
+            'all_clusters': all_clusters.tolist(),
+            'episode_manifolds': episode_manifolds.tolist(),
+            'episode_clusters': episode_clusters[0].T.tolist(),
+        },
     }
+
     action_map = get_environment_mapping(env_name)
     for step in episode.steps.all():
         for agent_step in step.agent_steps.all():

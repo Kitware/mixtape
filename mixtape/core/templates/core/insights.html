@@ -121,8 +121,93 @@
         </ol>
       </div>
     </div>
-    <div class="col-span-6 border border-dashed border-gray-400 rounded-lg m-1 content-center">
-      <p class="text-center text-xl font-bold text-gray-400">PLACEHOLDER</p>
+    <div class="col-span-6 content-center">
+      <div
+        class="col-span-12 content-center"
+        x-data="{
+          data: [],
+          layout: {
+            title: {text: 'Agent Observations'},
+            height: 450,
+            xaxis: {
+              showticklabels: false
+            },
+            yaxis: {
+              showticklabels: false
+            },
+          },
+          plot: null,
+        }"
+        x-init="
+          data = [{
+            x: plotData.clustering.all_manifolds_x,
+            y: plotData.clustering.all_manifolds_y,
+            type: 'scatter',
+            mode: 'markers',
+            showlegend: false,
+            marker: {
+              color: plotData.clustering.all_clusters,
+              cmin: 0,
+              cmax: 9,
+              colorscale: 'YlGnBu',
+              size: 20,
+              opacity: Array(plotData.clustering.all_manifolds_x.length).fill(0.3)
+            }
+          }];
+          for (let agent_idx = 0; agent_idx < plotData.unique_agents.length; agent_idx++) {
+            data.push({
+              x: plotData.clustering.episode_manifolds[0].map(row => row[agent_idx][0]),
+              y: plotData.clustering.episode_manifolds[0].map(row => row[agent_idx][1]),
+              type: 'scatter',
+              mode: 'lines',
+              colorscale: 'YlOrRd',
+              line: {
+                opacity: 0.5,
+                width: 1
+              },
+              name: plotData.unique_agents[agent_idx]
+            });
+          }
+          plot = Plotly.newPlot($refs.allManifolds, data, layout, {displayModeBar: false})"
+      >
+        <div x-ref="allManifolds"></div>
+      </div>
+      <div
+        class="col-span-12 content-center"
+        x-data="{
+          data: [],
+          layout: {
+            title: {text: 'Agent Observations Timeline'},
+            height: 150,
+            margin: {r: 0, t: 25},
+          },
+          plot: null,
+        }"
+        x-init="
+          data = [
+            {
+              z: plotData.clustering.episode_clusters,
+              type: 'heatmap',
+              showscale: false,
+              colorscale: 'YlGnBu',
+            },
+            {
+              x: [[currentStep, currentStep]],
+              y: [[0, plotData.clustering.episode_clusters.length - 1]],
+              type: 'scatter',
+              mode: 'lines',
+              showlegend: false,
+              line: {
+                color: 'red',
+                width: 4,
+                opacity: 0.5,
+              },
+            }
+          ];
+          plot = Plotly.newPlot($refs.allManifolds, data, layout, {displayModeBar: false})"
+      >
+        <div x-ref="allManifolds"></div>
+      </div>
     </div>
   </div>
 </div>
