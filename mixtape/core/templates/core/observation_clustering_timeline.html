@@ -30,6 +30,18 @@
       }
     ];
     plot = Plotly.newPlot($refs.allManifolds, data, layout, {displayModeBar: false})"
+  x-effect="
+    if (plot) {
+      // Get the current plot data from the DOM element
+      const plotElement = $refs.allManifolds;
+      const currentData = plotElement.data;
+      const yMin = currentData[0]._extremes.y.min[0].val;
+      const yMax = currentData[0]._extremes.y.max[0].val;
+      Plotly.update($refs.allManifolds, {
+        x: [[currentStep, currentStep]],
+        y: [[yMin, yMax]],
+      }, {}, [1]);
+    }"
 >
   <div x-ref="allManifolds"></div>
 </div>
