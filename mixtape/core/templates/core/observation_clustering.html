@@ -65,31 +65,36 @@
       const highlightColors = [];
 
       for (let i = startIdx; i < endIdx; i++) {
-        highlightX.push(plotData.clustering.all_manifolds_x[i]);
-        highlightY.push(plotData.clustering.all_manifolds_y[i]);
-        highlightColors.push(plotData.clustering.all_clusters[i]);
+        const agentIdx = i - startIdx;
+        const agentTrace = currentData[1 + agentIdx];
+        // Only add points for visible traces
+        if (agentTrace && agentTrace.visible === true) {
+          highlightX.push(plotData.clustering.all_manifolds_x[i]);
+          highlightY.push(plotData.clustering.all_manifolds_y[i]);
+          // Use the original agent index for color matching
+          highlightColors.push(agentTrace.line.color);
+        }
       }
 
-      // Add new trace for highlighted points
-      Plotly.addTraces($refs.allManifolds, [{
-        x: highlightX,
-        y: highlightY,
-        type: 'scatter',
-        mode: 'markers',
-        showlegend: false,
-        marker: {
-          color: highlightColors,
-          cmin: 0,
-          cmax: 9,
-          colorscale: 'YlGnBu',
-          size: 20,
-          opacity: 1,
-          line: {
-            width: 3,
-            color: 'red'
+      // Only add the highlight trace if there are visible points
+      if (highlightX.length > 0) {
+        // Add new trace for highlighted points
+        Plotly.addTraces($refs.allManifolds, [{
+          x: highlightX,
+          y: highlightY,
+          type: 'scatter',
+          mode: 'markers',
+          showlegend: false,
+          marker: {
+            color: 'transparent',
+            size: 20,
+            line: {
+              width: 3,
+              color: highlightColors
+            }
           }
-        }
-      }]);
+        }]);
+      }
     }"
 >
   <div x-ref="allManifolds"></div>
