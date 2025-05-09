@@ -59,7 +59,7 @@ The JSON file is required to contain information about both the training as well
 To ingest an external episode, use the Django management command:
 
 ```bash
-python manage.py ingest_episode path/to/your/episode.json
+docker compose run --rm django ./manage.py ingest_episode path/to/your/episode.json
 ```
 
 The command will validate the JSON structure against the required schema and create all the required records.
@@ -83,7 +83,7 @@ After all cells have run, select the file icon on the right side to open the `Fi
 You can then ingest the results file:
 
 ```bash
-python manage.py ingest_episode /path/to/stable_baselines_example.json
+docker compose run --rm django ./manage.py ingest_episode /path/to/stable_baselines_example.json
 ```
 
-Visit the [landing page](http://localhost:8000) where this episode should now be available.
+Assuming that the sever is already running with `docker compose up` (see [setup docs](../../../README.md)), you can visit the [landing page](http://localhost:8000) where this episode should now be available.
