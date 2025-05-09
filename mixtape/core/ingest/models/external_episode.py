@@ -1,5 +1,3 @@
-from typing import List, Union
-
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -7,19 +5,19 @@ class ExternalAgentStep(BaseModel):
     agent: str = Field(max_length=200)
     action: float
     reward: float
-    observation_space: Union[List[float], List[List[float]]]
+    observation_space: list[float] | list[list[float]]
 
 
 class ExternalStep(BaseModel):
     number: int = Field(ge=0)
     image: bytes | None = None
-    agent_steps: List[ExternalAgentStep] | None = None
+    agent_steps: list[ExternalAgentStep] | None = None
 
 
 class ExternalInference(BaseModel):
     parallel: bool = Field(default=False)
     config: dict = Field(default_factory=dict)
-    steps: List[ExternalStep] = Field(min_length=1)
+    steps: list[ExternalStep] = Field(min_length=1)
 
 
 class ExternalTraining(BaseModel):
