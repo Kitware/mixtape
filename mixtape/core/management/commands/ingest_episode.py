@@ -6,7 +6,7 @@ from django.core.files.base import ContentFile
 from django.db import transaction
 import djclick as click
 
-from mixtape.core.ingest.models.external_episode import ExternalImport
+from mixtape.core.management.ingest.external_episode import ExternalImport
 from mixtape.core.models import (
     AgentStep,
     Episode,
