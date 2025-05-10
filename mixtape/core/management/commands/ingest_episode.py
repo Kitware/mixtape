@@ -102,7 +102,7 @@ def ingest_episode(json_file: TextIO, allow_existing: bool) -> None:
                 number=step_data.number,
             )
 
-            # Save the image if provided
+            # Save the image if provided - key is optional
             if step_data.image:
                 # Decode base64 image data back to binary
                 image_binary = base64.b64decode(step_data.image)
@@ -112,7 +112,7 @@ def ingest_episode(json_file: TextIO, allow_existing: bool) -> None:
                     save=True,
                 )
 
-            # Create the agent steps
+            # Create the agent steps if they exist - key is optional
             if step_data.agent_steps:
                 for agent_step_data in step_data.agent_steps:
                     AgentStep.objects.create(

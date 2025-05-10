@@ -35,6 +35,6 @@ def get_environment_mapping(environment: str) -> dict:
 
     try:
         custom_mapping = ActionMapping.objects.get(environment=environment)
-        return custom_mapping.mapping
     except ActionMapping.DoesNotExist:
         return {}
+    return custom_mapping.mapping
