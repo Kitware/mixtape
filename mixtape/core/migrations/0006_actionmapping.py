@@ -2,6 +2,18 @@
 
 from django.db import migrations, models
 
+from mixtape.environments.mappings import action_maps
+
+
+def create_default_action_mappings(apps, schema_editor):
+    # Create the default action mappings for all of the environments we support
+    action_mapping = apps.get_model('core', 'ActionMapping')
+    for environment, mapping in action_maps.items():
+        action_mapping.objects.create(
+            environment=environment,
+            mapping=mapping,
+        )
+
 
 class Migration(migrations.Migration):
 
@@ -29,4 +41,5 @@ class Migration(migrations.Migration):
                 ],
             },
         ),
+        migrations.RunPython(create_default_action_mappings),
     ]

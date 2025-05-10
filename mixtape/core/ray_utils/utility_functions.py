@@ -5,7 +5,6 @@ from gymnasium.wrappers import LazyFrames
 import numpy as np
 
 from mixtape.core.models.action_mapping import ActionMapping
-from mixtape.environments.mappings import action_maps
 
 
 class NumpyJSONEncoder(json.JSONEncoder):
@@ -30,9 +29,6 @@ class NumpyJSONEncoder(json.JSONEncoder):
 
 
 def get_environment_mapping(environment: str) -> dict:
-    if environment in action_maps:
-        return action_maps[environment]
-
     try:
         custom_mapping = ActionMapping.objects.get(environment=environment)
     except ActionMapping.DoesNotExist:

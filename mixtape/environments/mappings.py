@@ -7,9 +7,9 @@ action_maps: dict[str, dict[str, str]] = {
         '4': 'Attack',
         '5': 'None',
     },
-    'pistonball_v6': {
-        # continuous action space; no mapping
-    },
+    # 'pistonball_v6': {
+    #     # continuous action space; no mapping
+    # },
     'cooperative_pong_v5': {
         '0': 'None',
         '1': 'Up',

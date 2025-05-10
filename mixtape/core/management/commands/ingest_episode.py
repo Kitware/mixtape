@@ -52,7 +52,7 @@ def ingest_episode(json_file: TextIO, allow_existing: bool) -> None:
                         bold=True,
                     )
                 )
-            return
+                return
         elif not existing_mapping:
             # Create new custom mapping
             ActionMapping.objects.create(
