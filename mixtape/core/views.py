@@ -2,7 +2,7 @@ from collections import defaultdict
 from itertools import accumulate
 from typing import Any
 
-from django.db.models import Sum
+from django.db.models import Subquery, Sum
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 
@@ -63,9 +63,12 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
     plot_data['rewards_over_time'] = list(accumulate(ks.total_rewards for ks in key_steps))
     # TODO: Revist this. This exists more as a placeholder, timeline
     #       should represent points of interest with more meaning.
-    # Get top 40 steps by total rewards, then order them chronologically
-    trimmed_timeline_steps = key_steps.filter(total_rewards__gt=0).order_by('-total_rewards')[:40]
-    timeline_steps = sorted(trimmed_timeline_steps, key=lambda x: x.number)
+    # Get top 40 steps by total rewards, ordered by step number
+    timeline_steps = key_steps.filter(
+        id__in=Subquery(
+            key_steps.filter(total_rewards__gt=0).order_by('-total_rewards').values('id')[:40]
+        )
+    ).order_by('number')
 
     return render(
         request,
