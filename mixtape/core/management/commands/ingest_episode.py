@@ -19,35 +19,17 @@ from mixtape.core.models.inference import Inference
 from mixtape.core.ray_utils.utility_functions import get_environment_mapping
 
 
-def resolve_conflict(existing_mapping: dict) -> bool:
-    click.echo(
-        click.style(
-            'Warning: This environment already has a custom action mapping defined:'
-            + '\n'
-            + '\n'.join([f'{k}: {v}' for k, v in existing_mapping.items()]),
-            fg='red',
-            bold=True,
-        )
-    )
-    while True:
-        choice = click.prompt(
-            'Options: '
-            + '\n1. Use existing mapping (ignore new mapping)'
-            + '\n2. Quit and rename environment',
-            type=int,
-        )
-        if choice == 1:
-            return True
-        elif choice == 2:
-            click.echo('\nPlease rename your environment and try again.')
-            return False
-        else:
-            click.echo('Invalid choice. Please enter 1 or 2.')
-
-
 @click.command()
 @click.argument('json_file', type=click.File('r'))
-def ingest_episode(json_file: TextIO) -> None:
+@click.option(
+    '--allow_existing',
+    is_flag=True,
+    help=(
+        'If true, use existing action mapping if it exists. '
+        'If false and existing action mapping is found, the ingestion will fail.'
+    ),
+)
+def ingest_episode(json_file: TextIO, allow_existing: bool) -> None:
     """Ingest an external episode from a JSON file."""
     data = json.load(json_file)
 
@@ -61,9 +43,17 @@ def ingest_episode(json_file: TextIO) -> None:
         existing_mapping = get_environment_mapping(environment)
 
         if existing_mapping and existing_mapping != external_import.action_mapping:
-            if not resolve_conflict(existing_mapping):
-                # User chose to quit
-                return
+            if not allow_existing:
+                click.echo(
+                    click.style(
+                        'Error: Existing action mapping found and --allow_existing is false. '
+                        'Please rename your environment or use --allow_existing to use the '
+                        'existing mapping.',
+                        fg='red',
+                        bold=True,
+                    )
+                )
+            return
         elif not existing_mapping:
             # Create new custom mapping
             ActionMapping.objects.create(
