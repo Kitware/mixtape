@@ -1,4 +1,3 @@
-import base64
 import json
 from typing import TextIO
 
@@ -105,7 +104,7 @@ def ingest_episode(json_file: TextIO, allow_existing: bool) -> None:
             # Save the image if provided - key is optional
             if step_data.image:
                 # Decode base64 image data back to binary
-                image_binary = base64.b64decode(step_data.image)
+                image_binary = step_data.image
                 step.image.save(
                     f'step_{step_data.number}.png',
                     ContentFile(image_binary),

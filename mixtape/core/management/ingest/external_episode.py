@@ -1,4 +1,7 @@
-from pydantic import BaseModel, Field, field_validator
+from io import BytesIO
+
+from PIL import Image
+from pydantic import Base64Bytes, BaseModel, Field, field_validator
 
 
 class ExternalAgentStep(BaseModel):
@@ -10,8 +13,21 @@ class ExternalAgentStep(BaseModel):
 
 class ExternalStep(BaseModel):
     number: int = Field(ge=0)
-    image: bytes | None = None
+    image: Base64Bytes | None = None
     agent_steps: list[ExternalAgentStep] | None = None
+
+    @field_validator('image')
+    @classmethod
+    def validate_image(cls, v: Base64Bytes | None) -> Base64Bytes | None:
+        if v is None:
+            return v
+
+        try:
+            # Try to open decoded bytes as an image
+            Image.open(BytesIO(v))
+        except Exception as e:
+            raise ValueError(f'Invalid image data: {str(e)}')
+        return v
 
 
 class ExternalInference(BaseModel):
