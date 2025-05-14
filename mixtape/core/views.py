@@ -2,27 +2,27 @@ from collections import defaultdict
 from itertools import accumulate
 from typing import Any
 
-from django.db.models import Sum
+from django.db.models import Subquery, Sum
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 
 from mixtape.core.models.episode import Episode
-from mixtape.environments.mappings import action_maps
+from mixtape.core.ray_utils.utility_functions import get_environment_mapping
 
 
 def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
     # Prefetch all related data in a single query
     episode = get_object_or_404(
-        Episode.objects.select_related(
-            'inference_request__checkpoint__training_request'
-        ).prefetch_related('steps', 'steps__agent_steps'),
+        Episode.objects.select_related('inference__checkpoint__training').prefetch_related(
+            'steps', 'steps__agent_steps'
+        ),
         pk=episode_pk,
     )
 
     # Prepare step data
     step_data = {
         step.number: {
-            'image_url': step.image.url,
+            'image_url': step.image.url if step.image else None,
             'agent_steps': [
                 {
                     'agent': agent_step.agent,
@@ -36,7 +36,7 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
     }
 
     # Prepare plot data
-    env_name = episode.inference_request.checkpoint.training_request.environment
+    env_name = episode.inference.checkpoint.training.environment
     plot_data: dict[str, Any] = {
         # dict mapping agent (str) to action (str) to total reward (float)
         'action_v_reward': defaultdict(lambda: defaultdict(float)),
@@ -47,10 +47,10 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
         # dict mapping action (str) to freuency of action (int)
         'action_v_frequency': defaultdict(int),
     }
-    action_map = action_maps.get(env_name, {})
+    action_map = get_environment_mapping(env_name)
     for step in episode.steps.all():
         for agent_step in step.agent_steps.all():
-            action = action_map.get(int(agent_step.action), f'{agent_step.action}')
+            action = action_map.get(f'{int(agent_step.action)}', f'{agent_step.action}')
             plot_data['action_v_reward'][agent_step.agent][action] += agent_step.reward
             plot_data['action_v_frequency'][action] += 1
 
@@ -63,8 +63,12 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
     plot_data['rewards_over_time'] = list(accumulate(ks.total_rewards for ks in key_steps))
     # TODO: Revist this. This exists more as a placeholder, timeline
     #       should represent points of interest with more meaning.
-    # list of steps with rewards greater than 0
-    timeline_steps = key_steps.filter(total_rewards__gt=0)
+    # Get top 40 steps by total rewards, ordered by step number
+    timeline_steps = key_steps.filter(
+        id__in=Subquery(
+            key_steps.filter(total_rewards__gt=0).order_by('-total_rewards').values('id')[:40]
+        )
+    ).order_by('number')
 
     return render(
         request,
@@ -80,7 +84,5 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
 
 
 def home_page(request: HttpRequest) -> HttpResponse:
-    episodes = Episode.objects.select_related(
-        'inference_request__checkpoint__training_request'
-    ).all()
+    episodes = Episode.objects.select_related('inference__checkpoint__training').all()
     return render(request, 'core/home.html', {'episodes': episodes})

@@ -20,29 +20,47 @@ maintenance. To non-destructively update your development stack at any time:
 2. Run `docker compose build --pull --no-cache`
 3. Run `docker compose run --rm django ./manage.py migrate`
 
-## Develop Natively (advanced)
-This configuration still uses Docker to run attached services in the background,
-but allows developers to run Python code on their native system.
+## Add data
 
-### Initial Setup
-1. Run `docker compose -f ./docker-compose.yml up -d`
-2. Install Python 3.11
-3. Create and activate a new Python virtualenv
-4. Run `pip install -e .[dev]`
-5. Run `source ./dev/export-env.sh`
-6. Run `./manage.py migrate`
-7. Run `./manage.py createsuperuser` and follow the prompts to create your own user
+### Training
+Start by training an environment of your choice. For example:
+```bash
+# This will use all of the default values (with the exception of parallel):
+# environment: 'knights_archers_zombies_v10'
+# algorithm: 'PPO'
+# parallel: True
+# num_gpus: 0.0
+# training_iteration: 100
+# config_file: None
+python manage.py training -p
 
-### Run Application
-1.  Ensure `docker compose -f ./docker-compose.yml up -d` is still active
-2. Run:
-   1. `source ./dev/export-env.sh`
-   2. `./manage.py runserver`
-3. Run in a separate terminal:
-   1. `source ./dev/export-env.sh`
-   2. `celery --app mixtape.celery worker --loglevel INFO --without-heartbeat`
-4. When finished, run `docker compose stop`
-5. To destroy the stack and start fresh, run `docker compose down -v`
+# This can also be specified explicity
+python manage.py training -e knights_archers_zombies_v10 -a PPO -p -g 0.0 -t 100
+
+# For a detailed breakdown of all available options, use -h|--help
+python manage.py training --help
+```
+
+### Inference
+
+Select an existing checkpoint to run inference. For example:
+```bash
+# This will use the checkpoint with ID 1 and will use the
+# parallel environment if it is a PettingZoo environment
+python manage.py inference 1 -p
+
+# This can also be specified explicity
+python manage.py inference -e knights_archers_zombies_v10 -p
+
+# For a detailed breakdown of all available options, use -h|--help
+python manage.py inference --help
+```
+
+If you've already started the server with `docker compose up`, you can see all available checkpoints at http://localhost:8000/admin/core/checkpoint/.
+
+### Ingest existing episode(s)
+
+See the [ingest documentation](./mixtape/core/ingest/README.md)
 
 ## Testing
 ### Initial Setup

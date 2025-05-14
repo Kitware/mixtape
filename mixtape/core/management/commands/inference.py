@@ -5,7 +5,7 @@ import yaml
 
 from mixtape.core.management.commands._utils import check_parallel
 from mixtape.core.models.checkpoint import Checkpoint
-from mixtape.core.models.inference_request import InferenceRequest
+from mixtape.core.models.inference import Inference
 from mixtape.core.ray_utils.constants import ExampleEnvs
 from mixtape.core.tasks.inference_tasks import run_inference_task
 
@@ -46,11 +46,11 @@ def inference(
     config_dict = yaml.safe_load(config_file) if config_file else {}
 
     checkpoint = Checkpoint.objects.get(pk=checkpoint_pk)
-    inference_request = InferenceRequest.objects.create(
+    inference = Inference.objects.create(
         checkpoint=checkpoint, parallel=parallel, config=config_dict
     )
 
-    task = run_inference_task.s(inference_request_pk=inference_request.pk)
+    task = run_inference_task.s(inference_pk=inference.pk)
     if immediate:
         task.apply()
     else:

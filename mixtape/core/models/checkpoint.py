@@ -7,36 +7,31 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 from django.core.files import File
 from django.db import models
-from django.db.models import Q
 
-from .training_request import TrainingRequest
+from .training import Training
 
 
 class Checkpoint(models.Model):
     class Meta:
         constraints = [
             # TODO: What if best / last is False? Should it be excluded from the constraint?
-            models.UniqueConstraint(
-                fields=['training_request', 'best'], name='unique_checkpoint_best'
-            ),
-            models.UniqueConstraint(
-                fields=['training_request', 'last'], name='unique_checkpoint_last'
-            ),
-            models.CheckConstraint(condition=Q(best=True) | Q(last=True), name='best_or_last'),
+            models.UniqueConstraint(fields=['training', 'best'], name='unique_checkpoint_best'),
+            models.UniqueConstraint(fields=['training', 'last'], name='unique_checkpoint_last'),
         ]
 
     created = models.DateTimeField(auto_now_add=True)
 
-    training_request = models.ForeignKey(
-        TrainingRequest, on_delete=models.CASCADE, related_name='checkpoints'
-    )
+    training = models.ForeignKey(Training, on_delete=models.CASCADE, related_name='checkpoints')
     best = models.BooleanField(default=False)
     last = models.BooleanField(default=False)
-    archive = models.FileField()
+    archive = models.FileField(null=True, blank=True)
 
     @contextmanager
     def archive_path(self) -> Generator[Path]:
         """Yield the archive as a directory on disk."""
+        if not self.archive:
+            raise ValueError('Checkpoint has no archive.')
+
         with TemporaryDirectory() as tmp_archive_dir:
             archive_dir = Path(tmp_archive_dir)
             with NamedTemporaryFile() as archive_file_stream:

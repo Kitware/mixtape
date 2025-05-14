@@ -4,7 +4,7 @@ import djclick as click
 import yaml
 
 from mixtape.core.management.commands._utils import check_parallel
-from mixtape.core.models import TrainingRequest
+from mixtape.core.models import Training
 from mixtape.core.ray_utils.constants import ExampleEnvs, SupportedAlgorithm
 from mixtape.core.tasks.training_tasks import run_training_task
 
@@ -86,16 +86,19 @@ def training(
     """Run training on the specified environment."""
     config_dict = yaml.safe_load(config_file) if config_file else {}
 
-    training_request = TrainingRequest.objects.create(
+    training = Training(
         environment=env_name,
         algorithm=algorithm,
         parallel=parallel,
         num_gpus=num_gpus,
         iterations=training_iteration,
         config=config_dict,
+        is_external=False,
     )
+    training.full_clean()
+    training.save()
 
-    task = run_training_task.s(training_request_pk=training_request.pk)
+    task = run_training_task.s(training_pk=training.pk)
     if immediate:
         task.apply()
     else:

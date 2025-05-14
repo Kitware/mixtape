@@ -44,8 +44,8 @@
   <div class="grid grid-cols-12">
     <div class="col-span-6">
       <h1 class="text-xl font-bold text-center">Step <span x-text="currentStep"></span></h1>
-      <div class="grid grid-cols-12 h-[45vh] {% if step.image %}content-center{% endif %}">
-        <div x-show="{{ step.image|yesno:'false,true' }}" class="col-span-9 content-center m-2 h-[inherit]">
+      <div class="grid grid-cols-12 h-[45vh] content-center">
+        <div x-show="stepData[currentStep].image_url" class="col-span-9 content-center m-2 h-[inherit]">
           <img class="max-h-4/5 m-auto" :src="stepData[currentStep].image_url" alt="Step Image">
           <div class="flex w-1/2 justify-evenly justify-self-center border border-black rounded-lg my-2 mx-5 py-1">
             <button
@@ -85,9 +85,9 @@
             </button>
           </div>
         </div>
-        <div class="col-span-3 flex flex-col justify-evenly overflow-y-auto h-9/10">
+        <div class="flex justify-evenly overflow-y-auto grid grid-cols-12" :class="stepData[currentStep].image_url ? 'col-span-3 flex-col' : 'col-span-12'">
           <template x-for="agent_step in stepData[currentStep].agent_steps || []">
-            <div class="border border-gray-900 rounded-lg m-1 p-1">
+            <div class="border border-gray-900 rounded-lg m-1 p-1" :class="stepData[currentStep].image_url ? 'col-span-12 h-min' : 'col-span-3'">
               <p class="flex justify-evenly">
                 <p><strong>Agent:</strong> <span x-text="agent_step.agent"></span></p>
                 <p><strong>Action:</strong> <span x-text="agent_step.action"></span></p>
@@ -102,7 +102,7 @@
         <ol class="items-center flex p-2">
           <div class="flex w-5 bg-gray-700 h-6 ml-2"></div>
           {% for ts in timeline_steps %}
-          <li x-show="{{ ts.total_rewards }} > 0" class="relative w-full flex even:flex-col odd:flex-col-reverse even:mb-5 odd:mt-5">
+          <li class="relative w-full flex even:flex-col odd:flex-col-reverse even:mb-5 odd:mt-5">
             <p class="text-sm text-gray-900 text-center">
               {{ ts.total_rewards|floatformat }}
             </p>
