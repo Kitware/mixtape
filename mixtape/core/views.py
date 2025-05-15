@@ -44,15 +44,16 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
         'reward_histogram': [
             a.reward for step in episode.steps.all() for a in step.agent_steps.all()
         ],
-        # dict mapping action (str) to freuency of action (int)
-        'action_v_frequency': defaultdict(int),
+        # dict mapping agent (str) to action (str) to frequency of action (int)
+        'action_v_frequency': defaultdict(lambda: defaultdict(int)),
     }
     action_map = get_environment_mapping(env_name)
     for step in episode.steps.all():
         for agent_step in step.agent_steps.all():
             action = action_map.get(f'{int(agent_step.action)}', f'{agent_step.action}')
             plot_data['action_v_reward'][agent_step.agent][action] += agent_step.reward
-            plot_data['action_v_frequency'][action] += 1
+            plot_data['action_v_frequency'][agent_step.agent][action] += 1
+    plot_data['unique_agents'] = list(plot_data['action_v_reward'].keys())
 
     key_steps = (
         episode.steps.all()

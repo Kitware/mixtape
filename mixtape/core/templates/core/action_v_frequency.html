@@ -2,12 +2,21 @@
     data: [],
     layout: {
       title: {text: 'Actions VS Frequency'},
-      autosize: true
+      autosize: true,
+      barmode: 'stack'
     },
     plot: null,
   }"
   x-init="
-    data = [{labels: Object.keys(plotData.action_v_frequency), values: Object.values(plotData.action_v_frequency), type: 'pie'}];
+    data = [];
+    plotData.unique_agents.forEach((agent) => {
+      data.push({
+        x: Object.keys(plotData.action_v_frequency[agent]),
+        y: Object.values(plotData.action_v_frequency[agent]),
+        type: 'bar',
+        name: agent
+      });
+    });
     plot = Plotly.newPlot($refs.actionsFrequency, data, layout)"
 >
   <div x-ref="actionsFrequency"></div>
