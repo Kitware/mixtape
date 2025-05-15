@@ -1,16 +1,58 @@
-<div x-data="{
+<div
+  x-data="{
     data: [],
     layout: {
       title: {text: 'Rewards Over Time'},
       xaxis: {title: {text: 'Time Step'}},
       yaxis: {title: {text: 'Cumulative Reward'}},
-      autosize: true
+      autosize: true,
+      showlegend: false,
+      annotations: [
+        {
+          x: currentStep,
+          y: plotData.rewards_over_time[currentStep],
+          text: plotData.rewards_over_time[currentStep].toFixed(2),
+        }
+      ],
     },
     plot: null,
   }"
   x-init="
-    data = [{x: plotData.rewards_over_time.length, y: plotData.rewards_over_time, type: 'scatter'}];
-    plot = Plotly.newPlot($refs.rewardsOverTime, data, layout)"
+    data = [
+      {
+        x: plotData.rewards_over_time.length,
+        y: plotData.rewards_over_time,
+        type: 'scatter'
+      },
+      {
+        x: [{{ currentStep }}, {{ currentStep }}],
+        y: [0, Math.max(...plotData.rewards_over_time)],
+        type: 'scatter',
+        mode: 'lines',
+        line: {
+          color: 'red',
+          width: 2,
+          dash: 'dash'
+        },
+        name: 'Current Step'
+      },
+    ];
+    plot = Plotly.newPlot($refs.rewardsOverTime, data, layout, {displayModeBar: false})"
+  x-effect="
+    if (plot) {
+      Plotly.update($refs.rewardsOverTime, {
+        x: [[currentStep, currentStep]],
+        y: [[Math.min(...plotData.rewards_over_time), Math.max(...plotData.rewards_over_time)]]
+      }, {
+        annotations: [
+          {
+            x: currentStep,
+            y: plotData.rewards_over_time[currentStep],
+            text: plotData.rewards_over_time[currentStep].toFixed(2),
+          }
+        ],
+      }, [1]);
+    }"
 >
   <div x-ref="rewardsOverTime"></div>
 </div>
