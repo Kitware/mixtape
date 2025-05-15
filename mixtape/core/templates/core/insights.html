@@ -109,7 +109,8 @@
             <div class="flex items-center">
                 <div class="flex w-full bg-gray-700 h-0.5"></div>
                 <button
-                  class="cursor-pointer z-10 flex items-center justify-center w-2 h-2 rounded-full ring-4 ring-blue-700 shrink-0 text-blue-500 bg-blue-500 focus:ring-yellow-500"
+                  class="cursor-pointer z-10 flex items-center justify-center w-2 h-2 rounded-full ring-4 shrink-0 text-blue-500 bg-blue-500"
+                  :class="currentStep === {{ ts.number }} ? 'ring-red-700' : 'ring-blue-700'"
                   @click="currentStep = {{ ts.number }}"
                 >
                 </button>
