@@ -37,7 +37,7 @@
         name: 'Current Step'
       },
     ];
-    plot = Plotly.newPlot($refs.rewardsOverTime, data, layout)"
+    plot = Plotly.newPlot($refs.rewardsOverTime, data, layout, {displayModeBar: false})"
   x-effect="
     if (plot) {
       Plotly.update($refs.rewardsOverTime, {
