@@ -7,22 +7,20 @@
 <div>
   <ol class="columns-2 list-inside">
     {% for episode in episodes %}
-    <a href="{% url 'insights' episode.pk %}">
-      <li class="break-inside-avoid block p-4 m-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-100">
-        <span class="text-gray-900 font-bold">{{ episode.inference.checkpoint.training.environment }}</span>
-        <span class="text-gray-500 italic">
-          {{ episode.inference.created|date:"D d M Y" }}
-          {{ episode.inference.created|time:"H:i" }}
+    <li class="break-inside-avoid block p-4 m-2 bg-white border border-gray-200 rounded-lg shadow-sm">
+      <div class="flex justify-between">
+        <span>
+          <span class="text-gray-900 font-bold mr-2">{{ episode.inference.checkpoint.training.environment }}</span>
+          <span class="text-gray-500 italic">
+            {{ episode.inference.created|date:"D d M Y" }}
+            {{ episode.inference.created|time:"H:i" }}
+          </span>
         </span>
-        <div class="ml-4 text-gray-700">
-          <span>{{ episode.inference.checkpoint.training.algorithm }}</span>
-          <span>{{ episode.inference.checkpoint.training.iterations }} Iterations</span>
-          {% if episode.inference.checkpoint.training.parallel %}
-            <span>Parallel</span>
-          {% endif %}
-        </div>
-      </li>
-    </a>
+        <a href="{% url 'insights' episode.pk %}" target="_blank" class="hover:bg-gray-100 rounded-lg">
+          <i class="ri-external-link-line p-1"></i>
+        </a>
+      </div>
+    </li>
     {% endfor %}
   </ol>
 </div>
