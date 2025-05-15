@@ -143,9 +143,7 @@ class Migration(migrations.Migration):
                 ('reward', models.FloatField()),
                 (
                     'observation_space',
-                    models.JSONField(
-                        encoder=mixtape.core.ray_utils.utility_functions.NumpyJSONEncoder
-                    ),
+                    models.JSONField(encoder=mixtape.core.ray_utils.json_encoder.CustomJSONEncoder),
                 ),
                 (
                     'step',

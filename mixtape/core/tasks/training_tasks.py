@@ -75,6 +75,12 @@ def run_training_task(training_pk: int):
         # TemporaryDirectory is a nicer API, but Python 3.11 lacks `delete`
         run_args['storage_path'] = mkdtemp(prefix='ray_training_')
 
+    # Makes sure the config is updated to include all of
+    # the default values that may have been used
+    training.config = run_args | training_config
+    training.full_clean()
+    training.save()
+
     # Dispatch run
     result = run(
         training.algorithm,
