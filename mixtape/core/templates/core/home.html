@@ -1,11 +1,12 @@
 {% extends "core/base.html" %}
+{% load resonant_utils %}
 
 {% block title %}MIXTAPE Home{% endblock %}
 
 {% block content %}
 <div class="text-center text-xl">Explore Results</div>
 <div>
-  <ol class="columns-2 list-inside">
+  <ol>
     {% for episode in episodes %}
     <li class="break-inside-avoid block p-4 m-2 bg-white border border-gray-200 rounded-lg shadow-sm">
       <div class="flex justify-between">
@@ -19,6 +20,33 @@
         <a href="{% url 'insights' episode.pk %}" target="_blank" class="hover:bg-gray-100 rounded-lg">
           <i class="ri-external-link-line p-1"></i>
         </a>
+      </div>
+      <div class="ml-4 text-gray-700">
+        <span>{{ episode.inference.checkpoint.training.algorithm }}</span>
+        <span>{{ episode.inference.checkpoint.training.iterations }} Iterations</span>
+        {% if episode.inference.checkpoint.training.parallel %}
+          <span>Parallel</span>
+        {% endif %}
+      </div>
+      <div x-data="{ open: false }" class="border border-gray-200 rounded-xl mt-3">
+        <button @click="open = !open" class="flex items-center justify-between w-full p-3 text-gray-700 hover:bg-gray-100 gap-3">
+          <span>Training Details</span>
+          <i x-show="!open" class="ri-arrow-down-s-line"></i>
+          <i x-show="open" class="ri-arrow-up-s-line"></i>
+        </button>
+        <div x-show="open" class="max-h-[300px] overflow-auto">
+          <pre class="text-gray-500">{{ episode.inference.checkpoint.training.config|pretty_json:2 }}</pre>
+        </div>
+      </div>
+      <div x-show="Object.keys({{ episode.inference.config }}).length" x-data="{ open: false }" class="border border-gray-200 rounded-xl mt-3">
+        <button @click="open = !open" class="flex items-center justify-between w-full p-3 text-gray-700 hover:bg-gray-100 gap-3">
+          <span>Episode Details</span>
+          <i x-show="!open" class="ri-arrow-down-s-line"></i>
+          <i x-show="open" class="ri-arrow-up-s-line"></i>
+        </button>
+        <div x-show="open" class="max-h-[300px] overflow-auto">
+          <pre class="text-gray-500">{{ episode.inference.config|pretty_json:2 }}</pre>
+        </div>
       </div>
     </li>
     {% endfor %}
