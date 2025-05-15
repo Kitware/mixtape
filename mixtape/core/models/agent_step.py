@@ -1,6 +1,7 @@
 from django.db import models
 
-from mixtape.core.ray_utils.utility_functions import NumpyJSONEncoder, get_environment_mapping
+from mixtape.core.ray_utils.json_encoder import CustomJSONEncoder
+from mixtape.core.ray_utils.utility_functions import get_environment_mapping
 
 from .step import Step
 
@@ -14,7 +15,7 @@ class AgentStep(models.Model):
 
     action = models.FloatField()
     reward = models.FloatField()
-    observation_space = models.JSONField(encoder=NumpyJSONEncoder)
+    observation_space = models.JSONField(encoder=CustomJSONEncoder)
 
     @property
     def action_string(self) -> str:

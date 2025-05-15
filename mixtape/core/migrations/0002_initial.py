@@ -144,7 +144,7 @@ class Migration(migrations.Migration):
                 (
                     'observation_space',
                     models.JSONField(
-                        encoder=mixtape.core.ray_utils.utility_functions.NumpyJSONEncoder
+                        encoder=mixtape.core.ray_utils.json_encoder.CustomJSONEncoder
                     ),
                 ),
                 (

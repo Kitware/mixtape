@@ -2,6 +2,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 from mixtape.core.ray_utils.constants import ExampleEnvs, SupportedAlgorithm
+from mixtape.core.ray_utils.json_encoder import CustomJSONEncoder
 
 
 class Training(models.Model):
@@ -13,7 +14,7 @@ class Training(models.Model):
     num_gpus = models.FloatField(default=0.0)
     iterations = models.PositiveIntegerField(default=100)
 
-    config = models.JSONField(default=dict, blank=True, null=True)
+    config = models.JSONField(default=dict, blank=True, null=True, encoder=CustomJSONEncoder)
 
     is_external = models.BooleanField(default=False)
 

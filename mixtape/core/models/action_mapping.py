@@ -1,5 +1,7 @@
 from django.db import models
 
+from mixtape.core.ray_utils.json_encoder import CustomJSONEncoder
+
 
 class ActionMapping(models.Model):
     class Meta:
@@ -8,4 +10,4 @@ class ActionMapping(models.Model):
     created = models.DateTimeField(auto_now_add=True)
 
     environment = models.CharField(max_length=200)
-    mapping = models.JSONField()
+    mapping = models.JSONField(encoder=CustomJSONEncoder)
