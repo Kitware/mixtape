@@ -1,7 +1,9 @@
 from django.db import models
 
-from .checkpoint import Checkpoint
 from mixtape.core.ray_utils.json_encoder import CustomJSONEncoder
+
+from .checkpoint import Checkpoint
+
 
 class Inference(models.Model):
     created = models.DateTimeField(auto_now_add=True)
