@@ -35,6 +35,15 @@
           <i x-show="open" class="ri-arrow-up-s-line"></i>
         </button>
         <div x-show="open" class="max-h-[300px] overflow-auto">
+          <div class="flex justify-end">
+            <a
+              href="data:text/json;charset=utf-8,{{ episode.inference.checkpoint.training.config|pretty_json:2|safe|urlencode }}"
+              download="training_{{ episode.inference.checkpoint.training.pk }}_config.json"
+              class="text-gray-600 hover:bg-gray-100 py-1 px-2 rounded-lg border border-gray-200 bg-gray-50"
+            >
+              <i class="ri-download-line"></i>
+            </a>
+          </div>
           <pre class="text-gray-500">{{ episode.inference.checkpoint.training.config|pretty_json:2 }}</pre>
         </div>
       </div>
@@ -45,6 +54,15 @@
           <i x-show="open" class="ri-arrow-up-s-line"></i>
         </button>
         <div x-show="open" class="max-h-[300px] overflow-auto">
+          <div class="flex justify-end">
+            <a
+              href="data:text/json;charset=utf-8,{{ episode.inference.config|pretty_json:2|safe|urlencode }}"
+              download="episode_{{ episode.pk }}_config.json"
+              class="text-gray-600 hover:bg-gray-100 py-1 px-2 rounded-lg border border-gray-200 bg-gray-50"
+            >
+              <i class="ri-download-line"></i>
+            </a>
+          </div>
           <pre class="text-gray-500">{{ episode.inference.config|pretty_json:2 }}</pre>
         </div>
       </div>
