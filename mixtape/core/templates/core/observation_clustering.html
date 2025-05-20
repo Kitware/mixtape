@@ -14,7 +14,22 @@
     plot: null,
   }"
   x-init="
-    data = [{
+    data = [];
+    for (let agent_idx = 0; agent_idx < plotData.unique_agents.length; agent_idx++) {
+      data.push({
+        x: plotData.clustering.episode_manifolds[0].map(row => row[agent_idx][0]),
+        y: plotData.clustering.episode_manifolds[0].map(row => row[agent_idx][1]),
+        type: 'scatter',
+        mode: 'lines',
+        colorscale: 'YlOrRd',
+        line: {
+          opacity: 1,
+          width: 2
+        },
+        name: plotData.unique_agents[agent_idx]
+      });
+    }
+    data.push({
       x: plotData.clustering.all_manifolds_x,
       y: plotData.clustering.all_manifolds_y,
       type: 'scatter',
@@ -24,25 +39,11 @@
         color: plotData.clustering.all_clusters,
         cmin: 0,
         cmax: 9,
-        colorscale: 'YlGnBu',
+        colorscale: 'Viridis',
         size: 20,
-        opacity: Array(plotData.clustering.all_manifolds_x.length).fill(0.5)
+        opacity: Array(plotData.clustering.all_manifolds_x.length).fill(1)
       }
-    }];
-    for (let agent_idx = 0; agent_idx < plotData.unique_agents.length; agent_idx++) {
-      data.push({
-        x: plotData.clustering.episode_manifolds[0].map(row => row[agent_idx][0]),
-        y: plotData.clustering.episode_manifolds[0].map(row => row[agent_idx][1]),
-        type: 'scatter',
-        mode: 'lines',
-        colorscale: 'YlOrRd',
-        line: {
-          opacity: 0.5,
-          width: 1
-        },
-        name: plotData.unique_agents[agent_idx]
-      });
-    }
+    })
     plot = Plotly.newPlot($refs.allManifolds, data, layout, {displayModeBar: false})"
   x-effect="
     if (plot) {
@@ -66,13 +67,11 @@
 
       for (let i = startIdx; i < endIdx; i++) {
         const agentIdx = i - startIdx;
-        const agentTrace = currentData[1 + agentIdx];
+        const agentTrace = currentData[agentIdx];
         // Only add points for visible traces
-        if (agentTrace && agentTrace.visible === true) {
+        if (agentTrace && (!agentTrace.visible || agentTrace.visible === true)) {
           highlightX.push(plotData.clustering.all_manifolds_x[i]);
           highlightY.push(plotData.clustering.all_manifolds_y[i]);
-          // Use the original agent index for color matching
-          highlightColors.push(agentTrace.line.color);
         }
       }
 
@@ -90,7 +89,7 @@
             size: 20,
             line: {
               width: 3,
-              color: highlightColors
+              color: 'red'
             }
           }
         }]);
