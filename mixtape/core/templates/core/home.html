@@ -10,13 +10,15 @@
     {% for episode in episodes %}
     <li class="card raised m-2">
       <div class="flex justify-between">
-        <span>
-          <span class="font-bold mx-2">{{ episode.inference.checkpoint.training.environment }}</span>
-          <span class="italic">
-            {{ episode.inference.created|date:"D d M Y" }}
-            {{ episode.inference.created|time:"H:i" }}
+        <a href="{% url 'insights' episode.pk %}" class="rounded-lg">
+          <span>
+            <span class="font-bold mx-2">{{ episode.inference.checkpoint.training.environment }}</span>
+            <span class="italic">
+              {{ episode.inference.created|date:"D d M Y" }}
+              {{ episode.inference.created|time:"H:i" }}
+            </span>
           </span>
-        </span>
+        </a>
         <a href="{% url 'insights' episode.pk %}" target="_blank" class="rounded-lg">
           <i class="ri-external-link-line p-1"></i>
         </a>
