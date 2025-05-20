@@ -64,6 +64,7 @@
       const highlightX = [];
       const highlightY = [];
       const highlightColors = [];
+      const highlightText = [];
 
       for (let i = startIdx; i < endIdx; i++) {
         const agentIdx = i - startIdx;
@@ -72,18 +73,26 @@
         if (agentTrace && (!agentTrace.visible || agentTrace.visible === true)) {
           highlightX.push(plotData.clustering.all_manifolds_x[i]);
           highlightY.push(plotData.clustering.all_manifolds_y[i]);
+          highlightText.push(plotData.unique_agents[agentIdx]);
         }
       }
 
       // Only add the highlight trace if there are visible points
       if (highlightX.length > 0) {
         // Add new trace for highlighted points
+        const textPosition = ['top left', 'middle left', 'bottom left', 'top center', 'middle center', 'bottom center', 'top right', 'middle right', 'bottom right'];
         Plotly.addTraces($refs.allManifolds, [{
           x: highlightX,
           y: highlightY,
+          text: highlightText,
           type: 'scatter',
-          mode: 'markers',
+          mode: 'markers+text',
           showlegend: false,
+          textposition: textPosition,
+          textfont: {
+            size: 12,
+            color: 'black'
+          },
           marker: {
             color: 'transparent',
             size: 20,
