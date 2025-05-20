@@ -5,11 +5,26 @@
 
 {% block content %}
 <h1 class="text-center">Explore Results</h1>
-<div>
+<div x-data="{ selectedEpisodes: [] }">
+  <div class="w-full flex justify-end">
+    <button
+      class="bg-blue-500 hover:bg-blue-800 rounded-lg px-5 py-2.5 me-2 mb-2 disabled:bg-gray-300 disabled:text-gray-400"
+      :disabled="selectedEpisodes.length === 0"
+    >
+      View Selected Episodes
+    </button>
+  </div>
   <ol>
     {% for episode in episodes %}
     <li class="card raised m-2">
       <div class="flex justify-between">
+        <input
+          id="{{ episode.pk }}-checkbox"
+          type="checkbox"
+          value="{{ episode.pk }}"
+          x-model="selectedEpisodes"
+          class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm mr-1"
+        >
         <a href="{% url 'insights' episode.pk %}" class="rounded-lg">
           <span>
             <span class="font-bold mx-2">{{ episode.inference.checkpoint.training.environment }}</span>
