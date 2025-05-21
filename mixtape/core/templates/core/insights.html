@@ -45,82 +45,13 @@
     <div class="col-span-6">
       <h1 class="text-xl font-bold text-center">Step <span x-text="currentStep"></span> of <span x-text="maxSteps"></span></h1>
       <div class="grid grid-cols-12 h-[45vh] content-center">
-        <div x-show="stepData[currentStep].image_url" class="col-span-9 content-center m-2 h-[inherit]">
-          <img class="max-h-4/5 m-auto" :src="stepData[currentStep].image_url" alt="Step Image">
-          <div class="flex w-1/2 justify-evenly justify-self-center border border-black rounded-lg my-2 mx-5 py-1">
-            <button
-              class="cursor-pointer text-blue-500 hover:text-blue-800 focus:ring-3 focus:ring-blue-800 focus:text-blue-800 rounded-lg p-1 text-center disabled:text-gray-300"
-              :disabled="currentStep === 0"
-              @click="currentStep = 0"
-            >
-              <i class="ri-rewind-start-line"></i>
-            </button>
-            <button
-              class="cursor-pointer text-blue-500 hover:text-blue-800 focus:ring-3 focus:ring-blue-800 focus:text-blue-800 rounded-lg p-1 text-center disabled:text-gray-300"
-              :disabled="currentStep === 0"
-              @click="currentStep--"
-            >
-              <i class="ri-rewind-line"></i>
-            </button>
-            <button
-              class="cursor-pointer text-blue-500 hover:text-blue-800 focus:ring-3 focus:ring-blue-800 focus:text-blue-800 rounded-lg p-1 text-center disabled:text-gray-300"
-              @click="playing = !playing; if (playing) stepForward()"
-            >
-              <i x-show="!playing" class="ri-play-line"></i>
-              <i x-show="playing" class="ri-pause-line"></i>
-            </button>
-            <button
-              class="cursor-pointer text-blue-500 hover:text-blue-800 focus:ring-3 focus:ring-blue-800 focus:text-blue-800 rounded-lg p-1 text-center disabled:text-gray-300"
-              :disabled="currentStep === maxSteps"
-              @click="currentStep++"
-            >
-              <i class="ri-speed-line"></i>
-            </button>
-            <button
-              class="cursor-pointer text-blue-500 hover:text-blue-800 focus:ring-3 focus:ring-blue-800 focus:text-blue-800 rounded-lg p-1 text-center disabled:text-gray-300"
-              :disabled="currentStep === maxSteps"
-              @click="currentStep = maxSteps"
-            >
-              <i class="ri-forward-end-line"></i>
-            </button>
-          </div>
+        <div class="col-span-9 content-center m-2 h-[inherit]">
+          <img x-show="stepData[currentStep].image_url" class="max-h-4/5 m-auto" :src="stepData[currentStep].image_url" alt="Step Image">
+          {% include "core/replay_controls.html" %}
         </div>
-        <div class="flex justify-evenly overflow-y-auto grid grid-cols-12" :class="stepData[currentStep].image_url ? 'col-span-3 flex-col' : 'col-span-12'">
-          <template x-for="agent_step in stepData[currentStep].agent_steps || []">
-            <div class="border border-gray-900 rounded-lg m-1 p-1" :class="stepData[currentStep].image_url ? 'col-span-12 h-min' : 'col-span-3'">
-              <p class="flex justify-evenly">
-                <p><strong>Agent:</strong> <span x-text="agent_step.agent"></span></p>
-                <p><strong>Action:</strong> <span x-text="agent_step.action"></span></p>
-                <p><strong>Reward:</strong> <span x-text="agent_step.reward"></span></p>
-              </p>
-            </div>
-          </template>
-          <p x-show="!stepData[currentStep]?.agent_steps?.length" class="text-center">End of episode</p>
-        </div>
+        {% include "core/replay_details.html" %}
       </div>
-      <div class="bg-gray-100 rounded-lg">
-        <ol class="items-center flex p-2">
-          <div class="flex w-5 bg-gray-700 h-6 ml-2"></div>
-          {% for ts in timeline_steps %}
-          <li class="relative w-full flex even:flex-col odd:flex-col-reverse even:mb-5 odd:mt-5">
-            <p class="text-sm text-gray-900 text-center">
-              {{ ts.total_rewards|floatformat }}
-            </p>
-            <div class="flex items-center">
-                <div class="flex w-full bg-gray-700 h-0.5"></div>
-                <button
-                  class="cursor-pointer z-10 flex items-center justify-center w-2 h-2 rounded-full ring-4 shrink-0 text-blue-500 bg-blue-500"
-                  :class="currentStep === {{ ts.number }} ? 'ring-red-700' : 'ring-blue-700'"
-                  @click="currentStep = {{ ts.number }}"
-                >
-                </button>
-                <div class="flex w-full bg-gray-700 h-0.5"></div>
-            </div>
-          </li>
-          {% endfor %}
-          <div class="flex w-5 bg-gray-700 h-6 mr-2"></div>
-        </ol>
-      </div>
+      {% include "core/timeline.html" %}
     </div>
     <div class="col-span-6 content-center">
       <div class="col-span-12 content-center">

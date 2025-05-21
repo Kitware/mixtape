@@ -1,0 +1,13 @@
+
+<div class="flex justify-evenly overflow-y-auto grid grid-cols-12 col-span-3 flex-col">
+  <template x-for="agent_step in stepData[currentStep].agent_steps || []">
+    <div class="border border-gray-900 rounded-lg m-1 p-1 col-span-12 h-min">
+      <p class="flex justify-evenly">
+        <p><strong>Agent:</strong> <span x-text="agent_step.agent"></span></p>
+        <p><strong>Action:</strong> <span x-text="agent_step.action"></span></p>
+        <p><strong>Reward:</strong> <span x-text="agent_step.reward"></span></p>
+      </p>
+    </div>
+  </template>
+  <p x-show="!stepData[currentStep]?.agent_steps?.length" class="text-center">End of episode</p>
+</div>
