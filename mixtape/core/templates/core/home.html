@@ -5,7 +5,19 @@
 
 {% block content %}
 <h1 class="text-center">Explore Results</h1>
-<div x-data="{ selectedEpisodes: [] }">
+<div
+  x-data="{
+    selectedEpisodes: [],
+    allowedEnvironment: null,
+    updateAllowedEnvironment(env) {
+      if (this.selectedEpisodes.length === 0) {
+        this.allowedEnvironment = null;
+      } else {
+        this.allowedEnvironment = env;
+      }
+    }
+  }"
+>
   <div class="w-full flex justify-end">
     <button
       class="bg-blue-500 hover:bg-blue-800 rounded-lg px-5 py-2.5 me-2 mb-2 disabled:bg-gray-300 disabled:text-gray-400"
@@ -16,13 +28,17 @@
   </div>
   <ol>
     {% for episode in episodes %}
-    <li class="card raised m-2">
+    <li
+      class="card raised m-2"
+      x-show="!allowedEnvironment || allowedEnvironment === '{{ episode.inference.checkpoint.training.environment }}'"
+    >
       <div class="flex justify-between">
         <input
           id="{{ episode.pk }}-checkbox"
           type="checkbox"
           value="{{ episode.pk }}"
           x-model="selectedEpisodes"
+          @change="updateAllowedEnvironment('{{ episode.inference.checkpoint.training.environment }}')"
           class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm mr-1"
         >
         <a href="{% url 'insights' episode.pk %}" class="rounded-lg">
