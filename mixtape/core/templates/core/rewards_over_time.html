@@ -15,6 +15,10 @@
         }
       ],
     },
+    config: {
+      displayModeBar: false,
+      responsive: true
+    },
     plot: null,
   }"
   x-init="
@@ -37,7 +41,12 @@
         name: 'Current Step'
       },
     ];
-    plot = Plotly.newPlot($refs.rewardsOverTime, data, layout, {displayModeBar: false})"
+    plot = Plotly.react($refs.rewardsOverTime, data, layout, config);
+    $watch('visOptions', () => {
+      $nextTick(() => {
+        Plotly.relayout($refs.rewardsOverTime, {autosize: true})
+      });
+    })"
   x-effect="
     if (plot) {
       Plotly.update($refs.rewardsOverTime, {
@@ -54,5 +63,5 @@
       }, [1]);
     }"
 >
-  <div x-ref="rewardsOverTime"></div>
+  <div x-ref="rewardsOverTime" class="w-full h-full"></div>
 </div>

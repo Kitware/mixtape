@@ -6,11 +6,20 @@
     yaxis: {title: {text: 'Frequency'}},
     autosize: true
   },
+  config: {
+    displayModeBar: false,
+    responsive: true
+  },
   plot: null,
 }"
 x-init="
   data = [{x: plotData.reward_histogram, type: 'histogram'}];
-  plot = Plotly.newPlot($refs.rewardsFrequency, data, layout)"
+  plot = Plotly.react($refs.rewardsFrequency, data, layout, config);
+  $watch('visOptions', () => {
+    $nextTick(() => {
+      Plotly.relayout($refs.rewardsFrequency, {autosize: true})
+    });
+  })"
 >
   <div x-ref="rewardsFrequency"></div>
 </div>

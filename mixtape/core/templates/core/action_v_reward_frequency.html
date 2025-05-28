@@ -5,7 +5,11 @@
       xaxis: {title: {text: 'Action'}},
       yaxis: {title: {text: 'Reward Frequency'}},
       autosize: true,
-      barmode: 'group',
+      barmode: 'stack'
+    },
+    config: {
+      displayModeBar: false,
+      responsive: true
     },
     plot: null,
   }"
@@ -16,7 +20,12 @@
       type: 'bar',
       name: agent
     }));
-    plot = Plotly.newPlot($refs.actionsRewards, data, layout, {displayModeBar: false})"
+    plot = Plotly.react($refs.actionsRewards, data, layout, config);
+    $watch('visOptions', () => {
+      $nextTick(() => {
+        Plotly.relayout($refs.actionsRewards, {autosize: true})
+      });
+    })"
 >
   <div x-ref="actionsRewards"></div>
 </div>

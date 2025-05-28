@@ -5,6 +5,10 @@
       autosize: true,
       barmode: 'stack'
     },
+    config: {
+      displayModeBar: false,
+      responsive: true
+    },
     plot: null,
   }"
   x-init="
@@ -17,7 +21,12 @@
         name: agent
       });
     });
-    plot = Plotly.newPlot($refs.actionsFrequency, data, layout, {displayModeBar: false})"
+    plot = Plotly.react($refs.actionsFrequency, data, layout, config);
+    $watch('visOptions', () => {
+      $nextTick(() => {
+        Plotly.relayout($refs.actionsFrequency, {autosize: true})
+      });
+    })"
 >
   <div x-ref="actionsFrequency"></div>
 </div>
