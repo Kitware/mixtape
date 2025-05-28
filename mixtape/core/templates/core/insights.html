@@ -27,36 +27,38 @@
       this.currentStep = 0;
     }
   }
-}">
+}"
+class="flex flex-col"
+>
   {% include "core/nav_bar.html" %}
-  <div class="flex flex-wrap h-[45vh]">
+  <div class="flex h-fit">
     <div
-      class="flex-1 min-w-[100%] md:min-w-[50%] xl:min-w-[25%] content-center"
+      class="flex-1 min-w-[100%] md:min-w-[50%] xl:min-w-[25%] h-fit"
       x-show="visOptions.includes('actionRewardFrequency')"
     >
       {% include "core/action_v_reward_frequency.html" with plot_data=plot_data %}
     </div>
     <div
-      class="flex-1 min-w-[100%] md:min-w-[50%] xl:min-w-[25%] content-center"
+      class="flex-1 min-w-[100%] md:min-w-[50%] xl:min-w-[25%] h-fit"
       x-show="visOptions.includes('rewardFrequency')"
     >
       {% include "core/reward_v_frequency.html" with plot_data=plot_data %}
     </div>
     <div
-      class="flex-1 min-w-[100%] md:min-w-[50%] xl:min-w-[25%] content-center"
+      class="flex-1 min-w-[100%] md:min-w-[50%] xl:min-w-[25%] h-fit"
       x-show="visOptions.includes('actionFrequency')"
     >
       {% include "core/action_v_frequency.html" with plot_data=plot_data %}
     </div>
     <div
-      class="flex-1 min-w-[100%] md:min-w-[50%] xl:min-w-[25%] content-center"
+      class="flex-1 min-w-[100%] md:min-w-[50%] xl:min-w-[25%] h-fit"
       x-show="visOptions.includes('rewardsOverTime')"
     >
       {% include "core/rewards_over_time.html" with plot_data=plot_data %}
     </div>
   </div>
-  <div id="example" class="flex h-[50vh] overflow-hidden">
-    <div x-show="visOptions.includes('episodeDetails')" class="flex-1 min-w-[100%] xl:min-w-[50%] h-full flex flex-col">
+  <div class="flex h-[50vh] overflow-hidden">
+    <div x-show="visOptions.includes('episodeDetails')" class="flex-1 min-w-[100%] xl:min-w-[50%] flex flex-col">
       <h1 class="text-xl font-bold text-center flex-none">Step <span x-text="currentStep"></span> of <span x-text="maxSteps"></span></h1>
       <div class="grid grid-cols-12 flex-1 min-h-0">
         <div class="col-span-9 flex flex-col p-2 min-h-0">
