@@ -136,21 +136,33 @@
     </div>
   </div>
   <div class="grid grid-cols-12">
-    <div class="col-span-12 md:col-span-6 xl:col-span-3 content-center">
+    <div
+      class="col-span-12 md:col-span-6 xl:col-span-3 content-center"
+      x-show="visOptions.includes('actionRewardFrequency')"
+    >
       {% include "core/action_v_reward_frequency.html" with plot_data=plot_data %}
     </div>
-    <div class="col-span-12 md:col-span-6 xl:col-span-3 content-center">
+    <div
+      class="col-span-12 md:col-span-6 xl:col-span-3 content-center"
+      x-show="visOptions.includes('rewardFrequency')"
+    >
       {% include "core/reward_v_frequency.html" with plot_data=plot_data %}
     </div>
-    <div class="col-span-12 md:col-span-6 xl:col-span-3 content-center">
+    <div
+      class="col-span-12 md:col-span-6 xl:col-span-3 content-center"
+      x-show="visOptions.includes('actionFrequency')"
+    >
       {% include "core/action_v_frequency.html" with plot_data=plot_data %}
     </div>
-    <div class="col-span-12 md:col-span-6 xl:col-span-3 content-center">
+    <div
+      class="col-span-12 md:col-span-6 xl:col-span-3 content-center"
+      x-show="visOptions.includes('rewardsOverTime')"
+    >
       {% include "core/rewards_over_time.html" with plot_data=plot_data %}
     </div>
   </div>
   <div class="grid grid-cols-12">
-    <div class="col-span-12 xl:col-span-6">
+    <div x-show="visOptions.includes('episodeDetails')" class="col-span-12 xl:col-span-6">
       <h1 class="text-xl font-bold text-center">Step <span x-text="currentStep"></span> of <span x-text="maxSteps"></span></h1>
       <div class="grid grid-cols-12 h-[45vh] content-center">
         <div class="col-span-9 content-center m-2 h-[inherit]">
@@ -161,7 +173,7 @@
       </div>
       {% include "core/timeline.html" %}
     </div>
-    <div class="col-span-6 content-center">
+    <div x-show="visOptions.includes('placeholder')" class="col-span-12 xl:col-span-6 border border-dashed border-gray-400 rounded-lg m-1 content-center">
       <div class="col-span-12 content-center">
         {% include "core/observation_clustering.html" %}
       </div>
