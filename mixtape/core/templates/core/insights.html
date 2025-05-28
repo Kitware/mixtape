@@ -28,21 +28,21 @@
 }">
   <h1 class="text-center text-2xl font-bold">Episode #{{ episode.pk }}</h1>
   <div class="grid grid-cols-12">
-    <div class="col-span-3 content-center">
+    <div class="col-span-12 md:col-span-6 xl:col-span-3 content-center">
       {% include "core/action_v_reward_frequency.html" with plot_data=plot_data %}
     </div>
-    <div class="col-span-3 content-center">
+    <div class="col-span-12 md:col-span-6 xl:col-span-3 content-center">
       {% include "core/reward_v_frequency.html" with plot_data=plot_data %}
     </div>
-    <div class="col-span-3 content-center">
+    <div class="col-span-12 md:col-span-6 xl:col-span-3 content-center">
       {% include "core/action_v_frequency.html" with plot_data=plot_data %}
     </div>
-    <div class="col-span-3 content-center">
+    <div class="col-span-12 md:col-span-6 xl:col-span-3 content-center">
       {% include "core/rewards_over_time.html" with plot_data=plot_data %}
     </div>
   </div>
   <div class="grid grid-cols-12">
-    <div class="col-span-6">
+    <div class="col-span-12 xl:col-span-6">
       <h1 class="text-xl font-bold text-center">Step <span x-text="currentStep"></span> of <span x-text="maxSteps"></span></h1>
       <div class="grid grid-cols-12 h-[45vh] content-center">
         <div class="col-span-9 content-center m-2 h-[inherit]">
