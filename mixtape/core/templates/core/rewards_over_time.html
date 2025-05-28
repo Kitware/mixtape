@@ -6,7 +6,7 @@
       xaxis: {title: {text: 'Time Step'}},
       yaxis: {title: {text: 'Cumulative Reward'}},
       autosize: true,
-      showlegend: false,
+      showlegend: visOptions.includes('plotLegends'),
       annotations: [
         {
           x: currentStep,
@@ -26,7 +26,8 @@
       {
         x: plotData.rewards_over_time.length,
         y: plotData.rewards_over_time,
-        type: 'scatter'
+        type: 'scatter',
+        name: 'Episode'
       },
       {
         x: [{{ currentStep }}, {{ currentStep }}],
@@ -44,7 +45,7 @@
     plot = Plotly.react($refs.rewardsOverTime, data, layout, config);
     $watch('visOptions', () => {
       $nextTick(() => {
-        Plotly.relayout($refs.rewardsOverTime, {autosize: true})
+        Plotly.relayout($refs.rewardsOverTime, {autosize: true, showlegend: visOptions.includes('plotLegends')})
       });
     })"
   x-effect="

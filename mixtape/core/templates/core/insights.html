@@ -14,7 +14,7 @@
   playing: false,
   maxSteps: {{ steps|length|add:'-1' }},
   showVisMenu: false,
-  visOptions: ['actionRewardFrequency', 'rewardFrequency', 'actionFrequency', 'rewardsOverTime', 'episodeDetails', 'placeholder'],
+  visOptions: ['actionRewardFrequency', 'rewardFrequency', 'actionFrequency', 'rewardsOverTime', 'episodeDetails', 'placeholder', 'plotLegends'],
   stepForward() {
     if (!this.playing) return;
     if (this.currentStep < this.maxSteps) {

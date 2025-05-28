@@ -5,7 +5,8 @@
       xaxis: {title: {text: 'Action'}},
       yaxis: {title: {text: 'Reward Frequency'}},
       autosize: true,
-      barmode: 'stack'
+      barmode: 'stack',
+      showlegend: visOptions.includes('plotLegends'),
     },
     config: {
       displayModeBar: false,
@@ -23,7 +24,7 @@
     plot = Plotly.react($refs.actionsRewards, data, layout, config);
     $watch('visOptions', () => {
       $nextTick(() => {
-        Plotly.relayout($refs.actionsRewards, {autosize: true})
+        Plotly.relayout($refs.actionsRewards, {autosize: true, showlegend: visOptions.includes('plotLegends')})
       });
     })"
 >

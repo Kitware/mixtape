@@ -3,7 +3,8 @@
     layout: {
       title: {text: 'Actions VS Frequency'},
       autosize: true,
-      barmode: 'stack'
+      barmode: 'stack',
+      showlegend: visOptions.includes('plotLegends'),
     },
     config: {
       displayModeBar: false,
@@ -24,7 +25,7 @@
     plot = Plotly.react($refs.actionsFrequency, data, layout, config);
     $watch('visOptions', () => {
       $nextTick(() => {
-        Plotly.relayout($refs.actionsFrequency, {autosize: true})
+        Plotly.relayout($refs.actionsFrequency, {autosize: true, showlegend: visOptions.includes('plotLegends')})
       });
     })"
 >

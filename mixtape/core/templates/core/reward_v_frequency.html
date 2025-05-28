@@ -4,7 +4,8 @@
     title: {text: 'Rewards VS Frequency'},
     xaxis: {title: {text: 'Reward'}},
     yaxis: {title: {text: 'Frequency'}},
-    autosize: true
+    autosize: true,
+    showlegend: visOptions.includes('plotLegends'),
   },
   config: {
     displayModeBar: false,
@@ -13,11 +14,11 @@
   plot: null,
 }"
 x-init="
-  data = [{x: plotData.reward_histogram, type: 'histogram'}];
+  data = [{x: plotData.reward_histogram, type: 'histogram', name: 'Episode'}];
   plot = Plotly.react($refs.rewardsFrequency, data, layout, config);
   $watch('visOptions', () => {
     $nextTick(() => {
-      Plotly.relayout($refs.rewardsFrequency, {autosize: true})
+      Plotly.relayout($refs.rewardsFrequency, {autosize: true, showlegend: visOptions.includes('plotLegends')})
     });
   })"
 >
