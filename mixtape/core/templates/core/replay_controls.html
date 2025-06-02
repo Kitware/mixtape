@@ -1,34 +1,34 @@
-<div class="flex w-auto justify-evenly justify-self-center border border-black rounded-lg my-2 mx-5 py-1">
+<div class="flex w-auto justify-evenly justify-self-center my-2 mx-5 py-1 card-alt">
   <button
-    class="cursor-pointer text-blue-500 hover:text-blue-800 focus:ring-3 focus:ring-blue-800 focus:text-blue-800 rounded-lg p-1 text-center disabled:text-gray-300"
+    class="cursor-pointer hover:text-gray-900 rounded-lg p-1 text-center disabled:text-gray-500"
     :disabled="currentStep === 0"
     @click="currentStep = 0"
   >
     <i class="ri-rewind-start-line"></i>
   </button>
   <button
-    class="cursor-pointer text-blue-500 hover:text-blue-800 focus:ring-3 focus:ring-blue-800 focus:text-blue-800 rounded-lg p-1 text-center disabled:text-gray-300"
+    class="cursor-pointer hover:text-gray-900 rounded-lg p-1 text-center disabled:text-gray-500"
     :disabled="currentStep === 0"
     @click="currentStep--"
   >
     <i class="ri-rewind-line"></i>
   </button>
   <button
-    class="cursor-pointer text-blue-500 hover:text-blue-800 focus:ring-3 focus:ring-blue-800 focus:text-blue-800 rounded-lg p-1 text-center disabled:text-gray-300"
+    class="cursor-pointer hover:text-gray-900 rounded-lg p-1 text-center disabled:text-gray-500"
     @click="playing = !playing; if (playing) stepForward()"
   >
     <i x-show="!playing" class="ri-play-line"></i>
     <i x-show="playing" class="ri-pause-line"></i>
   </button>
   <button
-    class="cursor-pointer text-blue-500 hover:text-blue-800 focus:ring-3 focus:ring-blue-800 focus:text-blue-800 rounded-lg p-1 text-center disabled:text-gray-300"
+    class="cursor-pointer hover:text-gray-900 rounded-lg p-1 text-center disabled:text-gray-500"
     :disabled="currentStep === maxSteps"
     @click="currentStep++"
   >
     <i class="ri-speed-line"></i>
   </button>
   <button
-    class="cursor-pointer text-blue-500 hover:text-blue-800 focus:ring-3 focus:ring-blue-800 focus:text-blue-800 rounded-lg p-1 text-center disabled:text-gray-300"
+    class="cursor-pointer hover:text-gray-900 rounded-lg p-1 text-center disabled:text-gray-500"
     :disabled="currentStep === maxSteps"
     @click="currentStep = maxSteps"
   >

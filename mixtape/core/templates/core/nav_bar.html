@@ -1,33 +1,33 @@
-<div class="flex w-full border-b border-gray-400 p-2 justify-between items-center z-10 bg-[#668F80] shadow-[0_1px_3px_1px_rgba(0,0,0,0.25)]">
+<div class="header">
   <div></div>
-  <h1 class="text-xl font-bold">Episode #{{ episode.pk }}</h1>
-  <div class="flex items-center">
-    <a href="{% url 'home' %}" class="text-2xl">
+  <h1>Episode #{{ episode.pk }}</h1>
+  <div>
+    <a href="{% url 'home' %}" class="btn btn-icon">
       <i class="ri-home-2-line"></i>
     </a>
     <button
-      class="text-center text-2xl rounded-lg px-2 py-1.5 inline-flex items-center"
+      class="btn btn-icon"
       @click="showVisMenu = !showVisMenu"
     >
       <i class="ri-settings-5-line"></i>
     </button>
     <!-- Dropdown menu -->
     <div
-      class="absolute right-0 top-12 mt-2 z-10 w-auto bg-white divide-y divide-gray-100 rounded-lg shadow-sm"
+      class="menu card raised"
       x-show="showVisMenu"
       @click.away="showVisMenu = false"
     >
-      <ul class="p-3 space-y-3 text-sm text-gray-700">
+      <ul class="p-3 space-y-3 text-sm">
         <li>
           <div class="flex items-center">
             <input
               type="checkbox"
               id="actionRewardFrequency"
-              class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm"
+              class="checkbox"
               x-model="visOptions"
               value="actionRewardFrequency"
             >
-            <label for="actionRewardFrequency" class="ms-2 text-sm text-gray-900">
+            <label for="actionRewardFrequency" class="ms-2 text-sm">
               Action VS Reward Frequency
             </label>
           </div>
@@ -37,11 +37,11 @@
             <input
               type="checkbox"
               id="rewardFrequency"
-              class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm"
+              class="checkbox"
               x-model="visOptions"
               value="rewardFrequency"
             >
-            <label for="rewardFrequency" class="ms-2 text-sm text-gray-900">
+            <label for="rewardFrequency" class="ms-2 text-sm">
               Reward VS Frequency
             </label>
           </div>
@@ -51,11 +51,11 @@
             <input
               type="checkbox"
               id="actionFrequency"
-              class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm"
+              class="checkbox"
               x-model="visOptions"
               value="actionFrequency"
             >
-            <label for="actionFrequency" class="ms-2 text-sm text-gray-900">
+            <label for="actionFrequency" class="ms-2 text-sm">
               Action VS Frequency
             </label>
           </div>
@@ -65,11 +65,11 @@
             <input
               type="checkbox"
               id="rewardsOverTime"
-              class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm"
+              class="checkbox"
               x-model="visOptions"
               value="rewardsOverTime"
             >
-            <label for="rewardsOverTime" class="ms-2 text-sm text-gray-900">
+            <label for="rewardsOverTime" class="ms-2 text-sm">
               Rewards Over Time
             </label>
           </div>
@@ -79,11 +79,11 @@
             <input
               type="checkbox"
               id="episodeDetails"
-              class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm"
+              class="checkbox"
               x-model="visOptions"
               value="episodeDetails"
             >
-            <label for="episodeDetails" class="ms-2 text-sm text-gray-900">
+            <label for="episodeDetails" class="ms-2 text-sm">
               Episode Details
             </label>
           </div>
@@ -93,11 +93,11 @@
             <input
               type="checkbox"
               id="placeholder"
-              class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm"
+              class="checkbox"
               x-model="visOptions"
               value="placeholder"
             >
-            <label for="placeholder" class="ms-2 text-sm text-gray-900">
+            <label for="placeholder" class="ms-2 text-sm">
               Placeholder
             </label>
           </div>
@@ -108,11 +108,11 @@
             <input
               type="checkbox"
               id="plotLegends"
-              class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm"
+              class="checkbox"
               x-model="visOptions"
               value="plotLegends"
             >
-            <label for="placeholder" class="ms-2 text-sm text-gray-900">
+            <label for="placeholder" class="ms-2 text-sm">
               Show Legends
             </label>
           </div>

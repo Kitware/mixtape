@@ -5,10 +5,19 @@
       title: {text: 'Agent Observations'},
       height: 450,
       xaxis: {
-        showticklabels: false
+        showticklabels: false,
+        gridcolor: $store.theme.darkMode ? '#4a5565' : '#d1d5dc',
+        zerolinecolor: $store.theme.darkMode ? '#F1F2F6' : '#111827'
       },
       yaxis: {
-        showticklabels: false
+        showticklabels: false,
+        gridcolor: $store.theme.darkMode ? '#4a5565' : '#d1d5dc',
+        zerolinecolor: $store.theme.darkMode ? '#F1F2F6' : '#111827'
+      },
+      paper_bgcolor: $store.theme.darkMode ? '#111827' : '#F1F2F6',
+      plot_bgcolor: $store.theme.darkMode ? '#111827' : '#F1F2F6',
+      font: {
+        color: $store.theme.darkMode ? '#D1D5DB' : '#000000'
       },
     },
     plot: null,
@@ -91,7 +100,7 @@
           textposition: textPosition,
           textfont: {
             size: 12,
-            color: 'black'
+            color: $store.theme.darkMode ? '#D1D5DB' : '#000000'
           },
           marker: {
             color: 'transparent',
