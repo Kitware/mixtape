@@ -25,6 +25,7 @@ dependencies = [
   "django-resonant-utils",
   "djangorestframework",
   "drf-yasg",
+  "einops",
   "gymnasium[atari, other]",
   # PettingZoo[butterfly] extra pulls in both pymunk and pygame, but the pypi version of PettingZoo
   # is extremely outdated and depends on a version of pymunk that does not build and has no bdist
@@ -36,8 +37,10 @@ dependencies = [
   "psycopg[binary]",
   "ray[default, rllib]==2.34.0",
   "rich",
+  "scikit-learn",
   "SuperSuit",
   "torch",
+  "umap-learn",
   "whitenoise[brotli]",
   # Production-only
   "django-s3-file-field[s3]",

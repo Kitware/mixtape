@@ -1,0 +1,45 @@
+<div
+  x-data="{
+    data: [],
+    layout: {
+      title: {text: 'Agent Observations Timeline'},
+      height: 150,
+      margin: {r: 0, t: 25},
+    },
+    plot: null,
+  }"
+  x-init="
+    data = [
+      {
+        z: plotData.clustering.episode_clusters,
+        type: 'heatmap',
+        showscale: false,
+        colorscale: 'YlGnBu',
+      },
+      {
+        x: [[currentStep, currentStep]],
+        y: [[0, plotData.clustering.episode_clusters.length - 1]],
+        type: 'scatter',
+        mode: 'lines',
+        showlegend: false,
+        line: {
+          color: 'red',
+          width: 4,
+          opacity: 0.5,
+        },
+      }
+    ];
+    plot = Plotly.newPlot($refs.allManifolds, data, layout, {displayModeBar: false})"
+  x-effect="
+    if (plot) {
+      // Use the heatmap data dimensions directly
+      const yMin = 0;
+      const yMax = plotData.clustering.episode_clusters.length - 1;
+      Plotly.update($refs.allManifolds, {
+        x: [[currentStep, currentStep]],
+        y: [[yMin - 0.5, yMax + 0.5]],
+      }, {}, [1]);
+    }"
+>
+  <div x-ref="allManifolds"></div>
+</div>

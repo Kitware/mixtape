@@ -109,7 +109,8 @@
             <div class="flex items-center">
                 <div class="flex w-full bg-gray-700 h-0.5"></div>
                 <button
-                  class="cursor-pointer z-10 flex items-center justify-center w-2 h-2 rounded-full ring-4 ring-blue-700 shrink-0 text-blue-500 bg-blue-500 focus:ring-yellow-500"
+                  class="cursor-pointer z-10 flex items-center justify-center w-2 h-2 rounded-full ring-4 shrink-0 text-blue-500 bg-blue-500"
+                  :class="currentStep === {{ ts.number }} ? 'ring-red-700' : 'ring-blue-700'"
                   @click="currentStep = {{ ts.number }}"
                 >
                 </button>
@@ -121,8 +122,13 @@
         </ol>
       </div>
     </div>
-    <div class="col-span-6 border border-dashed border-gray-400 rounded-lg m-1 content-center">
-      <p class="text-center text-xl font-bold text-gray-400">PLACEHOLDER</p>
+    <div class="col-span-6 content-center">
+      <div class="col-span-12 content-center">
+        {% include "core/observation_clustering.html" %}
+      </div>
+      <div class="col-span-12 content-center mr-4">
+        {% include "core/observation_clustering_timeline.html" %}
+      </div>
     </div>
   </div>
 </div>
