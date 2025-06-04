@@ -3,20 +3,22 @@ from __future__ import annotations
 from datetime import timedelta
 from pathlib import Path
 
+import django_stubs_ext
 from environ import Env
 from resonant_settings.allauth import *
 from resonant_settings.celery import *
-from resonant_settings.debug_toolbar import *
 from resonant_settings.django import *
+from resonant_settings.django_extensions import *
 from resonant_settings.logging import *
 from resonant_settings.oauth_toolkit import *
 from resonant_settings.rest_framework import *
+
+django_stubs_ext.monkeypatch()
 
 env = Env()
 
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 
-WSGI_APPLICATION = 'mixtape.wsgi.application'
 ROOT_URLCONF = 'mixtape.urls'
 
 INSTALLED_APPS = [
@@ -39,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.staticfiles',
+    'django_extensions',
     'django_filters',
     'drf_yasg',
     'oauth2_provider',
@@ -55,6 +58,8 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     # WhiteNoiseMiddleware must be directly after SecurityMiddleware
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    # GZipMiddleware can be after WhiteNoiseMiddleware, as WhiteNoise performs its own compression
+    'django.middleware.gzip.GZipMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',

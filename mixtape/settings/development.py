@@ -1,25 +1,26 @@
-import iptools
+from django_extensions.utils import InternalIPS
 
 from .base import *
 
 # Import these afterwards, to override
 from resonant_settings.development.celery import *  # isort: skip
-from resonant_settings.development.extensions import *  # isort: skip
+from resonant_settings.development.debug_toolbar import *  # isort: skip
 
 INSTALLED_APPS += [
     'debug_toolbar',
     'django_browser_reload',
-    'django_extensions',
 ]
 # Force WhiteNoice to serve static files, even when using 'manage.py runserver'
 staticfiles_index = INSTALLED_APPS.index('django.contrib.staticfiles')
 INSTALLED_APPS.insert(staticfiles_index, 'whitenoise.runserver_nostatic')
 
 # Include Debug Toolbar middleware as early as possible in the list.
-# However, it must come after any other middleware that encodes the response’s content,
+# However, it must come after any other middleware that encodes the response's content,
 # such as GZipMiddleware.
-MIDDLEWARE.insert(0, 'debug_toolbar.middleware.DebugToolbarMiddleware')
-# Should be listed after middleware that encode the response.
+MIDDLEWARE.insert(
+    MIDDLEWARE.index('django.middleware.gzip.GZipMiddleware') + 1,
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
+)  # Should be listed after middleware that encode the response.
 MIDDLEWARE += [
     'django_browser_reload.middleware.BrowserReloadMiddleware',
 ]
@@ -32,9 +33,7 @@ DEBUG = True
 SECRET_KEY = 'insecure-secret'
 
 # This is typically only overridden when running from Docker.
-INTERNAL_IPS = iptools.IpRangeList(
-    *env.list('DJANGO_INTERNAL_IPS', cast=str, default=['127.0.0.1'])
-)
+INTERNAL_IPS = InternalIPS(env.list('DJANGO_INTERNAL_IPS', cast=str, default=['127.0.0.1']))
 CORS_ALLOWED_ORIGIN_REGEXES = env.list(
     'DJANGO_CORS_ALLOWED_ORIGIN_REGEXES',
     cast=str,

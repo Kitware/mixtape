@@ -6,7 +6,8 @@ build-backend = "hatchling.build"
 name = "mixtape"
 version = "0.0.0"
 requires-python = ">=3.11"
-license = { text = "Apache 2.0" }
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 classifiers = ["Private :: Do Not Upload"]
 dependencies = [
   "ale-py",
@@ -23,6 +24,7 @@ dependencies = [
   "django-oauth-toolkit",
   "django-resonant-settings[allauth]",
   "django-resonant-utils",
+  "django-stubs-ext",
   "djangorestframework",
   "drf-yasg",
   "einops",
@@ -46,7 +48,7 @@ dependencies = [
   "django-s3-file-field[s3]",
   "django-storages[s3]",
   "gunicorn",
-  "sentry-sdk[celery,django]",
+  "sentry-sdk[celery,django,pure_eval]",
 ]
 
 [project.optional-dependencies]
@@ -55,9 +57,9 @@ dev = [
   "django-debug-toolbar",
   "django-minio-storage",
   "django-s3-file-field[minio]",
-  "iptools",
   "ipython",
   "tox",
+  "werkzeug",
 ]
 
 [dependency-groups]
@@ -86,6 +88,10 @@ test = [
   "pytest",
   "pytest-django",
   "pytest-mock",
+  # Enable with "pytest --random-order ..."
+  "pytest-random-order",
+  # Enable with "pytest --count=... ..."
+  "pytest-repeat",
 ]
 
 [tool.hatch.build]
@@ -110,8 +116,12 @@ combine_as_imports = true
 files = [
   "mixtape",
 ]
-show_error_codes = true
+check_untyped_defs = true
 ignore_missing_imports = true
+show_error_codes = true
+warn_redundant_casts = true
+warn_unused_configs = true
+warn_unused_ignores = true
 plugins = [
     "mypy_django_plugin.main",
 ]

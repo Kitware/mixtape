@@ -4,12 +4,15 @@ import sentry_sdk
 import sentry_sdk.integrations.celery
 import sentry_sdk.integrations.django
 import sentry_sdk.integrations.logging
+import sentry_sdk.integrations.pure_eval
 
 from .base import *
 
 # Import these afterwards, to override
 from resonant_settings.production.email import *  # isort: skip
 from resonant_settings.production.https import *  # isort: skip
+
+WSGI_APPLICATION = 'mixtape.wsgi.application'
 
 SECRET_KEY: str = env.str('DJANGO_SECRET_KEY')
 
@@ -35,7 +38,10 @@ sentry_sdk.init(
         ),
         sentry_sdk.integrations.django.DjangoIntegration(),
         sentry_sdk.integrations.celery.CeleryIntegration(),
+        sentry_sdk.integrations.pure_eval.PureEvalIntegration(),
     ],
+    # "project_root" defaults to the CWD, but for safety, don't assume that will be set correctly
+    project_root=str(BASE_DIR),
     # Send traces for non-exception events too
     attach_stacktrace=True,
     # Submit request User info from Django
