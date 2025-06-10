@@ -10,6 +10,7 @@ license = "Apache-2.0"
 license-files = ["LICENSE"]
 classifiers = ["Private :: Do Not Upload"]
 dependencies = [
+  # Runtime dependendencies, always needed
   "ale-py",
   "autorom[accept-rom-license]",
   "celery",
@@ -53,16 +54,23 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+  # Runtime dependendencies, only needed with "development" settings
   "django-browser-reload",
   "django-debug-toolbar",
   "django-minio-storage",
   "django-s3-file-field[minio]",
   "ipython",
-  "tox",
   "werkzeug",
 ]
 
 [dependency-groups]
+dev = [
+  # Additional developer tools
+  # The "dev" dependency group is installed by default, so use this to install "dev" extras too
+  "mixtape[dev]",
+  "tox",
+  "tox-uv",
+]
 lint = [
   "flake8",
   "flake8-black",
@@ -78,7 +86,6 @@ format = [
 ]
 type = [
   "mypy",
-  {include-group = "test"},
   "celery-types",
   "django-stubs[compatible-mypy]",
   "djangorestframework-stubs",
