@@ -4,13 +4,39 @@
     title: {text: 'Rewards VS Frequency'},
     xaxis: {title: {text: 'Reward'}},
     yaxis: {title: {text: 'Frequency'}},
-    autosize: true
+    autosize: true,
+    showlegend: visOptions.includes('plotLegends'),
+    paper_bgcolor: $store.theme.paper_bgcolor,
+    plot_bgcolor: $store.theme.plot_bgcolor,
+    font: $store.theme.font,
+    xaxis: {
+      gridcolor: $store.theme.axis.gridcolor,
+      zerolinecolor: $store.theme.axis.zerolinecolor
+    },
+    yaxis: {
+      gridcolor: $store.theme.axis.gridcolor,
+      zerolinecolor: $store.theme.axis.zerolinecolor
+    },
+  },
+  config: {
+    displayModeBar: false,
+    responsive: true
   },
   plot: null,
 }"
 x-init="
-  data = [{x: plotData.reward_histogram, type: 'histogram'}];
-  plot = Plotly.newPlot($refs.rewardsFrequency, data, layout)"
+  data = [{x: plotData.reward_histogram, type: 'histogram', name: 'Episode'}];
+  plot = Plotly.react($refs.rewardsFrequency, data, layout, config);
+  $watch('visOptions', () => {
+    $nextTick(() => {
+      Plotly.relayout(
+        $refs.rewardsFrequency,
+        {
+          autosize: true,
+          showlegend: visOptions.includes('plotLegends')
+        })
+    });
+  });"
 >
   <div x-ref="rewardsFrequency"></div>
 </div>

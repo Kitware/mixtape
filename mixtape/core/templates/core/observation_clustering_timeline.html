@@ -5,6 +5,9 @@
       title: {text: 'Agent Observations Timeline'},
       height: 150,
       margin: {r: 0, t: 25},
+      paper_bgcolor: $store.theme.paper_bgcolor,
+      plot_bgcolor: $store.theme.plot_bgcolor,
+      font: $store.theme.font,
     },
     plot: null,
   }"
@@ -29,7 +32,16 @@
         },
       }
     ];
-    plot = Plotly.newPlot($refs.allManifolds, data, layout, {displayModeBar: false})"
+    plot = Plotly.newPlot($refs.allManifolds, data, layout, {displayModeBar: false});
+    $watch('visOptions', () => {
+      $nextTick(() => {
+        Plotly.relayout(
+          $refs.allManifolds, {
+            autosize: true,
+            showlegend: visOptions.includes('plotLegends')
+          })
+      });
+    });"
   x-effect="
     if (plot) {
       // Use the heatmap data dimensions directly

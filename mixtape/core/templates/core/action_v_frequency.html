@@ -3,7 +3,23 @@
     layout: {
       title: {text: 'Actions VS Frequency'},
       autosize: true,
-      barmode: 'stack'
+      barmode: 'stack',
+      showlegend: visOptions.includes('plotLegends'),
+      paper_bgcolor: $store.theme.paper_bgcolor,
+      plot_bgcolor: $store.theme.plot_bgcolor,
+      font: $store.theme.font,
+      xaxis: {
+        gridcolor: $store.theme.axis.gridcolor,
+        zerolinecolor: $store.theme.axis.zerolinecolor
+      },
+      yaxis: {
+        gridcolor: $store.theme.axis.gridcolor,
+        zerolinecolor: $store.theme.axis.zerolinecolor
+      },
+    },
+    config: {
+      displayModeBar: false,
+      responsive: true
     },
     plot: null,
   }"
@@ -17,7 +33,17 @@
         name: agent
       });
     });
-    plot = Plotly.newPlot($refs.actionsFrequency, data, layout, {displayModeBar: false})"
+    plot = Plotly.react($refs.actionsFrequency, data, layout, config);
+    $watch('visOptions', () => {
+      $nextTick(() => {
+        Plotly.relayout(
+          $refs.actionsFrequency,
+          {
+            autosize: true,
+            showlegend: visOptions.includes('plotLegends')
+          })
+      });
+    });"
 >
   <div x-ref="actionsFrequency"></div>
 </div>

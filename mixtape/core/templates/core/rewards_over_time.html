@@ -6,7 +6,10 @@
       xaxis: {title: {text: 'Time Step'}},
       yaxis: {title: {text: 'Cumulative Reward'}},
       autosize: true,
-      showlegend: false,
+      showlegend: visOptions.includes('plotLegends'),
+      paper_bgcolor: $store.theme.paper_bgcolor,
+      plot_bgcolor: $store.theme.plot_bgcolor,
+      font: $store.theme.font,
       annotations: [
         {
           x: currentStep,
@@ -14,6 +17,18 @@
           text: plotData.rewards_over_time[currentStep].toFixed(2),
         }
       ],
+      xaxis: {
+        gridcolor: $store.theme.axis.gridcolor,
+        zerolinecolor: $store.theme.axis.zerolinecolor
+      },
+      yaxis: {
+        gridcolor: $store.theme.axis.gridcolor,
+        zerolinecolor: $store.theme.axis.zerolinecolor
+      },
+    },
+    config: {
+      displayModeBar: false,
+      responsive: true
     },
     plot: null,
   }"
@@ -22,7 +37,8 @@
       {
         x: plotData.rewards_over_time.length,
         y: plotData.rewards_over_time,
-        type: 'scatter'
+        type: 'scatter',
+        name: 'Episode'
       },
       {
         x: [{{ currentStep }}, {{ currentStep }}],
@@ -37,7 +53,17 @@
         name: 'Current Step'
       },
     ];
-    plot = Plotly.newPlot($refs.rewardsOverTime, data, layout, {displayModeBar: false})"
+    plot = Plotly.react($refs.rewardsOverTime, data, layout, config);
+    $watch('visOptions', () => {
+      $nextTick(() => {
+        Plotly.relayout(
+          $refs.rewardsOverTime,
+          {
+            autosize: true,
+            showlegend: visOptions.includes('plotLegends')
+          })
+      });
+    });"
   x-effect="
     if (plot) {
       Plotly.update($refs.rewardsOverTime, {

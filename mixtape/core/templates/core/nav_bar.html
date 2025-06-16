@@ -1,0 +1,123 @@
+<div class="header">
+  <div></div>
+  <h1>Episode #{{ episode.pk }}</h1>
+  <div>
+    <a href="{% url 'home' %}" class="btn btn-icon">
+      <i class="ri-home-2-line"></i>
+    </a>
+    <button
+      class="btn btn-icon"
+      @click="showVisMenu = !showVisMenu"
+    >
+      <i class="ri-settings-5-line"></i>
+    </button>
+    <!-- Dropdown menu -->
+    <div
+      class="menu card raised"
+      x-show="showVisMenu"
+      @click.away="showVisMenu = false"
+    >
+      <ul class="p-3 space-y-3 text-sm">
+        <li>
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="actionRewardFrequency"
+              class="checkbox"
+              x-model="visOptions"
+              value="actionRewardFrequency"
+            >
+            <label for="actionRewardFrequency" class="ms-2 text-sm">
+              Action VS Reward Frequency
+            </label>
+          </div>
+        </li>
+        <li>
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="rewardFrequency"
+              class="checkbox"
+              x-model="visOptions"
+              value="rewardFrequency"
+            >
+            <label for="rewardFrequency" class="ms-2 text-sm">
+              Reward VS Frequency
+            </label>
+          </div>
+        </li>
+        <li>
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="actionFrequency"
+              class="checkbox"
+              x-model="visOptions"
+              value="actionFrequency"
+            >
+            <label for="actionFrequency" class="ms-2 text-sm">
+              Action VS Frequency
+            </label>
+          </div>
+        </li>
+        <li>
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="rewardsOverTime"
+              class="checkbox"
+              x-model="visOptions"
+              value="rewardsOverTime"
+            >
+            <label for="rewardsOverTime" class="ms-2 text-sm">
+              Rewards Over Time
+            </label>
+          </div>
+        </li>
+        <li>
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="episodeDetails"
+              class="checkbox"
+              x-model="visOptions"
+              value="episodeDetails"
+            >
+            <label for="episodeDetails" class="ms-2 text-sm">
+              Episode Details
+            </label>
+          </div>
+        </li>
+        <li>
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="obsClustering"
+              class="checkbox"
+              x-model="visOptions"
+              value="obsClustering"
+            >
+            <label for="obsClustering" class="ms-2 text-sm">
+              Observation Clustering
+            </label>
+          </div>
+        </li>
+        <hr/>
+        <li>
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="plotLegends"
+              class="checkbox"
+              x-model="visOptions"
+              value="plotLegends"
+            >
+            <label for="plotLegends" class="ms-2 text-sm">
+              Show Legends
+            </label>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
