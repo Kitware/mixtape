@@ -3,13 +3,18 @@ services:
     build:
       context: .
       dockerfile: ./dev/django.Dockerfile
-    command: ["./manage.py", "runserver", "0.0.0.0:8000"]
-    # Log printing via Rich is enhanced by a TTY
+    command: [
+      "./manage.py",
+      "runserver", "0.0.0.0:8000"
+    ]
     tty: true
-    env_file: ./dev/.env.docker-compose
+    environment:
+      UV_ENV_FILE: ./dev/.env.docker-compose
+    working_dir: /opt/django-project
     platform: linux/amd64
     volumes:
       - .:/opt/django-project
+      - uv_cache:/var/cache/uv
     ports:
       - 8000:8000
     depends_on:
@@ -25,6 +30,7 @@ services:
       context: .
       dockerfile: ./dev/django.Dockerfile
     command: [
+      "uv", "run",
       "celery",
       "--app", "mixtape.celery",
       "worker",
@@ -33,10 +39,13 @@ services:
     ]
     # Docker Compose does not set the TTY width, which causes Celery errors
     tty: false
-    env_file: ./dev/.env.docker-compose
+    environment:
+      UV_ENV_FILE: ./dev/.env.docker-compose
+    working_dir: /opt/django-project
     platform: linux/amd64
     volumes:
       - .:/opt/django-project
+      - uv_cache:/var/cache/uv
     depends_on:
       postgres:
         condition: service_healthy
@@ -44,3 +53,6 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+
+volumes:
+  uv_cache:
