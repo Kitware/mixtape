@@ -16,6 +16,9 @@ resolution-markers = [
     "python_full_version < '3.12' and sys_platform == 'emscripten'",
 ]
 
+[manifest]
+constraints = [{ name = "numba", specifier = ">=0.61.0" }]
+
 [[package]]
 name = "absl-py"
 version = "2.3.0"

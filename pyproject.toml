@@ -106,6 +106,13 @@ packages = [
   "mixtape",
 ]
 
+[tool.uv]
+constraint-dependencies = [
+  # Earlier versions of "numba" (required by "umap-learn") didn't specify an upper bound for
+  # its compatability with "numpy", which led to incorrect versions of "numpy" and "umap-learn".
+  "numba >= 0.61.0",
+]
+
 [tool.black]
 line-length = 100
 skip-string-normalization = true
