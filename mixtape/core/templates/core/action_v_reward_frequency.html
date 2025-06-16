@@ -7,24 +7,21 @@
       autosize: true,
       barmode: 'stack',
       showlegend: visOptions.includes('plotLegends'),
-      paper_bgcolor: $store.theme.darkMode ? '#111827' : '#F1F2F6',
-      plot_bgcolor: $store.theme.darkMode ? '#111827' : '#F1F2F6',
-      font: {
-        color: $store.theme.darkMode ? '#D1D5DB' : '#000000'
-      },
+      paper_bgcolor: $store.theme.paper_bgcolor,
+      plot_bgcolor: $store.theme.plot_bgcolor,
+      font: $store.theme.font,
       xaxis: {
-        gridcolor: $store.theme.darkMode ? '#4a5565' : '#d1d5dc',
-        zerolinecolor: $store.theme.darkMode ? '#F1F2F6' : '#111827'
+        gridcolor: $store.theme.axis.gridcolor,
+        zerolinecolor: $store.theme.axis.zerolinecolor
       },
       yaxis: {
-        gridcolor: $store.theme.darkMode ? '#4a5565' : '#d1d5dc',
-        zerolinecolor: $store.theme.darkMode ? '#F1F2F6' : '#111827'
+        gridcolor: $store.theme.axis.gridcolor,
+        zerolinecolor: $store.theme.axis.zerolinecolor
       },
     },
     config: {
       displayModeBar: false,
-      responsive: true,
-      template: $store.theme.darkMode ? 'plotly_dark' : 'plotly'
+      responsive: true
     },
     plot: null,
   }"
