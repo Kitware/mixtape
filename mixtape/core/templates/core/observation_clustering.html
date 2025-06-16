@@ -53,7 +53,17 @@
         opacity: Array(plotData.clustering.all_manifolds_x.length).fill(1)
       }
     })
-    plot = Plotly.newPlot($refs.allManifolds, data, layout, {displayModeBar: false})"
+    plot = Plotly.newPlot($refs.allManifolds, data, layout, {displayModeBar: false});
+    $watch('visOptions', () => {
+      $nextTick(() => {
+        Plotly.relayout(
+          $refs.allManifolds,
+          {
+            autosize: true,
+            showlegend: visOptions.includes('plotLegends')
+          })
+      });
+    });"
   x-effect="
     if (plot) {
       const numAgents = plotData.unique_agents.length;

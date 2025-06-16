@@ -34,7 +34,16 @@
         },
       }
     ];
-    plot = Plotly.newPlot($refs.allManifolds, data, layout, {displayModeBar: false})"
+    plot = Plotly.newPlot($refs.allManifolds, data, layout, {displayModeBar: false});
+    $watch('visOptions', () => {
+      $nextTick(() => {
+        Plotly.relayout(
+          $refs.allManifolds, {
+            autosize: true,
+            showlegend: visOptions.includes('plotLegends')
+          })
+      });
+    });"
   x-effect="
     if (plot) {
       // Use the heatmap data dimensions directly

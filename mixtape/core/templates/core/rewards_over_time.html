@@ -58,7 +58,12 @@
     plot = Plotly.react($refs.rewardsOverTime, data, layout, config);
     $watch('visOptions', () => {
       $nextTick(() => {
-        Plotly.relayout($refs.rewardsOverTime, {autosize: true, showlegend: visOptions.includes('plotLegends')})
+        Plotly.relayout(
+          $refs.rewardsOverTime,
+          {
+            autosize: true,
+            showlegend: visOptions.includes('plotLegends')
+          })
       });
     });"
   x-effect="

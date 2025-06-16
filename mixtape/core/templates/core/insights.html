@@ -14,7 +14,15 @@
   playing: false,
   maxSteps: {{ steps|length|add:'-1' }},
   showVisMenu: false,
-  visOptions: ['actionRewardFrequency', 'rewardFrequency', 'actionFrequency', 'rewardsOverTime', 'episodeDetails', 'placeholder', 'plotLegends'],
+  visOptions: [
+    'actionRewardFrequency',
+    'rewardFrequency',
+    'actionFrequency',
+    'rewardsOverTime',
+    'episodeDetails',
+    'obsClustering',
+    'plotLegends'
+  ],
   stepForward() {
     if (!this.playing) return;
     if (this.currentStep < this.maxSteps) {
@@ -73,7 +81,7 @@ class="flex flex-col"
       </div>
       {% include "core/timeline.html" %}
     </div>
-    <div x-show="visOptions.includes('placeholder')" class="flex-1 min-w-[100%] xl:min-w-[50%] m-1 content-center">
+    <div x-show="visOptions.includes('obsClustering')" class="flex-1 min-w-[100%] xl:min-w-[50%] m-1 content-center">
       <div class="col-span-12 content-center">
         {% include "core/observation_clustering.html" %}
       </div>

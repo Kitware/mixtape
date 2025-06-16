@@ -38,7 +38,12 @@
     plot = Plotly.react($refs.actionsFrequency, data, layout, config);
     $watch('visOptions', () => {
       $nextTick(() => {
-        Plotly.relayout($refs.actionsFrequency, {autosize: true, showlegend: visOptions.includes('plotLegends')})
+        Plotly.relayout(
+          $refs.actionsFrequency,
+          {
+            autosize: true,
+            showlegend: visOptions.includes('plotLegends')
+          })
       });
     });"
 >

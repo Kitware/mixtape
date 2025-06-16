@@ -31,7 +31,12 @@ x-init="
   plot = Plotly.react($refs.rewardsFrequency, data, layout, config);
   $watch('visOptions', () => {
     $nextTick(() => {
-      Plotly.relayout($refs.rewardsFrequency, {autosize: true, showlegend: visOptions.includes('plotLegends')})
+      Plotly.relayout(
+        $refs.rewardsFrequency,
+        {
+          autosize: true,
+          showlegend: visOptions.includes('plotLegends')
+        })
     });
   });"
 >
