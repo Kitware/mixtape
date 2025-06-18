@@ -53,7 +53,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = [
+development = [
   # Runtime dependendencies, only needed with "development" settings
   "django-browser-reload",
   "django-debug-toolbar",
@@ -67,8 +67,9 @@ dev = [
 [dependency-groups]
 dev = [
   # Additional developer tools
-  # The "dev" dependency group is installed by default, so use this to install "dev" extras too
-  "mixtape[dev]",
+  # The "dev" dependency group is installed by default,
+  # so use this to install "development" extras by default too
+  "mixtape[development]",
   "tox",
   "tox-uv",
 ]
