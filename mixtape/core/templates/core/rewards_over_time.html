@@ -33,27 +33,32 @@
     plot: null,
   }"
   x-init="
-    data = [
-      {
-        x: rewardsOverTime[0].length,
-        y: rewardsOverTime[0],
+    rewardsOverTime.forEach((episode, idx) => {
+      data.push({
+        x: episode.length,
+        y: episode,
         type: 'scatter',
-        name: 'Episode'
+        name: `Episode ${episodeIds[idx]}`,
+        marker: {
+          line: {
+            width: 2
+          }
+        }
+      });
+    });
+    data.push({
+      x: [{{ currentStep }}, {{ currentStep }}],
+      y: [0, Math.max(...rewardsOverTime.flat())],
+      type: 'scatter',
+      mode: 'lines',
+      line: {
+        color: 'red',
+        width: 2,
+        dash: 'dash'
       },
-      {
-        x: [{{ currentStep }}, {{ currentStep }}],
-        y: [0, Math.max(...rewardsOverTime[0])],
-        type: 'scatter',
-        mode: 'lines',
-        line: {
-          color: 'red',
-          width: 2,
-          dash: 'dash'
-        },
-        name: 'Current Step'
-      },
-    ];
-    plot = Plotly.react($refs.rewardsOverTime, data, layout, config);
+      name: 'Current Step'
+    });
+    plot = Plotly.newPlot($refs.rewardsOverTime, data, layout, {displayModeBar: false});
     $watch('visOptions', () => {
       $nextTick(() => {
         Plotly.relayout(
@@ -65,20 +70,20 @@
       });
     });"
   x-effect="
-  if (plot) {
-    Plotly.update($refs.rewardsOverTime, {
-      x: [[currentStep, currentStep]],
-      y: [[Math.min(...rewardsOverTime[0]), Math.max(...rewardsOverTime[0])]]
-    }, {
-      annotations: [
-        {
-          x: currentStep,
-          y: rewardsOverTime[0][currentStep],
-          text: rewardsOverTime[0][currentStep].toFixed(2),
-        }
-      ],
-    }, [1]);
-  }"
+    if (plot) {
+      Plotly.update($refs.rewardsOverTime, {
+        x: [[currentStep, currentStep]],
+        y: [[Math.min(...rewardsOverTime.flat()), Math.max(...rewardsOverTime.flat())]]
+      }, {
+        annotations: rewardsOverTime.map((episode, idx) => {
+          return {
+            x: currentStep,
+            y: episode[currentStep],
+            text: episode[currentStep].toFixed(2),
+          }
+        })
+      }, [rewardsOverTime.length]);
+    }"
 >
   <div x-ref="rewardsOverTime"></div>
 </div>
