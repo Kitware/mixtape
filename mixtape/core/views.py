@@ -3,7 +3,7 @@ from itertools import accumulate
 from typing import Any
 
 from django.db.models import Subquery, Sum
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, Http404
 from django.shortcuts import get_object_or_404, render
 import einops
 import numpy as np
@@ -129,25 +129,13 @@ def cluster_episode(
     )
 
 
-def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
+def _episode_insights(episode_pk: int) -> HttpResponse:
     # Prefetch all related data in a single query
     episode = get_object_or_404(
         Episode.objects.select_related('inference__checkpoint__training').prefetch_related(
             'steps', 'steps__agent_steps'
         ),
         pk=episode_pk,
-    )
-
-    # Run clustering task for this episode
-    episode_clusters, episode_manifolds, all_clusters, all_manifolds = cluster_episode(
-        episode_pk,
-        umap_n_neighbors=30,
-        umap_min_dist=0.5,
-        umap_n_components=20,
-        pca_n_components=2,
-        kmeans_n_clusters=10,
-        feature_name='obs',
-        feature_dimensions='episode time agent',
     )
 
     # Prepare step data
@@ -168,40 +156,28 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
 
     # Prepare plot data
     env_name = episode.inference.checkpoint.training.environment
-    plot_data: dict[str, Any] = {
-        # dict mapping agent (str) to action (str) to total reward (float)
-        'action_v_reward': defaultdict(lambda: defaultdict(float)),
-        # all reward values received over the episode (list of floats)
-        'reward_histogram': [
-            a.reward for step in episode.steps.all() for a in step.agent_steps.all()
-        ],
-        # dict mapping agent (str) to action (str) to frequency of action (int)
-        'action_v_frequency': defaultdict(lambda: defaultdict(int)),
-        # clustering results
-        'clustering': {
-            'all_manifolds_x': all_manifolds[:, 0].tolist(),
-            'all_manifolds_y': all_manifolds[:, 1].tolist(),
-            'all_clusters': all_clusters.tolist(),
-            'episode_manifolds': episode_manifolds.tolist(),
-            'episode_clusters': episode_clusters[0].T.tolist(),
-        },
-    }
+    reward_histogram = [
+        a.reward for step in episode.steps.all() for a in step.agent_steps.all()
+    ]
 
+    action_v_reward = defaultdict(lambda: defaultdict(float))
+    action_v_frequency = defaultdict(lambda: defaultdict(int))
     action_map = get_environment_mapping(env_name)
     for step in episode.steps.all():
         for agent_step in step.agent_steps.all():
             action = action_map.get(f'{int(agent_step.action)}', f'{agent_step.action}')
-            plot_data['action_v_reward'][agent_step.agent][action] += agent_step.reward
-            plot_data['action_v_frequency'][agent_step.agent][action] += 1
-    plot_data['unique_agents'] = list(plot_data['action_v_reward'].keys())
+            action_v_reward[agent_step.agent][action] += agent_step.reward
+            action_v_frequency[agent_step.agent][action] += 1
+    unique_agents = list(action_v_reward.keys())
 
+    # Used to populate the timeline
     key_steps = (
         episode.steps.all()
         .annotate(total_rewards=Sum('agent_steps__reward', default=0))
         .order_by('number')
     )
     # list of cumulative rewards over time
-    plot_data['rewards_over_time'] = list(accumulate(ks.total_rewards for ks in key_steps))
+    rewards_over_time = list(accumulate(ks.total_rewards for ks in key_steps))
     # TODO: Revist this. This exists more as a placeholder, timeline
     #       should represent points of interest with more meaning.
     # Get top 40 steps by total rewards, ordered by step number
@@ -211,16 +187,69 @@ def insights(request: HttpRequest, episode_pk: int) -> HttpResponse:
         )
     ).order_by('number')
 
+    return {
+        'episode_details': episode,
+        'action_v_reward': action_v_reward,
+        'reward_histogram': reward_histogram,
+        'action_v_frequency': action_v_frequency,
+        'timeline_key_steps': timeline_steps,
+        'rewards_over_time': rewards_over_time,
+        'step_data': step_data,
+        'unique_agents': unique_agents,
+    }
+
+
+def insights(request: HttpRequest) -> HttpResponse:
+    # Get episode IDs from query parameters
+    episode_ids = request.GET.getlist('episode_id')
+    if not episode_ids:
+        raise Http404("No episode IDs provided")
+    try:
+        episode_pks = [int(episode_id) for episode_id in episode_ids]
+    except ValueError:
+        raise Http404("Invalid episode ID format")
+
+    # Process each episode and combine the data
+    all_episode_details = []
+    all_action_v_reward = []
+    all_reward_histogram = []
+    all_action_v_frequency = []
+    all_rewards_over_time = []
+    all_step_data = []
+    all_timeline_steps = []
+
+    for episode_pk in episode_pks:
+        insight_results = _episode_insights(episode_pk)
+        all_episode_details.append(insight_results['episode_details'])
+        all_action_v_reward.append(insight_results['action_v_reward'])
+        all_reward_histogram.append(insight_results['reward_histogram'])
+        all_action_v_frequency.append(insight_results['action_v_frequency'])
+        all_rewards_over_time.append(insight_results['rewards_over_time'])
+        all_step_data.append(insight_results['step_data'])
+        all_timeline_steps.append(insight_results['timeline_key_steps'])
+
+    # Get unique agents across all episodes
+    unique_agents = insight_results['unique_agents']
+
+    data = {
+        'all_episode_details': all_episode_details,
+        'timeline_key_steps': all_timeline_steps,
+        'parsed_data': {
+            'action_v_reward': all_action_v_reward,
+            'reward_histogram': all_reward_histogram,
+            'action_v_frequency': all_action_v_frequency,
+            'rewards_over_time': all_rewards_over_time,
+            'unique_agents': unique_agents,
+            'episode_ids': episode_pks,
+            'max_steps': max(len(step_data) for step_data in all_step_data),
+            'step_data': all_step_data,
+        },
+    }
+
     return render(
         request,
         'core/insights.html',
-        {
-            'episode': episode,
-            'steps': episode.steps.all(),
-            'plot_data': plot_data,
-            'timeline_steps': timeline_steps,
-            'step_data': step_data,
-        },
+        data,
     )
 
 

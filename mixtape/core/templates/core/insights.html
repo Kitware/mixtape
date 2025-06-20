@@ -4,38 +4,59 @@
 
 {% block content %}
 
-{{ plot_data|json_script:"plot_data_json" }}
-{{ step_data|json_script:"step_data_json" }}
+{{ parsed_data|json_script:"parsed_data_json" }}
 
-<div x-data="{
-  plotData: JSON.parse(document.getElementById('plot_data_json').textContent),
-  stepData: JSON.parse(document.getElementById('step_data_json').textContent),
-  currentStep: 0,
-  playing: false,
-  maxSteps: {{ steps|length|add:'-1' }},
-  showVisMenu: false,
-  visOptions: [
-    'actionRewardFrequency',
-    'rewardFrequency',
-    'actionFrequency',
-    'rewardsOverTime',
-    'episodeDetails',
-    'obsClustering',
-    'plotLegends'
-  ],
-  stepForward() {
-    if (!this.playing) return;
-    if (this.currentStep < this.maxSteps) {
-      setTimeout(() => {
-        this.currentStep++;
-        this.stepForward()
-      }, 100);
-    } else {
-      this.playing = false;
-      this.currentStep = 0;
+<div x-data="(() => {
+  const data = JSON.parse(document.getElementById('parsed_data_json').textContent);
+  const {
+    step_data,
+    action_v_reward,
+    reward_histogram,
+    action_v_frequency,
+    rewards_over_time,
+    unique_agents,
+    episode_ids,
+    max_steps,
+    timeline_key_steps,
+  } = data;
+
+  return {
+    parsedData: data,
+    actionVReward: action_v_reward,
+    rewardHistogram: reward_histogram,
+    actionVFrequency: action_v_frequency,
+    rewardsOverTime: rewards_over_time,
+    uniqueAgents: unique_agents,
+    episodeIds: episode_ids,
+    stepData: step_data,
+    timelineKeySteps: timeline_key_steps,
+    currentStep: 0,
+    playing: false,
+    maxSteps: max_steps,
+    showVisMenu: false,
+    visOptions: [
+      'actionRewardFrequency',
+      'rewardFrequency',
+      'actionFrequency',
+      'rewardsOverTime',
+      'episodeDetails',
+      'obsClustering',
+      'plotLegends'
+    ],
+    stepForward() {
+      if (!this.playing) return;
+      if (this.currentStep < this.maxSteps) {
+        setTimeout(() => {
+          this.currentStep++;
+          this.stepForward()
+        }, 100);
+      } else {
+        this.playing = false;
+        this.currentStep = 0;
+      }
     }
-  }
-}"
+  };
+})()"
 class="flex flex-col"
 >
   {% include "core/nav_bar.html" %}
@@ -44,25 +65,25 @@ class="flex flex-col"
       class="flex-1 min-w-[100%] md:min-w-[50%] xl:min-w-[25%] h-fit"
       x-show="visOptions.includes('actionRewardFrequency')"
     >
-      {% include "core/action_v_reward_frequency.html" with plot_data=plot_data %}
+      {% include "core/action_v_reward_frequency.html" %}
     </div>
     <div
       class="flex-1 min-w-[100%] md:min-w-[50%] xl:min-w-[25%] h-fit"
       x-show="visOptions.includes('rewardFrequency')"
     >
-      {% include "core/reward_v_frequency.html" with plot_data=plot_data %}
+      {% include "core/reward_v_frequency.html" %}
     </div>
     <div
       class="flex-1 min-w-[100%] md:min-w-[50%] xl:min-w-[25%] h-fit"
       x-show="visOptions.includes('actionFrequency')"
     >
-      {% include "core/action_v_frequency.html" with plot_data=plot_data %}
+      {% include "core/action_v_frequency.html" %}
     </div>
     <div
       class="flex-1 min-w-[100%] md:min-w-[50%] xl:min-w-[25%] h-fit"
       x-show="visOptions.includes('rewardsOverTime')"
     >
-      {% include "core/rewards_over_time.html" with plot_data=plot_data %}
+      {% include "core/rewards_over_time.html" %}
     </div>
   </div>
   <div class="flex h-[50vh] overflow-hidden">

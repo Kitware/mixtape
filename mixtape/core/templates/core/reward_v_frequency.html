@@ -25,8 +25,8 @@
   plot: null,
 }"
 x-init="
-  data = [{x: plotData.reward_histogram, type: 'histogram', name: 'Episode'}];
-  plot = Plotly.react($refs.rewardsFrequency, data, layout, config);
+  data = [{x: rewardHistogram[0], type: 'histogram', name: 'Episode'}];
+  plot = Plotly.newPlot($refs.rewardsFrequency, data, layout, {displayModeBar: false});
   $watch('visOptions', () => {
     $nextTick(() => {
       Plotly.relayout(

@@ -13,8 +13,8 @@
       annotations: [
         {
           x: currentStep,
-          y: plotData.rewards_over_time[currentStep],
-          text: plotData.rewards_over_time[currentStep].toFixed(2),
+          y: rewardsOverTime[0][currentStep],
+          text: rewardsOverTime[0][currentStep].toFixed(2),
         }
       ],
       xaxis: {
@@ -35,14 +35,14 @@
   x-init="
     data = [
       {
-        x: plotData.rewards_over_time.length,
-        y: plotData.rewards_over_time,
+        x: rewardsOverTime[0].length,
+        y: rewardsOverTime[0],
         type: 'scatter',
         name: 'Episode'
       },
       {
         x: [{{ currentStep }}, {{ currentStep }}],
-        y: [0, Math.max(...plotData.rewards_over_time)],
+        y: [0, Math.max(...rewardsOverTime[0])],
         type: 'scatter',
         mode: 'lines',
         line: {
@@ -65,20 +65,20 @@
       });
     });"
   x-effect="
-    if (plot) {
-      Plotly.update($refs.rewardsOverTime, {
-        x: [[currentStep, currentStep]],
-        y: [[Math.min(...plotData.rewards_over_time), Math.max(...plotData.rewards_over_time)]]
-      }, {
-        annotations: [
-          {
-            x: currentStep,
-            y: plotData.rewards_over_time[currentStep],
-            text: plotData.rewards_over_time[currentStep].toFixed(2),
-          }
-        ],
-      }, [1]);
-    }"
+  if (plot) {
+    Plotly.update($refs.rewardsOverTime, {
+      x: [[currentStep, currentStep]],
+      y: [[Math.min(...rewardsOverTime[0]), Math.max(...rewardsOverTime[0])]]
+    }, {
+      annotations: [
+        {
+          x: currentStep,
+          y: rewardsOverTime[0][currentStep],
+          text: rewardsOverTime[0][currentStep].toFixed(2),
+        }
+      ],
+    }, [1]);
+  }"
 >
   <div x-ref="rewardsOverTime"></div>
 </div>
