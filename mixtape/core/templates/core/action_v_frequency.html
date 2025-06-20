@@ -3,7 +3,7 @@
     layout: {
       title: {text: 'Actions VS Frequency'},
       autosize: true,
-      barmode: actionVFrequency.length > 1 ? 'group' : 'stack',
+      barmode: Object.keys(actionVFrequency).length > 1 ? 'group' : 'stack',
       showlegend: visOptions.includes('plotLegends'),
       paper_bgcolor: $store.theme.paper_bgcolor,
       plot_bgcolor: $store.theme.plot_bgcolor,
@@ -22,7 +22,7 @@
       responsive: true
     },
     plot: null,
-    actionVFrequency: actionVFrequency[0]
+    actionVFrequency: Object.keys(actionVFrequency).length > 1 ? actionVFrequency : Object.values(actionVFrequency)[0]
   }"
   x-init="
     Object.entries(actionVFrequency).forEach(([grouping, values]) => {

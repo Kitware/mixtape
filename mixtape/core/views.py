@@ -129,7 +129,7 @@ def cluster_episode(
     )
 
 
-def _episode_insights(episode_pk: int) -> HttpResponse:
+def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> HttpResponse:
     # Prefetch all related data in a single query
     episode = get_object_or_404(
         Episode.objects.select_related('inference__checkpoint__training').prefetch_related(
@@ -160,14 +160,21 @@ def _episode_insights(episode_pk: int) -> HttpResponse:
         a.reward for step in episode.steps.all() for a in step.agent_steps.all()
     ]
 
-    action_v_reward = defaultdict(lambda: defaultdict(float))
-    action_v_frequency = defaultdict(lambda: defaultdict(int))
     action_map = get_environment_mapping(env_name)
+    action_v_reward = defaultdict(float if group_by_episode else lambda: defaultdict(float))
+    action_v_frequency = defaultdict(int if group_by_episode else lambda: defaultdict(int))
+
     for step in episode.steps.all():
         for agent_step in step.agent_steps.all():
             action = action_map.get(f'{int(agent_step.action)}', f'{agent_step.action}')
-            action_v_reward[agent_step.agent][action] += agent_step.reward
-            action_v_frequency[agent_step.agent][action] += 1
+            key = action if group_by_episode else agent_step.agent
+            if group_by_episode:
+                action_v_reward[action] += agent_step.reward
+                action_v_frequency[action] += 1
+            else:
+                action_v_reward[key][action] += agent_step.reward
+                action_v_frequency[key][action] += 1
+
     unique_agents = list(action_v_reward.keys())
 
     # Used to populate the timeline
@@ -211,19 +218,20 @@ def insights(request: HttpRequest) -> HttpResponse:
 
     # Process each episode and combine the data
     all_episode_details = []
-    all_action_v_reward = []
+    all_action_v_reward = defaultdict(lambda: defaultdict(float))
     all_reward_histogram = []
-    all_action_v_frequency = []
+    all_action_v_frequency = defaultdict(lambda: defaultdict(int))
     all_rewards_over_time = []
     all_step_data = []
     all_timeline_steps = []
 
+    group_by_episode = len(episode_ids) > 1
     for episode_pk in episode_pks:
-        insight_results = _episode_insights(episode_pk)
+        insight_results = _episode_insights(episode_pk, group_by_episode)
         all_episode_details.append(insight_results['episode_details'])
-        all_action_v_reward.append(insight_results['action_v_reward'])
+        all_action_v_reward[f'Episode {episode_pk}'] = insight_results['action_v_reward']
         all_reward_histogram.append(insight_results['reward_histogram'])
-        all_action_v_frequency.append(insight_results['action_v_frequency'])
+        all_action_v_frequency[f'Episode {episode_pk}'] = insight_results['action_v_frequency']
         all_rewards_over_time.append(insight_results['rewards_over_time'])
         all_step_data.append(insight_results['step_data'])
         all_timeline_steps.append(insight_results['timeline_key_steps'])

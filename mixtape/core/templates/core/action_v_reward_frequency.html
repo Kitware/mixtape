@@ -5,7 +5,7 @@
       xaxis: {title: {text: 'Action'}},
       yaxis: {title: {text: 'Reward Frequency'}},
       autosize: true,
-      barmode: actionVReward.length > 1 ? 'group' : 'stack',
+      barmode: Object.keys(actionVReward).length > 1 ? 'group' : 'stack',
       showlegend: visOptions.includes('plotLegends'),
       paper_bgcolor: $store.theme.paper_bgcolor,
       plot_bgcolor: $store.theme.plot_bgcolor,
@@ -24,7 +24,7 @@
       responsive: true
     },
     plot: null,
-    actionVReward: actionVReward[0],
+    actionVReward: Object.keys(actionVReward).length > 1 ? actionVReward : Object.values(actionVReward)[0],
   }"
   x-init="
     data = Object.entries(actionVReward).map(([grouping, values]) => ({
