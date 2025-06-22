@@ -193,13 +193,19 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> HttpRe
             key_steps.filter(total_rewards__gt=0).order_by('-total_rewards').values('id')[:40]
         )
     ).order_by('number')
+    timeline_steps_serialized = [{
+            'number': step.number,
+            'total_rewards': step.total_rewards,
+        }
+        for step in timeline_steps
+    ]
 
     return {
         'episode_details': episode,
         'action_v_reward': action_v_reward,
         'reward_histogram': reward_histogram,
         'action_v_frequency': action_v_frequency,
-        'timeline_key_steps': timeline_steps,
+        'timeline_key_steps': timeline_steps_serialized,
         'rewards_over_time': rewards_over_time,
         'step_data': step_data,
         'unique_agents': unique_agents,
@@ -241,7 +247,6 @@ def insights(request: HttpRequest) -> HttpResponse:
 
     data = {
         'all_episode_details': all_episode_details,
-        'timeline_key_steps': all_timeline_steps,
         'parsed_data': {
             'action_v_reward': all_action_v_reward,
             'reward_histogram': all_reward_histogram,
@@ -251,6 +256,7 @@ def insights(request: HttpRequest) -> HttpResponse:
             'episode_ids': episode_pks,
             'max_steps': max(len(step_data) for step_data in all_step_data),
             'step_data': all_step_data,
+            'timeline_key_steps': all_timeline_steps,
         },
     }
 

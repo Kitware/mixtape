@@ -44,12 +44,12 @@ def run_inference_task(inference_pk: int):
                     observation, _ = (
                         env.reset()
                     )  # `reset` returns observation for single agent in Gym envs
+                    reward = 0.0
 
                     for step in itertools.count(start=0):
                         observation = np.transpose(observation, (1, 2, 0))
-                        action = algorithm.compute_single_action(observation)
-                        # Step the environment forward with the computed actions
-                        observation, reward, terminated, truncated, info = env.step(action)
+                        action, state, extras = algorithm.compute_single_action(
+                            observation, full_fetch=True)
 
                         rgb_image_array = cast(np.ndarray, env.render())
                         with Step.rgb_array_to_file(
@@ -67,20 +67,23 @@ def run_inference_task(inference_pk: int):
                             observation_space=observation,
                         )
 
+                        # Step the environment forward with the computed actions
+                        observation, reward, terminated, truncated, info = env.step(action)
+
                         if terminated or truncated:
                             break
                 elif isinstance(env, ParallelEnv):
                     # `reset` returns observations for all agents in parallel envs
                     observations, _ = env.reset()
+                    rewards = {agent: 0.0 for agent in env.agents}
 
                     # Loop until all agents are done (terminated or truncated)
                     for step in itertools.count(start=0):
-                        actions = {
-                            agent: algorithm.compute_single_action(obs)
-                            for agent, obs in observations.items()
-                        }
-                        # Step the environment forward with the computed actions
-                        observations, rewards, terminations, truncations, infos = env.step(actions)
+                        actions = {}
+                        for agent, obs in observations.items():
+                            action, state, extras = algorithm.compute_single_action(
+                                obs, full_fetch=True)
+                            actions[agent] = action
                         rgb_image_array = env.render()
                         assert isinstance(rgb_image_array, np.ndarray)
                         with Step.rgb_array_to_file(
@@ -97,22 +100,24 @@ def run_inference_task(inference_pk: int):
                                 reward=rewards[agent],
                                 observation_space=observations[agent],
                             )
+
+                        # Step the environment forward with the computed actions
+                        observations, rewards, terminations, truncations, infos = env.step(actions)
+
                         if all([terminations[agent] or truncations[agent] for agent in env.agents]):
                             break
                 elif isinstance(env, AECEnv):
                     # AEC environment (agent-iterating environment)
                     env.reset()
+                    reward = 0.0
 
                     # Loop over agents in the environment using the agent iterator
                     for step, agent in enumerate(env.agent_iter()):
                         observation, reward, termination, truncation, info = env.last()
-                        action = (
-                            # No action needed if the agent is done
-                            None
-                            if termination or truncation
-                            else algorithm.compute_single_action(observation)
-                        )
-                        env.step(action)  # Step the environment forward with the action
+                        action, state, extras = algorithm.compute_single_action(
+                            observation, full_fetch=True)
+                        # No action needed if the agent is done
+                        action = None if termination or truncation else action
                         rgb_image_array = env.render()
                         assert isinstance(rgb_image_array, np.ndarray)
                         with Step.rgb_array_to_file(
@@ -129,3 +134,5 @@ def run_inference_task(inference_pk: int):
                                 reward=reward,
                                 observation_space=observation,
                             )
+
+                        env.step(action)  # Step the environment forward with the action

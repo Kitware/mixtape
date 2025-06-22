@@ -31,6 +31,12 @@
       responsive: true
     },
     plot: null,
+    getStep(episode) {
+      if (this.currentStep < Object.keys(episode).length) {
+        return this.currentStep;
+      }
+      return Object.keys(episode).length - 1;
+    },
   }"
   x-init="
     rewardsOverTime.forEach((episode, idx) => {
@@ -77,9 +83,9 @@
       }, {
         annotations: rewardsOverTime.map((episode, idx) => {
           return {
-            x: currentStep,
-            y: episode[currentStep],
-            text: episode[currentStep].toFixed(2),
+            x: getStep(episode),
+            y: episode[getStep(episode)],
+            text: episode[getStep(episode)].toFixed(2),
           }
         })
       }, [rewardsOverTime.length]);

@@ -32,7 +32,7 @@
     timelineKeySteps: timeline_key_steps,
     currentStep: 0,
     playing: false,
-    maxSteps: max_steps,
+    maxSteps: max_steps - 1,
     showVisMenu: false,
     visOptions: [
       'actionRewardFrequency',
@@ -43,6 +43,12 @@
       'obsClustering',
       'plotLegends'
     ],
+    getStep(step) {
+      if (this.currentStep < Object.keys(step).length) {
+        return step[Math.max(0, this.currentStep - 1)];
+      }
+      return step[Object.keys(step).length - 1];
+    },
     stepForward() {
       if (!this.playing) return;
       if (this.currentStep < this.maxSteps) {
@@ -86,21 +92,14 @@ class="flex flex-col"
       {% include "core/rewards_over_time.html" %}
     </div>
   </div>
-  <div class="flex h-[50vh] overflow-hidden">
-    <div x-show="visOptions.includes('episodeDetails')" class="flex-1 min-w-[100%] xl:min-w-[50%] flex flex-col">
-      <div id="foo" class="card raised flex flex-col h-full overflow-hidden">
-        <h1 class="text-xl font-bold text-center flex-none">Step <span x-text="currentStep"></span> of <span x-text="maxSteps"></span></h1>
-        <div id="bar" class="grid grid-cols-12 flex-1 min-h-0 overflow-auto">
-          <div class="col-span-9 flex flex-col p-2 min-h-0">
-            <div class="flex-1 min-h-0 flex items-center justify-center">
-              <img x-show="stepData[currentStep].image_url" class="max-h-full max-w-full object-contain" :src="stepData[currentStep].image_url" alt="Step Image">
-            </div>
-            {% include "core/replay_controls.html" %}
-          </div>
-          {% include "core/replay_details.html" %}
-        </div>
+  <!-- <div class="flex h-[45vh] overflow-hidden">
+    <div x-show="visOptions.includes('obsClustering')" class="flex-1 min-w-[100%] xl:min-w-[50%] m-1 content-center h-fit">
+      <div class="col-span-12 content-center">
+        {% include "core/observation_clustering.html" %}
       </div>
-      {% include "core/timeline.html" %}
+      <div class="col-span-12 content-center mr-4">
+        {% include "core/observation_clustering_timeline.html" %}
+      </div>
     </div>
     <div x-show="visOptions.includes('obsClustering')" class="flex-1 min-w-[100%] xl:min-w-[50%] m-1 content-center">
       <div class="col-span-12 content-center">
@@ -108,6 +107,30 @@ class="flex flex-col"
       </div>
       <div class="col-span-12 content-center mr-4">
         {% include "core/observation_clustering_timeline.html" %}
+      </div>
+    </div>
+  </div> -->
+  <div>
+    <div x-show="visOptions.includes('episodeDetails')" class="flex-1 min-w-[100%] xl:min-w-[50%] flex flex-col">
+      {% include "core/replay_controls.html" %}
+      <div class="card raised flex flex-col h-full overflow-hidden">
+        <h1 class="text-xl font-bold text-center flex-none">Step <span x-text="currentStep"></span> of <span x-text="maxSteps"></span></h1>
+        <div class="grid gap-4 grid-cols-1 md:grid-cols-2">
+          <template x-for="(step, index) in stepData">
+            <div class="min-h-0 overflow-auto">
+              <div class="flex p-2 min-h-0 col-span-12">
+                <div class="flex-1 min-h-0 flex items-center justify-center relative">
+                  <img x-show="getStep(step).image_url" class="m-auto h-full" :src="getStep(step).image_url" alt="Step Image">
+                  <div class="absolute bottom-0 left-0 right-0 text-center">
+                    Episode <span x-text="episodeIds[index]"></span>: Step <span x-text="currentStep < Object.keys(step).length ? currentStep : Object.keys(step).length - 1"></span>
+                  </div>
+                </div>
+                {% include "core/replay_details.html" %}
+              </div>
+              {% include "core/timeline.html" %}
+            </div>
+          </template>
+        </div>
       </div>
     </div>
   </div>
