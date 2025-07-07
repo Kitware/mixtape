@@ -49,7 +49,8 @@ def run_inference_task(inference_pk: int):
                     for step in itertools.count(start=0):
                         observation = np.transpose(observation, (1, 2, 0))
                         action, state, extras = algorithm.compute_single_action(
-                            observation, full_fetch=True)
+                            observation, full_fetch=True
+                        )
 
                         rgb_image_array = cast(np.ndarray, env.render())
                         with Step.rgb_array_to_file(
@@ -82,7 +83,8 @@ def run_inference_task(inference_pk: int):
                         actions = {}
                         for agent, obs in observations.items():
                             action, state, extras = algorithm.compute_single_action(
-                                obs, full_fetch=True)
+                                obs, full_fetch=True
+                            )
                             actions[agent] = action
                         rgb_image_array = env.render()
                         assert isinstance(rgb_image_array, np.ndarray)
@@ -115,7 +117,8 @@ def run_inference_task(inference_pk: int):
                     for step, agent in enumerate(env.agent_iter()):
                         observation, reward, termination, truncation, info = env.last()
                         action, state, extras = algorithm.compute_single_action(
-                            observation, full_fetch=True)
+                            observation, full_fetch=True
+                        )
                         # No action needed if the agent is done
                         action = None if termination or truncation else action
                         rgb_image_array = env.render()

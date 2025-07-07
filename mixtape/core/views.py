@@ -1,9 +1,8 @@
 from collections import defaultdict
 from itertools import accumulate
-from typing import Any
 
 from django.db.models import Subquery, Sum
-from django.http import HttpRequest, HttpResponse, Http404
+from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 import einops
 import numpy as np
@@ -42,7 +41,9 @@ def _fetch_all_episode_observations(episode_ids: list[int]) -> list[dict]:
 
     # Get all unique agents across all episodes
     all_agent_steps = all_steps.exclude(agent_steps__agent=None)
-    unique_agents = all_agent_steps.distinct('agent_steps__agent').values_list('agent_steps__agent', flat=True)
+    unique_agents = all_agent_steps.distinct('agent_steps__agent').values_list(
+        'agent_steps__agent', flat=True
+    )
     agent_to_idx = {agent: idx for idx, agent in enumerate(unique_agents)}
     n_agents = len(unique_agents)
 
@@ -177,9 +178,7 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> HttpRe
 
     # Prepare plot data
     env_name = episode.inference.checkpoint.training.environment
-    reward_histogram = [
-        a.reward for step in episode.steps.all() for a in step.agent_steps.all()
-    ]
+    reward_histogram = [a.reward for step in episode.steps.all() for a in step.agent_steps.all()]
 
     action_map = get_environment_mapping(env_name)
     action_v_reward = defaultdict(float if group_by_episode else lambda: defaultdict(float))
@@ -216,7 +215,8 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> HttpRe
             key_steps.filter(total_rewards__gt=0).order_by('-total_rewards').values('id')[:40]
         )
     ).order_by('number')
-    timeline_steps_serialized = [{
+    timeline_steps_serialized = [
+        {
             'number': step.number,
             'total_rewards': step.total_rewards,
         }
@@ -239,11 +239,11 @@ def insights(request: HttpRequest) -> HttpResponse:
     # Get episode IDs from query parameters
     episode_ids = request.GET.getlist('episode_id')
     if not episode_ids:
-        raise Http404("No episode IDs provided")
+        raise Http404('No episode IDs provided')
     try:
         episode_pks = [int(episode_id) for episode_id in episode_ids]
     except ValueError:
-        raise Http404("Invalid episode ID format")
+        raise Http404('Invalid episode ID format')
 
     # Process each episode and combine the data
     all_episode_details = []
@@ -300,7 +300,7 @@ def insights(request: HttpRequest) -> HttpResponse:
             'all_clusters': all_clusters.tolist(),
             'episode_manifolds': episode_manifolds.tolist(),
             'episode_clusters': episode_clusters[0].T.tolist(),
-        }
+        },
     }
 
     return render(
