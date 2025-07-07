@@ -28,7 +28,7 @@ def _fetch_all_episode_observations(episode_ids: list[int]) -> list[dict]:
     all_steps = Step.objects.prefetch_related('agent_steps').filter(episode_id__in=episode_ids)
 
     # Group steps by episode
-    episode_steps = {}
+    episode_steps: dict[int, list[Step]] = {}
     for step in all_steps:
         if step.episode_id not in episode_steps:
             episode_steps[step.episode_id] = []
@@ -50,6 +50,8 @@ def _fetch_all_episode_observations(episode_ids: list[int]) -> list[dict]:
     # Get observation space shape from first step
     first_step = episode_steps[episode_ids[0]][0]
     first_agent_step = first_step.agent_steps.first()
+    if first_agent_step is None:
+        raise Http404('No agent steps found for episode')
     first_obs = np.array(first_agent_step.observation_space).flatten()
     obs_shape = first_obs.shape
 
@@ -151,7 +153,7 @@ def cluster_episodes(
     )
 
 
-def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> HttpResponse:
+def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
     # Prefetch all related data in a single query
     episode = get_object_or_404(
         Episode.objects.select_related('inference__checkpoint__training').prefetch_related(
@@ -181,8 +183,12 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> HttpRe
     reward_histogram = [a.reward for step in episode.steps.all() for a in step.agent_steps.all()]
 
     action_map = get_environment_mapping(env_name)
-    action_v_reward = defaultdict(float if group_by_episode else lambda: defaultdict(float))
-    action_v_frequency = defaultdict(int if group_by_episode else lambda: defaultdict(int))
+    action_v_reward: defaultdict[str, float] | defaultdict[str, defaultdict[str, float]] = (
+        defaultdict(float if group_by_episode else lambda: defaultdict(float))  # type: ignore
+    )
+    action_v_frequency: defaultdict[str, int] | defaultdict[str, defaultdict[str, int]] = (
+        defaultdict(int if group_by_episode else lambda: defaultdict(int))  # type: ignore
+    )
 
     unique_agents = set()
     for step in episode.steps.all():
@@ -191,13 +197,11 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> HttpRe
             action = action_map.get(f'{int(agent_step.action)}', f'{agent_step.action}')
             key = action if group_by_episode else agent_step.agent
             if group_by_episode:
-                action_v_reward[action] += agent_step.reward
-                action_v_frequency[action] += 1
+                action_v_reward[action] += agent_step.reward  # type: ignore
+                action_v_frequency[action] += 1  # type: ignore
             else:
-                action_v_reward[key][action] += agent_step.reward
-                action_v_frequency[key][action] += 1
-
-    unique_agents = list(unique_agents)
+                action_v_reward[key][action] += agent_step.reward  # type: ignore
+                action_v_frequency[key][action] += 1  # type: ignore
 
     # Used to populate the timeline
     key_steps = (
@@ -231,7 +235,7 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> HttpRe
         'timeline_key_steps': timeline_steps_serialized,
         'rewards_over_time': rewards_over_time,
         'step_data': step_data,
-        'unique_agents': unique_agents,
+        'unique_agents': list(unique_agents),
     }
 
 
@@ -246,13 +250,17 @@ def insights(request: HttpRequest) -> HttpResponse:
         raise Http404('Invalid episode ID format')
 
     # Process each episode and combine the data
-    all_episode_details = []
-    all_action_v_reward = defaultdict(lambda: defaultdict(float))
-    all_reward_histogram = []
-    all_action_v_frequency = defaultdict(lambda: defaultdict(int))
-    all_rewards_over_time = []
-    all_step_data = []
-    all_timeline_steps = []
+    all_episode_details: list[Episode] = []
+    all_action_v_reward: defaultdict[str, defaultdict[str, float]] = defaultdict(
+        lambda: defaultdict(float)
+    )
+    all_reward_histogram: list[float] = []
+    all_action_v_frequency: defaultdict[str, defaultdict[str, int]] = defaultdict(
+        lambda: defaultdict(int)
+    )
+    all_rewards_over_time: list[int] = []
+    all_step_data: list[dict] = []
+    all_timeline_steps: list[dict] = []
 
     group_by_episode = len(episode_pks) > 1
     for episode_pk in episode_pks:
