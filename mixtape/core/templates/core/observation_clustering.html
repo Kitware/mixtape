@@ -22,34 +22,37 @@
   }"
   x-init="
     data = [];
-    for (let agent_idx = 0; agent_idx < plotData.unique_agents.length; agent_idx++) {
-      data.push({
-        x: plotData.clustering.episode_manifolds[0].map(row => row[agent_idx][0]),
-        y: plotData.clustering.episode_manifolds[0].map(row => row[agent_idx][1]),
-        type: 'scatter',
-        mode: 'lines',
-        colorscale: 'YlOrRd',
-        line: {
-          opacity: 1,
-          width: 2
-        },
-        name: plotData.unique_agents[agent_idx]
+    for (let agent_idx = 0; agent_idx < uniqueAgents.length; agent_idx++) {
+      clustering.episode_manifolds.forEach((episode_manifold, episode_idx) => {
+        data.push({
+          x: episode_manifold.map(row => row[agent_idx][0]),
+          y: episode_manifold.map(row => row[agent_idx][1]),
+          type: 'scatter',
+          mode: 'lines',
+          colorscale: 'YlOrRd',
+          line: {
+            opacity: 1,
+            width: 2
+          },
+          name: `Episode ${episodeIds[episode_idx]} ${uniqueAgents[agent_idx]}`
+        });
       });
     }
+    console.log(clustering.all_manifolds_x, clustering.all_manifolds_y)
     data.push({
-      x: plotData.clustering.all_manifolds_x,
-      y: plotData.clustering.all_manifolds_y,
+      x: clustering.all_manifolds_x,
+      y: clustering.all_manifolds_y,
       type: 'scatter',
       mode: 'markers',
-      showlegend: false,
       marker: {
-        color: plotData.clustering.all_clusters,
+        color: clustering.all_clusters,
         cmin: 0,
         cmax: 9,
         colorscale: 'Viridis',
         size: 20,
-        opacity: Array(plotData.clustering.all_manifolds_x.length).fill(1)
-      }
+        opacity: Array(clustering.all_manifolds_x.length).fill(1)
+      },
+      name: 'All Episodes'
     })
     plot = Plotly.newPlot($refs.allManifolds, data, layout, {displayModeBar: false});
     $watch('visOptions', () => {
@@ -64,7 +67,8 @@
     });"
   x-effect="
     if (plot) {
-      const numAgents = plotData.unique_agents.length;
+      const numAgents = uniqueAgents.length;
+      const numEpisodes = episodeIds.length;
       const startIdx = currentStep * numAgents;
       const endIdx = startIdx + numAgents;
 
@@ -72,9 +76,9 @@
       const plotElement = $refs.allManifolds;
       const currentData = plotElement.data;
 
-      // Remove the highlight trace if it exists (it will be last, at index 1 + numAgents)
-      if (currentData && currentData.length > (1 + numAgents)) {
-        Plotly.deleteTraces($refs.allManifolds, [1 + numAgents]);
+      // Remove the highlight trace if it exists (it will be last, at numEpisodes * numAgents + 1)
+      if (currentData && currentData.length > (numEpisodes * numAgents + 1)) {
+        Plotly.deleteTraces($refs.allManifolds, [numEpisodes * numAgents + 1]);
       }
 
       // Create arrays for the highlighted points
@@ -88,9 +92,9 @@
         const agentTrace = currentData[agentIdx];
         // Only add points for visible traces
         if (agentTrace && (!agentTrace.visible || agentTrace.visible === true)) {
-          highlightX.push(plotData.clustering.all_manifolds_x[i]);
-          highlightY.push(plotData.clustering.all_manifolds_y[i]);
-          highlightText.push(plotData.unique_agents[agentIdx]);
+          highlightX.push(clustering.all_manifolds_x[i]);
+          highlightY.push(clustering.all_manifolds_y[i]);
+          highlightText.push(uniqueAgents[agentIdx]);
         }
       }
 
