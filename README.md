@@ -28,35 +28,31 @@ To non-destructively update your development stack at any time:
 ### Training
 Start by training an environment of your choice. For example:
 ```bash
-# This will use all of the default values (with the exception of parallel):
-# environment: 'knights_archers_zombies_v10'
-# algorithm: 'PPO'
-# parallel: True
-# num_gpus: 0.0
-# training_iteration: 100
-# config_file: None
-./manage.py training -p
-
-# This can also be specified explicity
-./manage.py training -e knights_archers_zombies_v10 -a PPO -p -g 0.0 -t 100
+docker compose run --rm django \
+./manage.py training \
+-e knights_archers_zombies_v10 \
+-a PPO \
+-p \
+-g 0.0 \
+-t 100 \
+--immediate
 
 # For a detailed breakdown of all available options, use -h|--help
-./manage.py training --help
+docker compose run --rm django ./manage.py training --help
 ```
 
 ### Inference
 
 Select an existing checkpoint to run inference. For example:
 ```bash
-# This will use the checkpoint with ID 1 and will use the
-# parallel environment if it is a PettingZoo environment
-./manage.py inference 1 -p
-
-# This can also be specified explicity
-./manage.py inference -e knights_archers_zombies_v10 -p
+docker compose run --rm django \
+./manage.py inference \
+1 \
+-p \
+--immediate
 
 # For a detailed breakdown of all available options, use -h|--help
-./manage.py inference --help
+docker compose run --rm django ./manage.py inference --help
 ```
 
 If you've already started the server with `docker compose up`, you can see all available checkpoints at http://localhost:8000/admin/core/checkpoint/.
