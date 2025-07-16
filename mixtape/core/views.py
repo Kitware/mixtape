@@ -170,7 +170,7 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
                 {
                     'agent': agent_step.agent,
                     'action': agent_step.action_string,
-                    'reward': agent_step.reward,
+                    'total_reward': agent_step.total_reward,
                 }
                 for agent_step in step.agent_steps.all()
             ],
@@ -180,7 +180,11 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
 
     # Prepare plot data
     env_name = episode.inference.checkpoint.training.environment
-    reward_histogram = [a.reward for step in episode.steps.all() for a in step.agent_steps.all()]
+    training = episode.inference.checkpoint.training
+
+    reward_histogram = [
+        a.total_reward for step in episode.steps.all() for a in step.agent_steps.all()
+    ]
 
     action_map = get_environment_mapping(env_name)
     action_v_reward: defaultdict[str, float] | defaultdict[str, defaultdict[str, float]] = (
@@ -191,36 +195,49 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
     )
 
     unique_agents = set()
+    reward_mapping = training.reward_mapping or []
+    decomposed_rewards = {v: [] for v in reward_mapping}
     for step in episode.steps.all():
+        step_decomposed_rewards = {v: 0.0 for v in reward_mapping}
         for agent_step in step.agent_steps.all():
             unique_agents.add(agent_step.agent)
             action = action_map.get(f'{int(agent_step.action)}', f'{agent_step.action}')
             key = action if group_by_episode else agent_step.agent
             if group_by_episode:
-                action_v_reward[action] += agent_step.reward  # type: ignore
-                action_v_frequency[action] += 1  # type: ignore
+                action_v_reward[action] += agent_step.total_reward # type: ignore
+                action_v_frequency[action] += 1 # type: ignore
             else:
-                action_v_reward[key][action] += agent_step.reward  # type: ignore
-                action_v_frequency[key][action] += 1  # type: ignore
+                action_v_reward[key][action] += agent_step.total_reward # type: ignore
+                action_v_frequency[key][action] += 1 # type: ignore
+            for i, reward_name in enumerate(reward_mapping):
+                step_decomposed_rewards[reward_name] += agent_step.rewards[i]
+        for reward_name in reward_mapping:
+            decomposed_rewards[reward_name].append(step_decomposed_rewards[reward_name])
+
+    # Calculate cumulative decomposed rewards
+    cumulative_decomposed_rewards = {}
+    for reward_name, rewards_list in decomposed_rewards.items():
+        cumulative_decomposed_rewards[reward_name] = list(accumulate(rewards_list))
 
     # Used to populate the timeline
-    key_steps = (
-        episode.steps.all()
-        .annotate(total_rewards=Sum('agent_steps__reward', default=0))
-        .order_by('number')
-    )
+    key_steps = episode.steps.all().order_by('number')
+
+    # In Python since total_reward is a property
+    for step in key_steps:
+        step.total_rewards = sum(agent_step.total_reward for agent_step in step.agent_steps.all())
+
     # list of cumulative rewards over time
     rewards_over_time = list(accumulate(ks.total_rewards for ks in key_steps))
     # TODO: Revist this. This exists more as a placeholder, timeline
     #       should represent points of interest with more meaning.
     # Get top 40 steps by total rewards, ordered by step number
-    timeline_steps = key_steps.filter(
-        id__in=Subquery(
-            key_steps.filter(total_rewards__gt=0).order_by('-total_rewards').values('id')[:40]
-        )
-    ).order_by('number')
-    timeline_steps_serialized = [
-        {
+    timeline_steps = sorted(
+        [step for step in key_steps if step.total_rewards > 0],
+        key=lambda x: x.total_rewards,
+        reverse=True
+    )[:40]
+    timeline_steps = sorted(timeline_steps, key=lambda x: x.number)
+    timeline_steps_serialized = [{
             'number': step.number,
             'total_rewards': step.total_rewards,
         }
@@ -234,6 +251,8 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
         'action_v_frequency': action_v_frequency,
         'timeline_key_steps': timeline_steps_serialized,
         'rewards_over_time': rewards_over_time,
+        'decomposed_rewards': cumulative_decomposed_rewards,
+        'reward_mapping': reward_mapping,
         'step_data': step_data,
         'unique_agents': list(unique_agents),
     }
@@ -261,6 +280,7 @@ def insights(request: HttpRequest) -> HttpResponse:
     all_rewards_over_time: list[int] = []
     all_step_data: list[dict] = []
     all_timeline_steps: list[dict] = []
+    all_decomposed_rewards: list[dict] = []
 
     group_by_episode = len(episode_pks) > 1
     for episode_pk in episode_pks:
@@ -270,6 +290,7 @@ def insights(request: HttpRequest) -> HttpResponse:
         all_reward_histogram.append(insight_results['reward_histogram'])
         all_action_v_frequency[f'Episode {episode_pk}'] = insight_results['action_v_frequency']
         all_rewards_over_time.append(insight_results['rewards_over_time'])
+        all_decomposed_rewards.append(insight_results['decomposed_rewards'])
         all_step_data.append(insight_results['step_data'])
         all_timeline_steps.append(insight_results['timeline_key_steps'])
 
@@ -296,6 +317,7 @@ def insights(request: HttpRequest) -> HttpResponse:
             'reward_histogram': all_reward_histogram,
             'action_v_frequency': all_action_v_frequency,
             'rewards_over_time': all_rewards_over_time,
+            'decomposed_rewards': all_decomposed_rewards,
             'unique_agents': unique_agents,
             'episode_ids': episode_pks,
             'max_steps': max(len(step_data) for step_data in all_step_data),
@@ -309,6 +331,10 @@ def insights(request: HttpRequest) -> HttpResponse:
             'episode_manifolds': episode_manifolds.tolist(),
             'episode_clusters': episode_clusters[0].T.tolist(),
         },
+        'has_reward_mapping': any(
+            episode.inference.checkpoint.training.reward_mapping
+            for episode in all_episode_details
+        ),
     }
 
     return render(

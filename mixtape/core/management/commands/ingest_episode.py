@@ -69,6 +69,7 @@ def ingest_episode(json_file: TextIO, allow_existing: bool) -> None:
             num_gpus=external_training.num_gpus,
             iterations=external_training.iterations,
             config=external_training.config,
+            reward_mapping=external_training.reward_mapping,
             is_external=True,
         )
         training.full_clean()
@@ -114,10 +115,15 @@ def ingest_episode(json_file: TextIO, allow_existing: bool) -> None:
             # Create the agent steps if they exist - key is optional
             if step_data.agent_steps:
                 for agent_step_data in step_data.agent_steps:
+                    # Support either single reward or multiple rewards
+                    rewards = agent_step_data.rewards
+                    if rewards is None:
+                        rewards = [agent_step_data.reward]
+
                     AgentStep.objects.create(
                         step=step,
                         agent=agent_step_data.agent,
                         action=agent_step_data.action,
-                        reward=agent_step_data.reward,
+                        rewards=rewards,
                         observation_space=agent_step_data.observation_space,
                     )

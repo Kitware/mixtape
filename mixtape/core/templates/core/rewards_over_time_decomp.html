@@ -1,0 +1,132 @@
+<div
+  x-data="{
+    data: [],
+    layout: {
+      title: {text: 'Rewards Over Time (Decomposed)'},
+      xaxis: {title: {text: 'Time Step'}},
+      yaxis: {title: {text: 'Cumulative Reward'}},
+      autosize: true,
+      showlegend: visOptions.includes('plotLegends'),
+      paper_bgcolor: $store.theme.paper_bgcolor,
+      plot_bgcolor: $store.theme.plot_bgcolor,
+      font: $store.theme.font,
+      annotations: [],
+      shapes: [],
+      xaxis: {
+        gridcolor: $store.theme.axis.gridcolor,
+        zerolinecolor: $store.theme.axis.zerolinecolor
+      },
+      yaxis: {
+        gridcolor: $store.theme.axis.gridcolor,
+        zerolinecolor: $store.theme.axis.zerolinecolor
+      },
+    },
+    config: {
+      displayModeBar: false,
+      responsive: true
+    },
+    plot: null,
+    initPlot() {
+      // Plot decomposed rewards for each episode
+      decomposedRewards.forEach((episodeRewards, episodeIdx) => {
+        Object.keys(episodeRewards).forEach((rewardType, rewardIdx) => {
+          const rewardData = episodeRewards[rewardType];
+          this.data.push({
+            x: Array.from({length: rewardData.length}, (_, i) => i),
+            y: rewardData,
+            type: 'scatter',
+            mode: 'lines',
+            name: `Episode ${episodeIds[episodeIdx]} - ${rewardType}`,
+          });
+        });
+      });
+
+      // Calculate overall min and max Y values from all data
+      const allYValues = decomposedRewards.flatMap(episodeRewards =>
+        Object.values(episodeRewards).flatMap(rewardData => rewardData)
+      );
+
+      // Add current step indicator as a shape
+      this.layout.shapes = this.createShapes(allYValues);
+
+      // Add annotations for current step values
+      this.layout.annotations = this.createAnnotations();
+
+      this.plot = Plotly.newPlot($refs.rewardsOverTime, this.data, this.layout, {displayModeBar: false});
+    },
+    createShapes(allYValues) {
+      const maxY = Math.max(...allYValues);
+      const minY = Math.min(...allYValues);
+
+      return [{
+        type: 'line',
+        x0: currentStep,
+        x1: currentStep,
+        y0: minY,
+        y1: maxY,
+        line: {
+          color: 'red',
+          width: 2,
+          dash: 'dash'
+        }
+      }];
+    },
+    createAnnotations() {
+      const episodeCount = Object.keys(decomposedRewards).length;
+      const annotations = decomposedRewards.flatMap((episodeRewards, episodeIdx) => {
+        const componentCount = Object.keys(episodeRewards).length;
+        const offset = 40 / (componentCount * episodeCount);
+        return Object.entries(episodeRewards).map(([rewardType, rewardData]) => {
+          const currentValue = rewardData[currentStep] || rewardData[rewardData.length - 1];
+
+          return {
+            x: currentStep,
+            y: currentValue,
+            text: currentValue.toFixed(2),
+            showarrow: true,
+            arrowhead: 2,
+            arrowsize: 1,
+            arrowwidth: 2,
+            ax: 20,
+            ay: -20,
+            font: {
+              size: 10
+            }
+          };
+        })
+      });
+      return annotations;
+    },
+    updateCurrentStep() {
+      if (this.plot) {
+        // Calculate overall min and max Y values from all data
+        let allYValues = [];
+        // Get all Y values from decomposed rewards
+        decomposedRewards.forEach(episodeRewards => {
+          Object.values(episodeRewards).forEach(rewardData => {
+            allYValues = allYValues.concat(rewardData);
+          });
+        });
+
+        Plotly.relayout($refs.rewardsOverTime, {
+          shapes: this.createShapes(allYValues),
+          annotations: this.createAnnotations()
+        });
+      }
+    }
+  }"
+  x-init="initPlot();
+  $watch('visOptions', () => {
+    $nextTick(() => {
+      Plotly.relayout(
+        $refs.rewardsOverTime,
+        {
+          autosize: true,
+          showlegend: visOptions.includes('plotLegends')
+        })
+    });
+  });"
+  x-effect="updateCurrentStep()"
+>
+  <div x-ref="rewardsOverTime"></div>
+</div>

@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from mixtape.core.ray_utils.json_encoder import CustomJSONEncoder
@@ -14,8 +15,22 @@ class AgentStep(models.Model):
     agent = models.CharField(max_length=200)
 
     action = models.FloatField()
-    reward = models.FloatField()
+    rewards = models.JSONField(encoder=CustomJSONEncoder, null=True, blank=True)
     observation_space = models.JSONField(encoder=CustomJSONEncoder)
+
+    def clean(self):
+        # Validate that it matches the training's reward mapping length
+        training = self.step.episode.inference.checkpoint.training
+        if not training.reward_mapping and len(self.rewards) != 1:
+            raise ValidationError('Reward mapping must be set when there are multiple reward values.')
+
+        if training.reward_mapping:
+            expected_length = len(training.reward_mapping)
+            actual_length = len(self.rewards)
+            if actual_length != expected_length:
+                raise ValidationError(
+                    f'Rewards array length ({actual_length}) must match reward mapping length ({expected_length}).'
+                )
 
     @property
     def action_string(self) -> str:
@@ -24,3 +39,17 @@ class AgentStep(models.Model):
         environment = self.step.episode.inference.checkpoint.training.environment
         mapping = get_environment_mapping(environment)
         return mapping.get(f'{int(self.action)}', f'{self.action}')
+
+    @property
+    def total_reward(self) -> float:
+        return sum(self.rewards)
+
+    @property
+    def reward_strings(self) -> list[str]:
+        training = self.step.episode.inference.checkpoint.training
+        reward_mapping = training.reward_mapping
+
+        if not reward_mapping:
+            return [f"{value}" for value in self.rewards]
+
+        return reward_mapping
