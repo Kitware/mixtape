@@ -5,6 +5,7 @@
     xaxis: {title: {text: 'Reward'}},
     yaxis: {title: {text: 'Frequency'}},
     autosize: true,
+    barmode: 'overlay',
     showlegend: visOptions.includes('plotLegends'),
     paper_bgcolor: $store.theme.paper_bgcolor,
     plot_bgcolor: $store.theme.plot_bgcolor,
@@ -25,8 +26,19 @@
   plot: null,
 }"
 x-init="
-  data = [{x: plotData.reward_histogram, type: 'histogram', name: 'Episode'}];
-  plot = Plotly.react($refs.rewardsFrequency, data, layout, config);
+rewardHistogram.forEach((episode, idx) => {
+    data.push({
+      x: episode,
+      type: 'histogram',
+      name: `Episode ${episodeIds[idx]}`,
+      marker: {
+        line: {
+          width: 2
+        }
+      }
+    });
+  });
+  plot = Plotly.newPlot($refs.rewardsFrequency, data, layout, {displayModeBar: false});
   $watch('visOptions', () => {
     $nextTick(() => {
       Plotly.relayout(

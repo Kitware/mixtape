@@ -24,7 +24,7 @@ urlpatterns = [
     path('api/docs/redoc/', schema_view.with_ui('redoc'), name='docs-redoc'),
     path('api/docs/swagger/', schema_view.with_ui('swagger'), name='docs-swagger'),
     path('', views.home_page, name='home'),
-    path('insights/<int:episode_pk>/', views.insights, name='insights'),
+    path('insights/', views.insights, name='insights'),
 ]
 
 if settings.DEBUG:

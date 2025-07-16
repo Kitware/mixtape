@@ -3,7 +3,7 @@
     layout: {
       title: {text: 'Actions VS Frequency'},
       autosize: true,
-      barmode: 'stack',
+      barmode: Object.keys(actionVFrequency).length > 1 ? 'group' : 'stack',
       showlegend: visOptions.includes('plotLegends'),
       paper_bgcolor: $store.theme.paper_bgcolor,
       plot_bgcolor: $store.theme.plot_bgcolor,
@@ -22,15 +22,20 @@
       responsive: true
     },
     plot: null,
+    actionVFrequency: Object.keys(actionVFrequency).length > 1 ? actionVFrequency : Object.values(actionVFrequency)[0]
   }"
   x-init="
-    data = [];
-    plotData.unique_agents.forEach((agent) => {
+    Object.entries(actionVFrequency).forEach(([grouping, values]) => {
       data.push({
-        x: Object.keys(plotData.action_v_frequency[agent]),
-        y: Object.values(plotData.action_v_frequency[agent]),
+        x: Object.keys(values),
+        y: Object.values(values),
         type: 'bar',
-        name: agent
+        name: grouping,
+        marker: {
+          line: {
+            width: 2
+          }
+        }
       });
     });
     plot = Plotly.react($refs.actionsFrequency, data, layout, config);

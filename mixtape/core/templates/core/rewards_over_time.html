@@ -13,8 +13,8 @@
       annotations: [
         {
           x: currentStep,
-          y: plotData.rewards_over_time[currentStep],
-          text: plotData.rewards_over_time[currentStep].toFixed(2),
+          y: rewardsOverTime[0][currentStep],
+          text: rewardsOverTime[0][currentStep].toFixed(2),
         }
       ],
       xaxis: {
@@ -31,29 +31,40 @@
       responsive: true
     },
     plot: null,
+    getStep(episode) {
+      if (this.currentStep < Object.keys(episode).length) {
+        return this.currentStep;
+      }
+      return Object.keys(episode).length - 1;
+    },
   }"
   x-init="
-    data = [
-      {
-        x: plotData.rewards_over_time.length,
-        y: plotData.rewards_over_time,
+    rewardsOverTime.forEach((episode, idx) => {
+      data.push({
+        x: episode.length,
+        y: episode,
         type: 'scatter',
-        name: 'Episode'
+        name: `Episode ${episodeIds[idx]}`,
+        marker: {
+          line: {
+            width: 2
+          }
+        }
+      });
+    });
+    data.push({
+      x: [{{ currentStep }}, {{ currentStep }}],
+      y: [0, Math.max(...rewardsOverTime.flat())],
+      type: 'scatter',
+      mode: 'lines',
+      line: {
+        color: 'red',
+        width: 2,
+        dash: 'dash'
       },
-      {
-        x: [{{ currentStep }}, {{ currentStep }}],
-        y: [0, Math.max(...plotData.rewards_over_time)],
-        type: 'scatter',
-        mode: 'lines',
-        line: {
-          color: 'red',
-          width: 2,
-          dash: 'dash'
-        },
-        name: 'Current Step'
-      },
-    ];
-    plot = Plotly.react($refs.rewardsOverTime, data, layout, config);
+      name: 'Current Step'
+    });
+    plot = Plotly.newPlot($refs.rewardsOverTime, data, layout, {displayModeBar: false});
     $watch('visOptions', () => {
       $nextTick(() => {
         Plotly.relayout(
@@ -68,16 +79,16 @@
     if (plot) {
       Plotly.update($refs.rewardsOverTime, {
         x: [[currentStep, currentStep]],
-        y: [[Math.min(...plotData.rewards_over_time), Math.max(...plotData.rewards_over_time)]]
+        y: [[Math.min(...rewardsOverTime.flat()), Math.max(...rewardsOverTime.flat())]]
       }, {
-        annotations: [
-          {
-            x: currentStep,
-            y: plotData.rewards_over_time[currentStep],
-            text: plotData.rewards_over_time[currentStep].toFixed(2),
+        annotations: rewardsOverTime.map((episode, idx) => {
+          return {
+            x: getStep(episode),
+            y: episode[getStep(episode)],
+            text: episode[getStep(episode)].toFixed(2),
           }
-        ],
-      }, [1]);
+        })
+      }, [rewardsOverTime.length]);
     }"
 >
   <div x-ref="rewardsOverTime"></div>

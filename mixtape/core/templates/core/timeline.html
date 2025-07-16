@@ -1,23 +1,21 @@
-<div class="card raised">
-  <ol class="items-center flex p-1">
+<div class="flex my-2 mx-5 py-1 card-alt">
+  <ol class="items-center flex p-1 w-full">
     <div class="flex w-5 bg-blue-600 dark:bg-blue-200 h-6 ml-2"></div>
-    {% for ts in timeline_steps %}
+    <template x-for="ts in timelineKeySteps[index]">
     <li class="relative w-full flex even:flex-col odd:flex-col-reverse even:mb-5 odd:mt-5">
-      <p class="text-sm text-center">
-        {{ ts.total_rewards|floatformat }}
-      </p>
+      <p class="text-sm text-center" x-text="ts.total_rewards.toFixed(2)"></p>
       <div class="flex items-center">
           <div class="flex w-full bg-blue-600 dark:bg-blue-200 h-0.5"></div>
           <button
             class="cursor-pointer z-10 flex items-center justify-center w-2 h-2 rounded-full ring-4 shrink-0"
-            :class="currentStep === {{ ts.number }} ? 'ring-blue-300 bg-blue-600 dark:ring-white dark:bg-blue-200' : 'ring-blue-600 dark:ring-blue-200'"
-            @click="currentStep = {{ ts.number }}"
+            :class="currentStep === ts.number ? 'ring-blue-300 bg-blue-600 dark:ring-white dark:bg-blue-200' : 'ring-blue-600 dark:ring-blue-200'"
+            @click="currentStep = ts.number"
           >
           </button>
           <div class="flex w-full bg-blue-600 dark:bg-blue-200 h-0.5"></div>
       </div>
     </li>
-    {% endfor %}
+    </template>
     <div class="flex w-5 bg-blue-600 dark:bg-blue-200 h-6 mr-2"></div>
   </ol>
 </div>

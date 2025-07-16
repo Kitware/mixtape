@@ -5,7 +5,7 @@
       xaxis: {title: {text: 'Action'}},
       yaxis: {title: {text: 'Reward Frequency'}},
       autosize: true,
-      barmode: 'stack',
+      barmode: Object.keys(actionVReward).length > 1 ? 'group' : 'stack',
       showlegend: visOptions.includes('plotLegends'),
       paper_bgcolor: $store.theme.paper_bgcolor,
       plot_bgcolor: $store.theme.plot_bgcolor,
@@ -24,13 +24,19 @@
       responsive: true
     },
     plot: null,
+    actionVReward: Object.keys(actionVReward).length > 1 ? actionVReward : Object.values(actionVReward)[0],
   }"
   x-init="
-    data = Object.entries(plotData.action_v_reward).map(([agent, actions]) => ({
-      x: Object.keys(actions),
-      y: Object.values(actions),
+    data = Object.entries(actionVReward).map(([grouping, values]) => ({
+      x: Object.keys(values),
+      y: Object.values(values),
       type: 'bar',
-      name: agent
+      name: grouping,
+      marker: {
+        line: {
+          width: 2
+        }
+      }
     }));
     plot = Plotly.react($refs.actionsRewards, data, layout, config);
     $watch('visOptions', () => {

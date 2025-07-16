@@ -5,21 +5,58 @@
 
 {% block content %}
 <h1 class="text-center">Explore Results</h1>
-<div>
+<div
+  x-data="{
+    selectedEpisodes: [],
+    allowedEnvironment: null,
+    updateAllowedEnvironment(env) {
+      if (this.selectedEpisodes.length === 0) {
+        this.allowedEnvironment = null;
+      } else {
+        this.allowedEnvironment = env;
+      }
+    },
+    viewSelectedEpisodes() {
+      window.location.href = '{% url 'insights' %}?episode_id=' + this.selectedEpisodes.join('&episode_id=');
+    }
+  }"
+>
+  <div class="w-full flex justify-end">
+    <button
+      class="bg-blue-500 hover:bg-blue-800 rounded-lg px-5 py-2.5 me-2 mb-2 disabled:bg-gray-300 disabled:text-gray-400"
+      :disabled="selectedEpisodes.length === 0"
+      @click="viewSelectedEpisodes"
+    >
+      View Selected Episodes
+    </button>
+  </div>
   <ol>
     {% for episode in episodes %}
-    <li class="card raised m-2">
+    <li
+      class="card raised m-2"
+      x-show="!allowedEnvironment || allowedEnvironment === '{{ episode.inference.checkpoint.training.environment }}'"
+    >
       <div class="flex justify-between">
-        <a href="{% url 'insights' episode.pk %}" class="rounded-lg">
-          <span>
-            <span class="font-bold mx-2">{{ episode.inference.checkpoint.training.environment }}</span>
-            <span class="italic">
-              {{ episode.inference.created|date:"D d M Y" }}
-              {{ episode.inference.created|time:"H:i" }}
+        <div>
+          <input
+            id="{{ episode.pk }}-checkbox"
+            type="checkbox"
+            value="{{ episode.pk }}"
+            x-model="selectedEpisodes"
+            @change="updateAllowedEnvironment('{{ episode.inference.checkpoint.training.environment }}')"
+            class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm mr-1"
+          >
+          <a href="{% url 'insights' %}?episode_id={{ episode.pk }}" class="rounded-lg">
+            <span>
+              <span class="font-bold mx-2">{{ episode.inference.checkpoint.training.environment }}</span>
+              <span class="italic">
+                {{ episode.inference.created|date:"D d M Y" }}
+                {{ episode.inference.created|time:"H:i" }}
+              </span>
             </span>
-          </span>
-        </a>
-        <a href="{% url 'insights' episode.pk %}" target="_blank" class="rounded-lg">
+          </a>
+        </div>
+        <a href="{% url 'insights' %}?episode_id={{ episode.pk }}" target="_blank" class="rounded-lg">
           <i class="ri-external-link-line p-1"></i>
         </a>
       </div>
