@@ -6,20 +6,11 @@ import yaml
 from mixtape.core.management.commands._utils import check_parallel
 from mixtape.core.models.checkpoint import Checkpoint
 from mixtape.core.models.inference import Inference
-from mixtape.core.ray_utils.constants import ExampleEnvs
 from mixtape.core.tasks.inference_tasks import run_inference_task
 
 
 @click.command()
 @click.argument('checkpoint_pk', type=int)
-@click.option(
-    '-e',
-    '--env_name',
-    type=click.Choice([choice.value for choice in ExampleEnvs]),  # type: ignore
-    default=ExampleEnvs.PZ_KnightsArchersZombies,
-    callback=check_parallel,
-    help='The PettingZoo or Gymnasium environment to use.',
-)
 @click.option(
     '-f',
     '--config_file',
@@ -37,7 +28,6 @@ from mixtape.core.tasks.inference_tasks import run_inference_task
 @click.option('--immediate', is_flag=True, help='Run the task immediately.')
 def inference(
     checkpoint_pk: int,
-    env_name: ExampleEnvs,
     config_file: TextIO | None,
     parallel: bool,
     immediate: bool,

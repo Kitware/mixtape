@@ -64,7 +64,7 @@ def run_inference_task(inference_pk: int):
                             agent='agent_0',
                             step=step_model,
                             action=action,
-                            reward=reward,
+                            rewards=[reward],
                             observation_space=observation,
                         )
 
@@ -99,7 +99,7 @@ def run_inference_task(inference_pk: int):
                                 agent=agent,
                                 step=step_model,
                                 action=actions[agent],
-                                reward=rewards[agent],
+                                rewards=[rewards[agent]],
                                 observation_space=observations[agent],
                             )
 
@@ -134,7 +134,7 @@ def run_inference_task(inference_pk: int):
                                 agent=agent,
                                 step=step_model,
                                 action=action,
-                                reward=reward,
+                                rewards=[reward],
                                 observation_space=observation,
                             )
 
