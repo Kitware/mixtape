@@ -1,7 +1,7 @@
 from io import BytesIO
 
 from PIL import Image
-from pydantic import Base64Bytes, BaseModel, Field, field_validator
+from pydantic import Base64Bytes, BaseModel, Field, field_validator, model_validator
 
 
 class ExternalAgentStep(BaseModel):
@@ -9,21 +9,29 @@ class ExternalAgentStep(BaseModel):
     action: float
     # Support environments that use either single reward or multiple rewards
     reward: float | None = None
-    rewards: list[float] | None = None
+    rewards: list[float | int] | None = None
     observation_space: list[float] | list[list[float]]
 
     @field_validator('rewards')
     @classmethod
     def validate_rewards_list(cls, v: list[float] | None) -> list[float] | None:
         if v is not None:
-            if not isinstance(v, list):
-                raise ValueError('Rewards must be a list')
             if len(v) == 0:
                 raise ValueError('Rewards list cannot be empty')
-            for reward in v:
-                if not isinstance(reward, (int, float)):
-                    raise ValueError('All rewards must be float or integer values')
         return v
+
+    @model_validator(mode='after')
+    def validate_reward_fields(self) -> 'ExternalAgentStep':
+        reward_defined = self.reward is not None
+        rewards_defined = self.rewards is not None
+
+        if not reward_defined and not rewards_defined:
+            raise ValueError('Either reward or rewards must be defined')
+
+        if reward_defined and rewards_defined:
+            raise ValueError('Cannot define both reward and rewards - use only one')
+
+        return self
 
 
 class ExternalStep(BaseModel):

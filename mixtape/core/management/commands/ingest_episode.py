@@ -118,6 +118,8 @@ def ingest_episode(json_file: TextIO, allow_existing: bool) -> None:
                     # Support either single reward or multiple rewards
                     rewards = agent_step_data.rewards
                     if rewards is None:
+                        if agent_step_data.reward is None:
+                            raise ValueError('Either reward or rewards must be defined')
                         rewards = [agent_step_data.reward]
 
                     AgentStep.objects.create(

@@ -195,7 +195,7 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
 
     unique_agents = set()
     reward_mapping = training.reward_mapping or []
-    decomposed_rewards = {v: [] for v in reward_mapping}
+    decomposed_rewards: dict[str, list[float]] = {v: [] for v in reward_mapping}
     for step in episode.steps.all():
         step_decomposed_rewards = {v: 0.0 for v in reward_mapping}
         for agent_step in step.agent_steps.all():
@@ -203,11 +203,11 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
             action = action_map.get(f'{int(agent_step.action)}', f'{agent_step.action}')
             key = action if group_by_episode else agent_step.agent
             if group_by_episode:
-                action_v_reward[action] += agent_step.total_reward # type: ignore
-                action_v_frequency[action] += 1 # type: ignore
+                action_v_reward[action] += agent_step.total_reward  # type: ignore
+                action_v_frequency[action] += 1  # type: ignore
             else:
-                action_v_reward[key][action] += agent_step.total_reward # type: ignore
-                action_v_frequency[key][action] += 1 # type: ignore
+                action_v_reward[key][action] += agent_step.total_reward  # type: ignore
+                action_v_frequency[key][action] += 1  # type: ignore
             for i, reward_name in enumerate(reward_mapping):
                 step_decomposed_rewards[reward_name] += agent_step.rewards[i]
         for reward_name in reward_mapping:
@@ -222,23 +222,32 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
     key_steps = episode.steps.all().order_by('number')
 
     # In Python since total_reward is a property
+    key_steps_values = []
     for step in key_steps:
-        step.total_rewards = sum(agent_step.total_reward for agent_step in step.agent_steps.all())
+        key_steps_values.append(
+            {
+                'number': step.number,
+                'total_rewards': sum(
+                    agent_step.total_reward for agent_step in step.agent_steps.all()
+                ),
+            }
+        )
 
     # list of cumulative rewards over time
-    rewards_over_time = list(accumulate(ks.total_rewards for ks in key_steps))
+    rewards_over_time = list(accumulate(ks['total_rewards'] for ks in key_steps_values))
     # TODO: Revist this. This exists more as a placeholder, timeline
     #       should represent points of interest with more meaning.
     # Get top 40 steps by total rewards, ordered by step number
     timeline_steps = sorted(
-        [step for step in key_steps if step.total_rewards > 0],
-        key=lambda x: x.total_rewards,
-        reverse=True
+        [step for step in key_steps_values if step['total_rewards'] > 0],
+        key=lambda x: x['total_rewards'],
+        reverse=True,
     )[:40]
-    timeline_steps = sorted(timeline_steps, key=lambda x: x.number)
-    timeline_steps_serialized = [{
-            'number': step.number,
-            'total_rewards': step.total_rewards,
+    timeline_steps = sorted(timeline_steps, key=lambda x: x['number'])
+    timeline_steps_serialized = [
+        {
+            'number': step['number'],
+            'total_rewards': step['total_rewards'],
         }
         for step in timeline_steps
     ]
@@ -331,8 +340,7 @@ def insights(request: HttpRequest) -> HttpResponse:
             'episode_clusters': episode_clusters[0].T.tolist(),
         },
         'has_reward_mapping': any(
-            episode.inference.checkpoint.training.reward_mapping
-            for episode in all_episode_details
+            episode.inference.checkpoint.training.reward_mapping for episode in all_episode_details
         ),
     }
 

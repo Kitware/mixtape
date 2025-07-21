@@ -6,7 +6,6 @@ import yaml
 from mixtape.core.management.commands._utils import check_parallel
 from mixtape.core.models.checkpoint import Checkpoint
 from mixtape.core.models.inference import Inference
-from mixtape.core.ray_utils.constants import ExampleEnvs
 from mixtape.core.tasks.inference_tasks import run_inference_task
 
 
