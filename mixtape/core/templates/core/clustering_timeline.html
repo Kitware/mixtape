@@ -2,7 +2,7 @@
   x-data="{
     data: [],
     layout: {
-      title: {text: 'Agent Observations Timeline'},
+      title: {text: 'Agent {{title}} Timeline'},
       height: 150,
       margin: {r: 0, t: 25},
       paper_bgcolor: $store.theme.paper_bgcolor,
@@ -14,14 +14,14 @@
   x-init="
     data = [
       {
-        z: clustering.episode_clusters,
+        z: clustering[{{key}}].episode_clusters,
         type: 'heatmap',
         showscale: false,
         colorscale: 'YlGnBu',
       },
       {
         x: [[currentStep, currentStep]],
-        y: [[0, clustering.episode_clusters.length - 1]],
+        y: [[0, clustering[{{key}}].episode_clusters.length - 1]],
         type: 'scatter',
         mode: 'lines',
         showlegend: false,
@@ -46,7 +46,7 @@
     if (plot) {
       // Use the heatmap data dimensions directly
       const yMin = 0;
-      const yMax = clustering.episode_clusters.length - 1;
+      const yMax = clustering[{{key}}].episode_clusters.length - 1;
       Plotly.update($refs.allManifolds, {
         x: [[currentStep, currentStep]],
         y: [[yMin - 0.5, yMax + 0.5]],

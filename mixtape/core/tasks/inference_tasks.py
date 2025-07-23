@@ -60,13 +60,16 @@ def run_inference_task(inference_pk: int):
                                 episode=episode, number=step, image=image_file
                             )
 
-                        AgentStep.objects.create(
+                        agent_step = AgentStep(
                             agent='agent_0',
                             step=step_model,
                             action=action,
                             rewards=[reward],
                             observation_space=observation,
+                            action_distribution=extras.get('action_dist_inputs'),
                         )
+                        agent_step.full_clean()
+                        agent_step.save()
 
                         # Step the environment forward with the computed actions
                         observation, reward, terminated, truncated, info = env.step(action)
@@ -81,11 +84,13 @@ def run_inference_task(inference_pk: int):
                     # Loop until all agents are done (terminated or truncated)
                     for step in itertools.count(start=0):
                         actions = {}
+                        action_distributions = {}
                         for agent, obs in observations.items():
                             action, state, extras = algorithm.compute_single_action(
                                 obs, full_fetch=True
                             )
                             actions[agent] = action
+                            action_distributions[agent] = extras.get('action_dist_inputs')
                         rgb_image_array = env.render()
                         assert isinstance(rgb_image_array, np.ndarray)
                         with Step.rgb_array_to_file(
@@ -95,13 +100,16 @@ def run_inference_task(inference_pk: int):
                                 episode=episode, number=step, image=image_file
                             )
                         for agent in env.agents:
-                            AgentStep.objects.create(
+                            agent_step = AgentStep(
                                 agent=agent,
                                 step=step_model,
                                 action=actions[agent],
                                 rewards=[rewards[agent]],
                                 observation_space=observations[agent],
+                                action_distribution=action_distributions[agent],
                             )
+                            agent_step.full_clean()
+                            agent_step.save()
 
                         # Step the environment forward with the computed actions
                         observations, rewards, terminations, truncations, infos = env.step(actions)
@@ -130,12 +138,15 @@ def run_inference_task(inference_pk: int):
                                 episode=episode, number=step, image=image_file
                             )
                         if action is not None:
-                            AgentStep.objects.create(
+                            agent_step = AgentStep(
                                 agent=agent,
                                 step=step_model,
                                 action=action,
                                 rewards=[reward],
                                 observation_space=observation,
+                                action_distribution=extras.get('action_dist_inputs'),
                             )
+                            agent_step.full_clean()
+                            agent_step.save()
 
                         env.step(action)  # Step the environment forward with the action
