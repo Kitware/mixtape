@@ -2,7 +2,7 @@
   x-data="{
     data: [],
     layout: {
-      title: {text: 'Agent Observations'},
+      title: {text: 'Agent {{title}}'},
       height: 450,
       xaxis: {
         showticklabels: false,
@@ -23,7 +23,7 @@
   x-init="
     data = [];
     for (let agent_idx = 0; agent_idx < uniqueAgents.length; agent_idx++) {
-      clustering.episode_manifolds.forEach((episode_manifold, episode_idx) => {
+      clustering[{{key}}].episode_manifolds.forEach((episode_manifold, episode_idx) => {
         data.push({
           x: episode_manifold.map(row => row[agent_idx][0]),
           y: episode_manifold.map(row => row[agent_idx][1]),
@@ -38,19 +38,18 @@
         });
       });
     }
-    console.log(clustering.all_manifolds_x, clustering.all_manifolds_y)
     data.push({
-      x: clustering.all_manifolds_x,
-      y: clustering.all_manifolds_y,
+      x: clustering[{{key}}].all_manifolds_x,
+      y: clustering[{{key}}].all_manifolds_y,
       type: 'scatter',
       mode: 'markers',
       marker: {
-        color: clustering.all_clusters,
+        color: clustering[{{key}}].all_clusters,
         cmin: 0,
         cmax: 9,
         colorscale: 'Viridis',
         size: 20,
-        opacity: Array(clustering.all_manifolds_x.length).fill(1)
+        opacity: Array(clustering[{{key}}].all_manifolds_x.length).fill(1)
       },
       name: 'All Episodes'
     })
@@ -84,17 +83,17 @@
       // Create arrays for the highlighted points
       const highlightX = [];
       const highlightY = [];
-      const highlightColors = [];
       const highlightText = [];
 
-      for (let i = startIdx; i < endIdx; i++) {
-        const agentIdx = i - startIdx;
-        const agentTrace = currentData[agentIdx];
-        // Only add points for visible traces
-        if (agentTrace && (!agentTrace.visible || agentTrace.visible === true)) {
-          highlightX.push(clustering.all_manifolds_x[i]);
-          highlightY.push(clustering.all_manifolds_y[i]);
-          highlightText.push(uniqueAgents[agentIdx]);
+      for (let agentIdx = 0; agentIdx < numAgents; agentIdx++) {
+        for (let episodeIdx = 0; episodeIdx < numEpisodes; episodeIdx++) {
+          const idx = agentIdx + episodeIdx * numAgents;
+          const agentTrace = currentData[idx];
+          if (currentStep < agentTrace.x.length && agentTrace && (!agentTrace.visible || agentTrace.visible === true)) {
+            highlightX.push(agentTrace.x[currentStep]);
+            highlightY.push(agentTrace.y[currentStep]);
+            highlightText.push(`${uniqueAgents[agentIdx]} Episode ${episodeIds[episodeIdx]}`);
+          }
         }
       }
 

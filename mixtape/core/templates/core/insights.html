@@ -46,6 +46,7 @@
       'rewardsOverTime',
       'episodeDetails',
       'obsClustering',
+      'actionClustering',
       'plotLegends'
     ],
     getStep(step) {
@@ -92,21 +93,34 @@ class="flex flex-col"
     </div>
     <div
       class="flex-1 min-w-[100%] md:min-w-[50%] xl:min-w-[25%] h-fit"
-      x-show="visOptions.includes('rewardsOverTime')"
+      x-show="{{ has_reward_mapping|yesno:'false,true' }} && visOptions.includes('rewardsOverTime')"
     >
       {% include "core/rewards_over_time.html" %}
     </div>
   </div>
-  <div class="flex overflow-hidden">
-    <div x-show="visOptions.includes('rewardsOverTime') && {{ has_reward_mapping|yesno:'true,false' }}" class="flex-1 min-w-[100%] xl:min-w-[50%] m-1 content-center h-fit">
+  <div x-show="{{ has_reward_mapping|yesno:'true,false' }}" class="flex overflow-hidden">
+    <div x-show="visOptions.includes('rewardsOverTime')" class="flex-1 min-w-[100%] xl:min-w-[50%] m-1 content-center h-fit">
+      {% include "core/rewards_over_time.html" %}
+    </div>
+    <div x-show="visOptions.includes('rewardsOverTime')" class="flex-1 min-w-[100%] xl:min-w-[50%] m-1 content-center h-fit">
       {% include "core/rewards_over_time_decomp.html" %}
     </div>
+  </div>
+  <div class="flex overflow-hidden">
     <div x-show="visOptions.includes('obsClustering')" class="flex-1 min-w-[100%] xl:min-w-[50%] m-1 content-center h-fit">
       <div class="col-span-12 content-center">
-        {% include "core/observation_clustering.html" %}
+        {% include "core/clustering.html" with key="'obs'" title="Observations" %}
       </div>
       <div class="col-span-12 content-center mr-4">
-        {% include "core/observation_clustering_timeline.html" %}
+        {% include "core/clustering_timeline.html" with key="'obs'" title="Observations" %}
+      </div>
+    </div>
+    <div x-show="visOptions.includes('actionClustering')" class="flex-1 min-w-[100%] xl:min-w-[50%] m-1 content-center h-fit">
+      <div class="col-span-12 content-center">
+        {% include "core/clustering.html" with key="'agent_outs'" title="Actions" %}
+      </div>
+      <div class="col-span-12 content-center mr-4">
+        {% include "core/clustering_timeline.html" with key="'agent_outs'" title="Actions" %}
       </div>
     </div>
   </div>

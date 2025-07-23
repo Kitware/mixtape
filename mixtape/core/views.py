@@ -1,6 +1,5 @@
 from collections import defaultdict
 from itertools import accumulate
-
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 import einops
@@ -13,16 +12,7 @@ from mixtape.core.models.step import Step
 from mixtape.core.ray_utils.utility_functions import get_environment_mapping
 
 
-def _fetch_all_episode_observations(episode_ids: list[int]) -> list[dict]:
-    """
-    Fetch observations for multiple episodes and pad them to match the episode with the most steps.
-
-    Args:
-        episode_ids: List of episode IDs to fetch observations for
-
-    Returns:
-        List of dictionaries, each containing an 'obs' key with a padded numpy array
-    """
+def _fetch_all_episode_features(episode_ids: list[int]) -> list[dict]:
     # Fetch all episodes and their steps
     all_steps = Step.objects.prefetch_related('agent_steps').filter(episode_id__in=episode_ids)
 
@@ -53,14 +43,21 @@ def _fetch_all_episode_observations(episode_ids: list[int]) -> list[dict]:
         raise Http404('No agent steps found for episode')
     first_obs = np.array(first_agent_step.observation_space).flatten()
     obs_shape = first_obs.shape
+    if first_agent_step.action_distribution:
+        first_action_dist = np.array(first_agent_step.action_distribution).flatten()
+        action_dist_shape = first_action_dist.shape
+    else:
+        # If no action distribution data, create a default shape
+        action_dist_shape = (1,)
 
     results = []
 
     for episode_id in episode_ids:
         steps = episode_steps[episode_id]
 
-        # Initialize padded array
+        # Initialize padded arrays
         obs = np.zeros((max_timesteps, n_agents, *obs_shape))
+        agent_outs = np.zeros((max_timesteps, n_agents, *action_dist_shape))
 
         # Fill in the actual data
         for step in steps:
@@ -68,9 +65,11 @@ def _fetch_all_episode_observations(episode_ids: list[int]) -> list[dict]:
             for agent_step in step.agent_steps.all():
                 if agent_step.agent in agent_to_idx:
                     agent_idx = agent_to_idx[agent_step.agent]
+                    if agent_step.action_distribution:
+                        agent_outs[step_idx, agent_idx] = np.array(agent_step.action_distribution).flatten()
                     obs[step_idx, agent_idx] = np.array(agent_step.observation_space).flatten()
 
-        results.append({'obs': obs})
+        results.append({'obs': obs, 'agent_outs': agent_outs})
 
     return results
 
@@ -112,19 +111,22 @@ def _cluster_episodes_by_feature(
     return episode_clusters, episode_manifolds, all_clusters, all_manifolds
 
 
-def cluster_episodes(
+def cluster_episodes_all_features(
     episode_ids: list[int],
     umap_n_neighbors: int = 30,
     umap_min_dist: float = 0.5,
     umap_n_components: int = 20,
     pca_n_components: int = 2,
     kmeans_n_clusters: int = 10,
-    feature_name: str = 'obs',
     feature_dimensions: str = 'episode time agent',
     seed: int = 42,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    episodes = _fetch_all_episode_observations(episode_ids)
+) -> tuple[dict, dict]:
+    # Fetch both types of data
+    features = _fetch_all_episode_features(episode_ids)
+    obs_episodes = [{'obs': feat['obs']} for feat in features if 'obs' in feat]
+    agent_outs_episodes = [{'agent_outs': feat['agent_outs']} for feat in features if 'agent_outs' in feat]
 
+    # Create pipelines
     manifold_pipeline = pipeline.Pipeline(
         [
             ('scale', preprocessing.StandardScaler()),
@@ -143,13 +145,39 @@ def cluster_episodes(
     )
     cluster_pipeline = cluster.KMeans(kmeans_n_clusters, random_state=seed)
 
-    return _cluster_episodes_by_feature(
-        episodes,
-        feature_name,
+    # Cluster observations
+    obs_clusters, obs_manifolds, obs_all_clusters, obs_all_manifolds = _cluster_episodes_by_feature(
+        obs_episodes,
+        'obs',
         manifold_pipeline,
         cluster_pipeline,
         dimension_keys=feature_dimensions,
     )
+
+    # Cluster action distributions
+    agent_outs_clusters, agent_outs_manifolds, agent_outs_all_clusters, agent_outs_all_manifolds = _cluster_episodes_by_feature(
+        agent_outs_episodes,
+        'agent_outs',
+        manifold_pipeline,
+        cluster_pipeline,
+        dimension_keys=feature_dimensions,
+    )
+
+    obs_results = {
+        'episode_clusters': obs_clusters,
+        'episode_manifolds': obs_manifolds,
+        'all_clusters': obs_all_clusters,
+        'all_manifolds': obs_all_manifolds,
+    }
+
+    agent_outs_results = {
+        'episode_clusters': agent_outs_clusters,
+        'episode_manifolds': agent_outs_manifolds,
+        'all_clusters': agent_outs_all_clusters,
+        'all_manifolds': agent_outs_all_manifolds,
+    }
+
+    return obs_results, agent_outs_results
 
 
 def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
@@ -305,15 +333,14 @@ def insights(request: HttpRequest) -> HttpResponse:
     # Get unique agents across all episodes
     unique_agents = insight_results['unique_agents']
 
-    # Run clustering task for this episode
-    episode_clusters, episode_manifolds, all_clusters, all_manifolds = cluster_episodes(
+    # Run clustering task for both observations and action distributions
+    obs_clustering, agent_outs_clustering = cluster_episodes_all_features(
         episode_pks,
         umap_n_neighbors=30,
         umap_min_dist=0.5,
         umap_n_components=20,
         pca_n_components=2,
         kmeans_n_clusters=10,
-        feature_name='obs',
         feature_dimensions='episode time agent',
         seed=42,
     )
@@ -333,11 +360,20 @@ def insights(request: HttpRequest) -> HttpResponse:
             'timeline_key_steps': all_timeline_steps,
         },
         'clustering': {
-            'all_manifolds_x': all_manifolds[:, 0].tolist(),
-            'all_manifolds_y': all_manifolds[:, 1].tolist(),
-            'all_clusters': all_clusters.tolist(),
-            'episode_manifolds': episode_manifolds.tolist(),
-            'episode_clusters': episode_clusters[0].T.tolist(),
+            'obs': {
+                'all_manifolds_x': obs_clustering['all_manifolds'][:, 0].tolist(),
+                'all_manifolds_y': obs_clustering['all_manifolds'][:, 1].tolist(),
+                'all_clusters': obs_clustering['all_clusters'].tolist(),
+                'episode_manifolds': obs_clustering['episode_manifolds'].tolist(),
+                'episode_clusters': obs_clustering['episode_clusters'][0].T.tolist(),
+            },
+            'agent_outs': {
+                'all_manifolds_x': agent_outs_clustering['all_manifolds'][:, 0].tolist(),
+                'all_manifolds_y': agent_outs_clustering['all_manifolds'][:, 1].tolist(),
+                'all_clusters': agent_outs_clustering['all_clusters'].tolist(),
+                'episode_manifolds': agent_outs_clustering['episode_manifolds'].tolist(),
+                'episode_clusters': agent_outs_clustering['episode_clusters'][0].T.tolist(),
+            },
         },
         'has_reward_mapping': any(
             episode.inference.checkpoint.training.reward_mapping for episode in all_episode_details
