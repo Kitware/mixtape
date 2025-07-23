@@ -4,6 +4,7 @@ from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 import einops
 import numpy as np
+import os
 from sklearn import cluster, decomposition, pipeline, preprocessing
 import umap.umap_ as umap
 
@@ -136,8 +137,8 @@ def cluster_episodes_all_features(
                     n_neighbors=umap_n_neighbors,
                     min_dist=umap_min_dist,
                     n_components=umap_n_components,
-                    densmap=True,
-                    random_state=seed,
+                    densmap=False,
+                    n_jobs=min(8, os.cpu_count() - 1),
                 ),
             ),
             ('decompose', decomposition.PCA(pca_n_components)),
