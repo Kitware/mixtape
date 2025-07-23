@@ -122,10 +122,12 @@ def ingest_episode(json_file: TextIO, allow_existing: bool) -> None:
                             raise ValueError('Either reward or rewards must be defined')
                         rewards = [agent_step_data.reward]
 
-                    AgentStep.objects.create(
+                    agent_step = AgentStep(
                         step=step,
                         agent=agent_step_data.agent,
                         action=agent_step_data.action,
                         rewards=rewards,
                         observation_space=agent_step_data.observation_space,
                     )
+                    agent_step.full_clean()
+                    agent_step.save()

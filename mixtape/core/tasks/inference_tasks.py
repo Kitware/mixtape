@@ -60,13 +60,16 @@ def run_inference_task(inference_pk: int):
                                 episode=episode, number=step, image=image_file
                             )
 
-                        AgentStep.objects.create(
+                        agent_step = AgentStep(
                             agent='agent_0',
                             step=step_model,
                             action=action,
                             rewards=[reward],
                             observation_space=observation,
+                            action_distribution=extras.get('action_dist_inputs'),
                         )
+                        agent_step.full_clean()
+                        agent_step.save()
 
                         # Step the environment forward with the computed actions
                         observation, reward, terminated, truncated, info = env.step(action)
@@ -95,13 +98,16 @@ def run_inference_task(inference_pk: int):
                                 episode=episode, number=step, image=image_file
                             )
                         for agent in env.agents:
-                            AgentStep.objects.create(
+                            agent_step = AgentStep(
                                 agent=agent,
                                 step=step_model,
                                 action=actions[agent],
                                 rewards=[rewards[agent]],
                                 observation_space=observations[agent],
+                                action_distribution=action_distributions[agent],
                             )
+                            agent_step.full_clean()
+                            agent_step.save()
 
                         # Step the environment forward with the computed actions
                         observations, rewards, terminations, truncations, infos = env.step(actions)
@@ -130,12 +136,15 @@ def run_inference_task(inference_pk: int):
                                 episode=episode, number=step, image=image_file
                             )
                         if action is not None:
-                            AgentStep.objects.create(
+                            agent_step = AgentStep(
                                 agent=agent,
                                 step=step_model,
                                 action=action,
                                 rewards=[reward],
                                 observation_space=observation,
+                                action_distribution=extras.get('action_dist_inputs'),
                             )
+                            agent_step.full_clean()
+                            agent_step.save()
 
                         env.step(action)  # Step the environment forward with the action
