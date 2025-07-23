@@ -1,10 +1,11 @@
 from collections import defaultdict
 from itertools import accumulate
+import os
+
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 import einops
 import numpy as np
-import os
 from sklearn import cluster, decomposition, pipeline, preprocessing
 import umap.umap_ as umap
 
@@ -67,7 +68,9 @@ def _fetch_all_episode_features(episode_ids: list[int]) -> list[dict]:
                 if agent_step.agent in agent_to_idx:
                     agent_idx = agent_to_idx[agent_step.agent]
                     if agent_step.action_distribution:
-                        agent_outs[step_idx, agent_idx] = np.array(agent_step.action_distribution).flatten()
+                        agent_outs[step_idx, agent_idx] = np.array(
+                            agent_step.action_distribution
+                        ).flatten()
                     obs[step_idx, agent_idx] = np.array(agent_step.observation_space).flatten()
 
         results.append({'obs': obs, 'agent_outs': agent_outs})
@@ -125,9 +128,12 @@ def cluster_episodes_all_features(
     # Fetch both types of data
     features = _fetch_all_episode_features(episode_ids)
     obs_episodes = [{'obs': feat['obs']} for feat in features if 'obs' in feat]
-    agent_outs_episodes = [{'agent_outs': feat['agent_outs']} for feat in features if 'agent_outs' in feat]
+    agent_outs_episodes = [
+        {'agent_outs': feat['agent_outs']} for feat in features if 'agent_outs' in feat
+    ]
 
     # Create pipelines
+    avail_cpus = (os.cpu_count() or 0) - 1
     manifold_pipeline = pipeline.Pipeline(
         [
             ('scale', preprocessing.StandardScaler()),
@@ -138,7 +144,7 @@ def cluster_episodes_all_features(
                     min_dist=umap_min_dist,
                     n_components=umap_n_components,
                     densmap=False,
-                    n_jobs=min(8, os.cpu_count() - 1),
+                    n_jobs=min(8, avail_cpus),
                 ),
             ),
             ('decompose', decomposition.PCA(pca_n_components)),
@@ -156,12 +162,14 @@ def cluster_episodes_all_features(
     )
 
     # Cluster action distributions
-    agent_outs_clusters, agent_outs_manifolds, agent_outs_all_clusters, agent_outs_all_manifolds = _cluster_episodes_by_feature(
-        agent_outs_episodes,
-        'agent_outs',
-        manifold_pipeline,
-        cluster_pipeline,
-        dimension_keys=feature_dimensions,
+    agent_outs_clusters, agent_outs_manifolds, agent_outs_all_clusters, agent_outs_all_manifolds = (
+        _cluster_episodes_by_feature(
+            agent_outs_episodes,
+            'agent_outs',
+            manifold_pipeline,
+            cluster_pipeline,
+            dimension_keys=feature_dimensions,
+        )
     )
 
     obs_results = {
