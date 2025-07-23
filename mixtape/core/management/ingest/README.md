@@ -21,19 +21,20 @@ The JSON file is required to contain information about both the training as well
     "training": {
         "environment": "string",
         "algorithm": "string",
-        "parallel": false,                         // Optional, defaults to false
-        "num_gpus": 0.0,                           // Optional
+        "parallel": false,                          // Optional, defaults to false
+        "num_gpus": 0.0,                            // Optional
         "iterations": 100,
-        "config": {}                               // Optional
+        "config": {},                               // Optional
+        "reward_mapping": ["string"]                // Optional
     },
     "inference": {
-        "parallel": false,                         // Optional, defaults to false
-        "config": {},                              // Optional
-        "steps": [                                 // Must have at least one step
+        "parallel": false,                          // Optional, defaults to false
+        "config": {},                               // Optional
+        "steps": [                                  // Must have at least one step
             {
-                "number": 0,                       // This is the step number
-                "image": "base64_encoded_string",  // Optional
-                "agent_steps": [                   // Optional, one agent_step per agent that performs an action in the current step
+                "number": 0,                        // This is the step number
+                "image": "base64_encoded_string",   // Optional
+                "agent_steps": [                    // Optional, one agent_step per agent that performs an action in the current step
                     {
                         "agent": "string",
                         /**
@@ -43,9 +44,11 @@ The JSON file is required to contain information about both the training as well
                             provide float values, discrete action spaces should provide integer
                             values.
                         */
-                        "action": 0.0,
-                        "reward": 0.0,
-                        "observation_space": [0.0] // Currently only supports 1D or 2D array of floats
+                        "action": "float | int",
+                        "reward": "float | int",              // Users must provide either reward or rewards, not both
+                        "rewards": ["float | int"],           // Users must provide either reward or rewards, not both
+                        "observation_space": ["float | int"], // Currently only supports 1D or 2D array of floats
+                        "action_distribution": ["float"]   // Optional
                     }
                 ]
             }
