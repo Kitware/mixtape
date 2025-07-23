@@ -84,11 +84,13 @@ def run_inference_task(inference_pk: int):
                     # Loop until all agents are done (terminated or truncated)
                     for step in itertools.count(start=0):
                         actions = {}
+                        action_distributions = {}
                         for agent, obs in observations.items():
                             action, state, extras = algorithm.compute_single_action(
                                 obs, full_fetch=True
                             )
                             actions[agent] = action
+                            action_distributions[agent] = extras.get('action_dist_inputs')
                         rgb_image_array = env.render()
                         assert isinstance(rgb_image_array, np.ndarray)
                         with Step.rgb_array_to_file(

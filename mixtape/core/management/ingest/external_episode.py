@@ -11,6 +11,7 @@ class ExternalAgentStep(BaseModel):
     reward: float | None = None
     rewards: list[float | int] | None = None
     observation_space: list[float] | list[list[float]]
+    action_distribution: list[float] | None = None
 
     @field_validator('rewards')
     @classmethod

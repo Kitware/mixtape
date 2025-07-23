@@ -21,6 +21,8 @@ class AgentStep(models.Model):
     rewards = models.JSONField(encoder=CustomJSONEncoder, default=rewards_default)
     observation_space = models.JSONField(encoder=CustomJSONEncoder)
 
+    action_distribution = models.JSONField(encoder=CustomJSONEncoder, null=True, blank=True)
+
     def clean(self):
         # Validate that it matches the training's reward mapping length
         training = self.step.episode.inference.checkpoint.training
