@@ -7,18 +7,19 @@ from mixtape.core.ray_utils.utility_functions import get_environment_mapping
 from .step import Step
 
 
+def _rewards_default():
+    return [0]
+
+
 class AgentStep(models.Model):
     class Meta:
         constraints = [models.UniqueConstraint(fields=['agent', 'step'], name='unique_agent_step')]
-
-    def rewards_default(self):
-        return [0]
 
     step = models.ForeignKey(Step, on_delete=models.CASCADE, related_name='agent_steps')
     agent = models.CharField(max_length=200)
 
     action = models.FloatField()
-    rewards = models.JSONField(encoder=CustomJSONEncoder, default=rewards_default)
+    rewards = models.JSONField(encoder=CustomJSONEncoder, default=_rewards_default)
     observation_space = models.JSONField(encoder=CustomJSONEncoder)
 
     action_distribution = models.JSONField(encoder=CustomJSONEncoder, null=True, blank=True)

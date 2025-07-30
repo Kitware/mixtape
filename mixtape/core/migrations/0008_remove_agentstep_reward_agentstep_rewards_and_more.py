@@ -21,7 +21,7 @@ class Migration(migrations.Migration):
             model_name='agentstep',
             name='rewards',
             field=models.JSONField(
-                default=mixtape.core.models.agent_step.AgentStep.rewards_default,
+                default=mixtape.core.models.agent_step._rewards_default,
                 encoder=mixtape.core.ray_utils.json_encoder.CustomJSONEncoder,
             ),
         ),
