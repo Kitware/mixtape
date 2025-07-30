@@ -1,4 +1,8 @@
-FROM ghcr.io/astral-sh/uv:debian
+FROM mcr.microsoft.com/devcontainers/base:ubuntu-24.04
+
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+RUN mv /root/.local/bin/uv /usr/local/bin/uv
+RUN mv /root/.local/bin/uvx /usr/local/bin/uvx
 
 # Make Python more friendly to running in containers
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -11,3 +15,7 @@ ENV UV_PROJECT_ENVIRONMENT=/var/lib/venv \
   # The uv cache and environment are expected to be mounted on different volumes,
   # so hardlinks won't work
   UV_LINK_MODE=symlink
+
+USER vscode
+
+WORKDIR /home/vscode/mixtape

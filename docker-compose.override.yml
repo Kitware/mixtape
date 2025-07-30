@@ -9,11 +9,18 @@ services:
     ]
     tty: true
     environment:
+      PYTHONDONTWRITEBYTECODE: 1
+      PYTHONUNBUFFERED: 1
       UV_ENV_FILE: ./dev/.env.docker-compose
-    working_dir: /opt/django-project
+      UV_PROJECT_ENVIRONMENT: /home/vscode/uv-env
+      UV_CACHE_DIR: /home/vscode/uv/cache
+      UV_PYTHON_INSTALL_DIR: /home/vscode/uv/bin
+      UV_LINK_MODE: symlink
+    env_file: ./dev/.env.docker-compose
+    working_dir: /home/vscode/mixtape
     platform: linux/amd64
     volumes:
-      - .:/opt/django-project
+      - .:/home/vscode/mixtape
       - uv_cache:/var/cache/uv
     ports:
       - 8000:8000
@@ -40,11 +47,18 @@ services:
     # Docker Compose does not set the TTY width, which causes Celery errors
     tty: false
     environment:
+      PYTHONDONTWRITEBYTECODE: 1
+      PYTHONUNBUFFERED: 1
       UV_ENV_FILE: ./dev/.env.docker-compose
-    working_dir: /opt/django-project
+      UV_PROJECT_ENVIRONMENT: /home/vscode/uv-env
+      UV_CACHE_DIR: /home/vscode/uv/cache
+      UV_PYTHON_INSTALL_DIR: /home/vscode/uv/bin
+      UV_LINK_MODE: symlink
+    env_file: ./dev/.env.docker-compose
+    working_dir: /home/vscode/mixtape
     platform: linux/amd64
     volumes:
-      - .:/opt/django-project
+      - .:/home/vscode/mixtape
       - uv_cache:/var/cache/uv
     depends_on:
       postgres:
