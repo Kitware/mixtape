@@ -10,7 +10,7 @@ This is the simplest configuration for developers to start with.
 
 ### Run Application
 1. Run `docker compose up`
-2. Access the site, starting at http://localhost:8000/admin/
+2. Access the site, starting at <http://localhost:8000/admin/>
 3. When finished, use `Ctrl+C`
 
 ### Maintenance
@@ -55,7 +55,7 @@ docker compose run --rm django \
 docker compose run --rm django ./manage.py inference --help
 ```
 
-If you've already started the server with `docker compose up`, you can see all available checkpoints at http://localhost:8000/admin/core/checkpoint/.
+If you've already started the server with `docker compose up`, you can see all available checkpoints at <http://localhost:8000/admin/core/checkpoint/>.
 
 ### Ingest existing episode(s)
 

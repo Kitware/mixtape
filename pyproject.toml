@@ -23,7 +23,7 @@ dependencies = [
   "django-extensions",
   "django-filter",
   "django-oauth-toolkit",
-  "django-resonant-settings[allauth] >= 0.30",
+  "django-resonant-settings[allauth,celery]",
   "django-resonant-utils",
   "django-stubs-ext",
   "djangorestframework",
@@ -148,14 +148,17 @@ django_settings_module = "mixtape.settings.testing"
 [tool.pytest.ini_options]
 addopts = [
   # Test utilies should be imported absolutely from the pythonpath,
-  # so use the Pytest-reccomended "importlib" mode
+  # so use the Pytest-recommended "importlib" mode
   "--import-mode=importlib",
   "--strict-config",
   "--strict-markers",
   "--showlocals",
   "--verbose",
+  # Specifying as "--ds" will override any value in the environment
+  "--ds=mixtape.settings.testing",
 ]
 filterwarnings = [
   "error",
+  # pytest often causes unclosed socket warnings
+  "ignore:unclosed <socket\\.socket:ResourceWarning",
 ]
-DJANGO_SETTINGS_MODULE = "mixtape.settings.testing"
