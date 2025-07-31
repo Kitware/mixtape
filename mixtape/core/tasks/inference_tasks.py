@@ -65,8 +65,12 @@ def run_inference_task(inference_pk: int):
                             step=step_model,
                             action=action,
                             rewards=[reward],
-                            observation_space=observation,
-                            action_distribution=extras.get('action_dist_inputs'),
+                            observation_space=observation.tolist(),
+                            action_distribution=(
+                                extras['action_dist_inputs'].tolist()
+                                if 'action_dist_inputs' in extras
+                                else None
+                            ),
                         )
                         agent_step.full_clean()
                         agent_step.save()
@@ -104,9 +108,13 @@ def run_inference_task(inference_pk: int):
                                 agent=agent,
                                 step=step_model,
                                 action=actions[agent],
+                                observation_space=observations[agent].tolist(),
                                 rewards=[rewards[agent]],
-                                observation_space=observations[agent],
-                                action_distribution=action_distributions[agent],
+                                action_distribution=(
+                                    action_distributions[agent].tolist()
+                                    if action_distributions[agent] is not None
+                                    else None
+                                ),
                             )
                             agent_step.full_clean()
                             agent_step.save()
@@ -143,8 +151,12 @@ def run_inference_task(inference_pk: int):
                                 step=step_model,
                                 action=action,
                                 rewards=[reward],
-                                observation_space=observation,
-                                action_distribution=extras.get('action_dist_inputs'),
+                                observation_space=observation.tolist(),
+                                action_distribution=(
+                                    extras['action_dist_inputs'].tolist()
+                                    if 'action_dist_inputs' in extras
+                                    else None
+                                ),
                             )
                             agent_step.full_clean()
                             agent_step.save()

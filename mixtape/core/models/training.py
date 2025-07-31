@@ -17,7 +17,7 @@ class Training(models.Model):
     config = models.JSONField(default=dict, blank=True, null=True, encoder=CustomJSONEncoder)
 
     # Reward mapping for environments with multiple reward components
-    reward_mapping = models.JSONField(encoder=CustomJSONEncoder, null=True, blank=True)
+    reward_mapping = models.JSONField(null=True, blank=True)
 
     is_external = models.BooleanField(default=False)
 

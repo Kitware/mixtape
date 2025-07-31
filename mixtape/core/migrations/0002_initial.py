@@ -3,8 +3,6 @@
 from django.db import migrations, models
 import django.db.models.deletion
 
-import mixtape.core.ray_utils.utility_functions
-
 
 class Migration(migrations.Migration):
 
@@ -143,7 +141,7 @@ class Migration(migrations.Migration):
                 ('reward', models.FloatField()),
                 (
                     'observation_space',
-                    models.JSONField(encoder=mixtape.core.ray_utils.json_encoder.CustomJSONEncoder),
+                    models.JSONField(),
                 ),
                 (
                     'step',

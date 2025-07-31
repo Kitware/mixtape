@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='actionmapping',
             name='mapping',
-            field=models.JSONField(encoder=mixtape.core.ray_utils.json_encoder.CustomJSONEncoder),
+            field=models.JSONField(),
         ),
         migrations.AlterField(
             model_name='inference',
