@@ -1,7 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.db import models
 
-from mixtape.core.ray_utils.json_encoder import CustomJSONEncoder
 from mixtape.core.ray_utils.utility_functions import get_environment_mapping
 
 from .step import Step
@@ -19,10 +18,10 @@ class AgentStep(models.Model):
     agent = models.CharField(max_length=200)
 
     action = models.FloatField()
-    rewards = models.JSONField(encoder=CustomJSONEncoder, default=_rewards_default)
-    observation_space = models.JSONField(encoder=CustomJSONEncoder)
+    rewards = models.JSONField(default=_rewards_default)
+    observation_space = models.JSONField()
 
-    action_distribution = models.JSONField(encoder=CustomJSONEncoder, null=True, blank=True)
+    action_distribution = models.JSONField(null=True, blank=True)
 
     def clean(self):
         # Validate that it matches the training's reward mapping length

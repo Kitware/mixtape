@@ -2,8 +2,6 @@
 
 from django.db import migrations, models
 
-import mixtape.core.ray_utils.json_encoder
-
 
 class Migration(migrations.Migration):
 
@@ -15,8 +13,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='agentstep',
             name='action_distribution',
-            field=models.JSONField(
-                blank=True, encoder=mixtape.core.ray_utils.json_encoder.CustomJSONEncoder, null=True
-            ),
+            field=models.JSONField(blank=True, null=True),
         ),
     ]
