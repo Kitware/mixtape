@@ -1,0 +1,13 @@
+<div class="navbar bg-base-300 shadow-md">
+  <div class="navbar-start">
+    {% if request.path != '/' %}
+      {% include "core/drawer.html" %}
+    {% endif %}
+    <span class="text-3xl">MIXTAPE</span>
+  </div>
+  <div class="navbar-center">
+    Explore Episodes
+  </div>
+  <div class="navbar-end">
+  </div>
+</div>
