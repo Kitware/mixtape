@@ -9,5 +9,10 @@
     Explore Episodes
   </div>
   <div class="navbar-end">
+    <label class="toggle text-base-content">
+      <input type="checkbox" checked="checked" x-model="$store.theme.darkMode" @change="document.documentElement.setAttribute('data-theme', $store.theme.darkMode ? 'dark' : 'light')"/>
+      <i class="ri-sun-line flex items-center justify-center text-sm" style="contain: size;"></i>
+      <i class="ri-moon-line flex items-center justify-center text-sm" style="contain: size;"></i>
+    </label>
   </div>
 </div>
