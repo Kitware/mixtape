@@ -7,6 +7,7 @@ import os
 from django.core.files.storage import default_storage
 from django.db import transaction
 from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, render
 import numpy as np
 from sklearn import cluster, decomposition, pipeline, preprocessing
