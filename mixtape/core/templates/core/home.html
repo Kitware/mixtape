@@ -8,6 +8,9 @@
   x-data="{
     selectedEpisodes: [],
     allowedEnvironment: null,
+    selectedAlgorithms: [],
+    selectedEnvironments: [],
+    searchQuery: '',
     updateAllowedEnvironment(env) {
       if (this.selectedEpisodes.length === 0) {
         this.allowedEnvironment = null;
@@ -17,6 +20,22 @@
     },
     viewSelectedEpisodes() {
       window.location.href = '{% url 'insights' %}?episode_id=' + this.selectedEpisodes.join('&episode_id=');
+    },
+    matchesEnvironment(environment) {
+      console.log(this.selectedEnvironment, environment);
+      if (!this.selectedEnvironments.length) return true;
+      return this.selectedEnvironments.includes(environment);
+    },
+    matchesAlgorithm(algorithm) {
+      console.log(this.selectedAlgorithms, algorithm);
+      if (!this.selectedAlgorithms.length) return true;
+      return this.selectedAlgorithms.includes(algorithm);
+    },
+    matchesSearch(environment, algorithm) {
+      if (!this.searchQuery.trim()) return true;
+      const query = this.searchQuery.toLowerCase();
+      return environment.toLowerCase().includes(query) ||
+             algorithm.toLowerCase().includes(query);
     }
   }"
   class="flex flex-col overflow-hidden"
@@ -30,6 +49,7 @@
           type="search"
           class="grow"
           placeholder="Search"
+          x-model="searchQuery"
         />
       </label>
     </div>
@@ -42,7 +62,7 @@
               {% for algorithm in algorithms %}
               <li>
                 <label class="label">
-                  <input type="checkbox" class="checkbox" />
+                  <input type="checkbox" class="checkbox" value="{{ algorithm }}" x-model="selectedAlgorithms" />
                   {{ algorithm }}
                 </label>
               </li>
@@ -59,7 +79,7 @@
               {% for environment in environments %}
               <li>
                 <label class="label">
-                  <input type="checkbox" class="checkbox" />
+                  <input type="checkbox" class="checkbox" value="{{ environment }}" x-model="selectedEnvironments" />
                   {{ environment }}
                 </label>
               </li>
