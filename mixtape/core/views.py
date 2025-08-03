@@ -7,7 +7,10 @@ import os
 from django.core.files.storage import default_storage
 from django.db import transaction
 from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
+import os
+
 from django.db.models import Q
+from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 import numpy as np
 from sklearn import cluster, decomposition, pipeline, preprocessing
@@ -641,4 +644,24 @@ def home_page(request: HttpRequest) -> HttpResponse:
             }
         )
 
-    return render(request, 'core/home/home.html', {'episodes_with_rewards': episodes_with_rewards})
+    episodes = Episode.objects.select_related('inference__checkpoint__training').all()
+    algorithms = (
+        episodes.values_list('inference__checkpoint__training__algorithm', flat=True)
+        .distinct()
+        .order_by('inference__checkpoint__training__algorithm')
+    )
+    environments = (
+        episodes.values_list('inference__checkpoint__training__environment', flat=True)
+        .distinct()
+        .order_by('inference__checkpoint__training__environment')
+    )
+    return render(
+        request,
+        'core/home/home.html',
+        {
+            'episodes': episodes,
+            'algorithms': algorithms,
+            'environments': environments,
+            'episodes_with_rewards': episodes_with_rewards,
+        },
+    )

@@ -1,0 +1,92 @@
+<div class="flex items-center self-center mx-2 my-3 max-w-full flex-shrink-0">
+  <div class="flex flex-grow-2 gap-2 justify-end">
+    <div class="relative min-w-3/4">
+      <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-surface-foreground)]/60"></i>
+      <input
+        type="search"
+        class="form-input pl-9 w-full shadow-sm shadow-neutral-900 rounded-md h-10"
+        placeholder="Search"
+        x-model="searchQuery"
+      />
+    </div>
+  </div>
+  <div class="flex flex-grow-1 gap-2 justify-evenly items-center">
+    <div class="px-1 z-10 relative">
+      <button type="button" class="btn bg-base-200 shadow-sm shadow-neutral-700" @click="algoOpen = !algoOpen" @click.outside="algoOpen = false" :aria-expanded="algoOpen.toString()">Algorithm</button>
+      <ul x-show="algoOpen" x-transition class="card p-2 mt-1 absolute right-0 top-full min-w-48 shadow-sm shadow-neutral-700 bg-base-200">
+          {% for algorithm in algorithms %}
+          <li>
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" class="checkbox" value="{{ algorithm }}" x-model="selectedAlgorithms" />
+              {{ algorithm }}
+            </label>
+          </li>
+          {% endfor %}
+      </ul>
+    </div>
+    <div class="px-1 z-10 mt-1 relative">
+      <button type="button" class="btn bg-base-200 shadow-sm shadow-neutral-700" @click="envOpen = !envOpen" @click.outside="envOpen = false" :aria-expanded="envOpen.toString()">Environment</button>
+      <ul x-show="envOpen" x-transition class="card p-2 mt-1 absolute right-0 top-full min-w-48 shadow-sm shadow-neutral-700 bg-base-200">
+          {% for environment in environments %}
+          <li>
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" class="checkbox" value="{{ environment }}" x-model="selectedEnvironments" />
+              {{ environment }}
+            </label>
+          </li>
+          {% endfor %}
+      </ul>
+    </div>
+    <div class="px-1 z-10 relative">
+      <button type="button" class="btn bg-base-200 btn-icon shadow-sm shadow-neutral-700" @click="sortOpen = !sortOpen" @click.outside="sortOpen = false" :aria-expanded="sortOpen.toString()">
+        <i class="ri-arrow-up-down-line text-lg"></i>
+      </button>
+      <ul x-show="sortOpen" x-transition class="card p-2 mt-1 absolute right-0 top-full min-w-64 shadow-sm shadow-neutral-700 bg-base-200">
+        <li>
+          <label class="flex items-center gap-2 text-sm">
+            <input type="radio" name="sort" value="newest" x-model="sortOrder" @change="applySorting()" />
+            Newest First
+          </label>
+        </li>
+        <li>
+          <label class="flex items-center gap-2 text-sm">
+            <input type="radio" name="sort" value="oldest" x-model="sortOrder" @change="applySorting()" />
+            Oldest First
+          </label>
+        </li>
+        <li>
+          <label class="flex items-center gap-2 text-sm">
+            <input type="radio" name="sort" value="environment" x-model="sortOrder" @change="applySorting()" />
+            Environment A–Z
+          </label>
+        </li>
+        <li>
+          <label class="flex items-center gap-2 text-sm">
+            <input type="radio" name="sort" value="algorithm" x-model="sortOrder" @change="applySorting()" />
+            Algorithm A–Z
+          </label>
+        </li>
+      </ul>
+    </div>
+    <div class="px-1 relative">
+      <button
+        type="button"
+        class="btn bg-base-200 btn-icon shadow-sm shadow-neutral-700"
+        :class="multiSelectMode ? 'btn-active' : ''"
+        @click="toggleMultiSelect()"
+        :aria-pressed="multiSelectMode.toString()"
+      >
+        <i class="ri-list-check-3 text-lg"></i>
+      </button>
+    </div>
+    <div>
+      <button
+        class="btn btn-primary"
+        :disabled="selectedEpisodes.length === 0"
+        @click="viewSelectedEpisodes"
+      >
+        View Selected Episodes
+      </button>
+    </div>
+  </div>
+</div>
