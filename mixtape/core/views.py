@@ -1,8 +1,9 @@
 from collections import defaultdict
 from itertools import accumulate
 import os
-from django.http import Http404, HttpRequest, HttpResponse
+
 from django.db.models import Q
+from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 import einops
 import numpy as np
@@ -398,6 +399,18 @@ def insights(request: HttpRequest) -> HttpResponse:
 
 def home_page(request: HttpRequest) -> HttpResponse:
     episodes = Episode.objects.select_related('inference__checkpoint__training').all()
-    algorithms = episodes.values_list('inference__checkpoint__training__algorithm', flat=True).distinct().order_by('inference__checkpoint__training__algorithm')
-    environments = episodes.values_list('inference__checkpoint__training__environment', flat=True).distinct().order_by('inference__checkpoint__training__environment')
-    return render(request, 'core/home.html', {'episodes': episodes, 'algorithms': algorithms, 'environments': environments})
+    algorithms = (
+        episodes.values_list('inference__checkpoint__training__algorithm', flat=True)
+        .distinct()
+        .order_by('inference__checkpoint__training__algorithm')
+    )
+    environments = (
+        episodes.values_list('inference__checkpoint__training__environment', flat=True)
+        .distinct()
+        .order_by('inference__checkpoint__training__environment')
+    )
+    return render(
+        request,
+        'core/home.html',
+        {'episodes': episodes, 'algorithms': algorithms, 'environments': environments},
+    )
