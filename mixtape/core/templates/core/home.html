@@ -11,6 +11,8 @@
     selectedAlgorithms: [],
     selectedEnvironments: [],
     searchQuery: '',
+    sortOrder: 'newest',
+    sortOptions: ['newest', 'oldest', 'environment', 'algorithm'],
     updateAllowedEnvironment(env) {
       if (this.selectedEpisodes.length === 0) {
         this.allowedEnvironment = null;
@@ -22,12 +24,10 @@
       window.location.href = '{% url 'insights' %}?episode_id=' + this.selectedEpisodes.join('&episode_id=');
     },
     matchesEnvironment(environment) {
-      console.log(this.selectedEnvironment, environment);
       if (!this.selectedEnvironments.length) return true;
       return this.selectedEnvironments.includes(environment);
     },
     matchesAlgorithm(algorithm) {
-      console.log(this.selectedAlgorithms, algorithm);
       if (!this.selectedAlgorithms.length) return true;
       return this.selectedAlgorithms.includes(algorithm);
     },
@@ -36,6 +36,43 @@
       const query = this.searchQuery.toLowerCase();
       return environment.toLowerCase().includes(query) ||
              algorithm.toLowerCase().includes(query);
+    },
+    toggleSort() {
+      const currentIndex = this.sortOptions.indexOf(this.sortOrder);
+      const nextIndex = (currentIndex + 1) % this.sortOptions.length;
+      this.sortOrder = this.sortOptions[nextIndex];
+      this.applySorting();
+    },
+    getSortLabel() {
+      const labels = {
+        'newest': 'Newest First',
+        'oldest': 'Oldest First',
+        'environment': 'Environment A-Z',
+        'algorithm': 'Algorithm A-Z'
+      };
+      return labels[this.sortOrder];
+    },
+    applySorting() {
+      const container = document.getElementById('episodes-list');
+      const episodes = Array.from(container.children);
+
+      episodes.sort((a, b) => {
+        switch(this.sortOrder) {
+          case 'newest':
+            // Default order (assuming episodes are already sorted by creation date desc)
+            return parseInt(a.dataset.episodeId) - parseInt(b.dataset.episodeId);
+          case 'oldest':
+            return parseInt(b.dataset.episodeId) - parseInt(a.dataset.episodeId);
+          case 'environment':
+            return a.dataset.environment.localeCompare(b.dataset.environment);
+          case 'algorithm':
+            return a.dataset.algorithm.localeCompare(b.dataset.algorithm);
+          default:
+            return 0;
+        }
+      });
+      // Reorder the DOM elements
+      episodes.forEach(episode => container.appendChild(episode));
     }
   }"
   class="flex flex-col overflow-hidden"
@@ -71,7 +108,7 @@
           </details>
         </li>
       </ul>
-      <ul class="menu menu-horizontal px-1 z-10">
+      <ul class="menu menu-horizontal px-1 z-10 mt-4">
         <li>
           <details>
             <summary>Environment</summary>
@@ -88,9 +125,44 @@
           </details>
         </li>
       </ul>
-      <button class="btn btn-square btn-ghost">
+      <!-- <button class="btn btn-square btn-ghost">
         <i class="ri-arrow-up-down-line"></i>
-      </button>
+      </button> -->
+      <ul class="menu menu-horizontal px-1 z-10">
+        <li>
+          <details>
+            <summary>
+              <i class="ri-arrow-up-down-line"></i>
+            </summary>
+            <ul class="bg-base-100 rounded-t-none p-2">
+              <li>
+                <label class="label">
+                  <input type="checkbox" class="checkbox" value="env_asc" x-model="sortOrder" />
+                  Environment Name Ascending
+                </label>
+              </li>
+              <li>
+                <label class="label">
+                  <input type="checkbox" class="checkbox" value="env_desc" x-model="sortOrder" />
+                  Environment Name Descending
+                </label>
+              </li>
+              <li>
+                <label class="label">
+                  <input type="checkbox" class="checkbox" value="algo_asc" x-model="sortOrder" />
+                  Algorithm Name Ascending
+                </label>
+              </li>
+              <li>
+                <label class="label">
+                  <input type="checkbox" class="checkbox" value="algo_desc" x-model="sortOrder" />
+                  Algorithm Name Descending
+                </label>
+              </li>
+            </ul>
+          </details>
+        </li>
+      </ul>
       <button class="btn btn-square btn-ghost">
         <i class="ri-filter-fill"></i>
       </button>
