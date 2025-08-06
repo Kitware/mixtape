@@ -19,8 +19,148 @@
       window.location.href = '{% url 'insights' %}?episode_id=' + this.selectedEpisodes.join('&episode_id=');
     }
   }"
+  class="flex flex-col overflow-hidden"
+  style="height: calc(100vh - 64px);"
 >
-  <div class="w-full flex justify-end">
+  <div class="flex items-center self-center mx-2 my-3 w-3/4 flex-shrink-0">
+    <div class="flex gap-2">
+      <label class="input w-2xl!">
+        <i class="ri-search-line"></i>
+        <input
+          type="search"
+          class="grow"
+          placeholder="Search"
+        />
+      </label>
+    </div>
+    <div class="flex gap-2 w-full justify-evenly">
+      <ul class="menu menu-horizontal px-1 z-10">
+        <li>
+          <details>
+            <summary>Algorithm</summary>
+            <ul class="bg-base-100 rounded-t-none p-2">
+              {% for algorithm in algorithms %}
+              <li>
+                <label class="label">
+                  <input type="checkbox" class="checkbox" />
+                  {{ algorithm }}
+                </label>
+              </li>
+              {% endfor %}
+            </ul>
+          </details>
+        </li>
+      </ul>
+      <ul class="menu menu-horizontal px-1 z-10">
+        <li>
+          <details>
+            <summary>Environment</summary>
+            <ul class="bg-base-100 rounded-t-none p-2">
+              {% for environment in environments %}
+              <li>
+                <label class="label">
+                  <input type="checkbox" class="checkbox" />
+                  {{ environment }}
+                </label>
+              </li>
+              {% endfor %}
+            </ul>
+          </details>
+        </li>
+      </ul>
+      <button class="btn btn-square btn-ghost">
+        <i class="ri-arrow-up-down-line"></i>
+      </button>
+      <button class="btn btn-square btn-ghost">
+        <i class="ri-filter-fill"></i>
+      </button>
+      <button class="btn btn-square btn-ghost">
+        <i class="ri-list-check-3"></i>
+      </button>
+    </div>
+  </div>
+  <div class="bg-base-200 m-2 p-2 flex-1 overflow-y-auto min-h-0 rounded-sm">
+    <ol>
+      {% for episode in episodes %}
+      <li
+        class="card raised m-2"
+        x-show="!allowedEnvironment || allowedEnvironment === '{{ episode.inference.checkpoint.training.environment }}'"
+      >
+        <div class="flex justify-between">
+          <div>
+            <input
+              id="{{ episode.pk }}-checkbox"
+              type="checkbox"
+              value="{{ episode.pk }}"
+              x-model="selectedEpisodes"
+              @change="updateAllowedEnvironment('{{ episode.inference.checkpoint.training.environment }}')"
+              class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm mr-1"
+              :disabled="allowedEnvironment && allowedEnvironment !== '{{ episode.inference.checkpoint.training.environment }}'"
+            >
+            <a href="{% url 'insights' %}?episode_id={{ episode.pk }}" class="rounded-lg">
+              <span>
+                <span class="font-bold mx-2">{{ episode.inference.checkpoint.training.environment }}</span>
+                <span class="italic">
+                  {{ episode.inference.created|date:"D d M Y" }}
+                  {{ episode.inference.created|time:"H:i" }}
+                </span>
+              </span>
+            </a>
+          </div>
+          <a href="{% url 'insights' %}?episode_id={{ episode.pk }}" target="_blank" class="rounded-lg">
+            <i class="ri-external-link-line p-1"></i>
+          </a>
+        </div>
+        <div class="ml-4">
+          <span>{{ episode.inference.checkpoint.training.algorithm }}</span>
+          <span>{{ episode.inference.checkpoint.training.iterations }} Iterations</span>
+          {% if episode.inference.checkpoint.training.parallel %}
+            <span>Parallel</span>
+          {% endif %}
+        </div>
+        <div x-data="{ open: false }" class="card mt-2">
+          <button @click="open = !open" class="flex items-center justify-between w-full p-3 gap-3">
+            <span>Training Details</span>
+            <i x-show="!open" class="ri-arrow-down-s-line"></i>
+            <i x-show="open" class="ri-arrow-up-s-line"></i>
+          </button>
+          <div x-show="open" class="max-h-[300px] overflow-auto">
+            <div class="flex justify-end">
+              <a
+                href="data:text/json;charset=utf-8,{{ episode.inference.checkpoint.training.config|pretty_json:2|safe|urlencode }}"
+                download="training_{{ episode.inference.checkpoint.training.pk }}_config.json"
+                class="py-1 px-2 rounded-lg"
+              >
+                <i class="ri-download-line"></i>
+              </a>
+            </div>
+            <pre>{{ episode.inference.checkpoint.training.config|pretty_json:2 }}</pre>
+          </div>
+        </div>
+        <div x-show="Object.keys({{ episode.inference.config }}).length" x-data="{ open: false }" class="card mt-2">
+          <button @click="open = !open" class="flex items-center justify-between w-full p-3 gap-3">
+            <span>Episode Details</span>
+            <i x-show="!open" class="ri-arrow-down-s-line"></i>
+            <i x-show="open" class="ri-arrow-up-s-line"></i>
+          </button>
+          <div x-show="open" class="max-h-[300px] overflow-auto">
+            <div class="flex justify-end">
+              <a
+                href="data:text/json;charset=utf-8,{{ episode.inference.config|pretty_json:2|safe|urlencode }}"
+                download="episode_{{ episode.pk }}_config.json"
+                class="py-1 px-2 rounded-lg"
+              >
+                <i class="ri-download-line"></i>
+              </a>
+            </div>
+            <pre>{{ episode.inference.config|pretty_json:2 }}</pre>
+          </div>
+        </div>
+      </li>
+      {% endfor %}
+    </ol>
+  </div>
+  <div class="w-full flex justify-end flex-shrink-0">
     <button
       class="bg-blue-500 hover:bg-blue-800 rounded-lg px-5 py-2.5 me-2 mb-2 disabled:bg-gray-300 disabled:text-gray-400"
       :disabled="selectedEpisodes.length === 0"
@@ -29,83 +169,5 @@
       View Selected Episodes
     </button>
   </div>
-  <ol>
-    {% for episode in episodes %}
-    <li
-      class="card raised m-2"
-      x-show="!allowedEnvironment || allowedEnvironment === '{{ episode.inference.checkpoint.training.environment }}'"
-    >
-      <div class="flex justify-between">
-        <div>
-          <input
-            id="{{ episode.pk }}-checkbox"
-            type="checkbox"
-            value="{{ episode.pk }}"
-            x-model="selectedEpisodes"
-            @change="updateAllowedEnvironment('{{ episode.inference.checkpoint.training.environment }}')"
-            class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm mr-1"
-          >
-          <a href="{% url 'insights' %}?episode_id={{ episode.pk }}" class="rounded-lg">
-            <span>
-              <span class="font-bold mx-2">{{ episode.inference.checkpoint.training.environment }}</span>
-              <span class="italic">
-                {{ episode.inference.created|date:"D d M Y" }}
-                {{ episode.inference.created|time:"H:i" }}
-              </span>
-            </span>
-          </a>
-        </div>
-        <a href="{% url 'insights' %}?episode_id={{ episode.pk }}" target="_blank" class="rounded-lg">
-          <i class="ri-external-link-line p-1"></i>
-        </a>
-      </div>
-      <div class="ml-4">
-        <span>{{ episode.inference.checkpoint.training.algorithm }}</span>
-        <span>{{ episode.inference.checkpoint.training.iterations }} Iterations</span>
-        {% if episode.inference.checkpoint.training.parallel %}
-          <span>Parallel</span>
-        {% endif %}
-      </div>
-      <div x-data="{ open: false }" class="card mt-2">
-        <button @click="open = !open" class="flex items-center justify-between w-full p-3 gap-3">
-          <span>Training Details</span>
-          <i x-show="!open" class="ri-arrow-down-s-line"></i>
-          <i x-show="open" class="ri-arrow-up-s-line"></i>
-        </button>
-        <div x-show="open" class="max-h-[300px] overflow-auto">
-          <div class="flex justify-end">
-            <a
-              href="data:text/json;charset=utf-8,{{ episode.inference.checkpoint.training.config|pretty_json:2|safe|urlencode }}"
-              download="training_{{ episode.inference.checkpoint.training.pk }}_config.json"
-              class="py-1 px-2 rounded-lg"
-            >
-              <i class="ri-download-line"></i>
-            </a>
-          </div>
-          <pre>{{ episode.inference.checkpoint.training.config|pretty_json:2 }}</pre>
-        </div>
-      </div>
-      <div x-show="Object.keys({{ episode.inference.config }}).length" x-data="{ open: false }" class="card mt-2">
-        <button @click="open = !open" class="flex items-center justify-between w-full p-3 gap-3">
-          <span>Episode Details</span>
-          <i x-show="!open" class="ri-arrow-down-s-line"></i>
-          <i x-show="open" class="ri-arrow-up-s-line"></i>
-        </button>
-        <div x-show="open" class="max-h-[300px] overflow-auto">
-          <div class="flex justify-end">
-            <a
-              href="data:text/json;charset=utf-8,{{ episode.inference.config|pretty_json:2|safe|urlencode }}"
-              download="episode_{{ episode.pk }}_config.json"
-              class="py-1 px-2 rounded-lg"
-            >
-              <i class="ri-download-line"></i>
-            </a>
-          </div>
-          <pre>{{ episode.inference.config|pretty_json:2 }}</pre>
-        </div>
-      </div>
-    </li>
-    {% endfor %}
-  </ol>
 </div>
 {% endblock %}
