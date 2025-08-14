@@ -278,7 +278,7 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
         [step for step in key_steps_values if step['total_rewards'] > 0],
         key=lambda x: x['total_rewards'],
         reverse=True,
-    )[:40]
+    )[:15]
     timeline_steps = sorted(timeline_steps, key=lambda x: x['number'])
     timeline_steps_serialized = [
         {

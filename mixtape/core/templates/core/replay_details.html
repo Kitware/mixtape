@@ -1,13 +1,14 @@
 
-<div class="flex justify-evenly overflow-y-auto grid grid-cols-12 col-span-3 flex-col card-alt">
-  <template x-for="agent_step in getStep(step).agent_steps">
-    <div class="m-1 p-1 col-span-12 h-min">
-      <p class="flex justify-evenly">
-        <p><strong>Agent:</strong> <span x-text="agent_step.agent"></span></p>
-        <p><strong>Action:</strong> <span x-text="agent_step.action"></span></p>
-        <p><strong>Reward:</strong> <span x-text="agent_step.total_reward"></span></p>
-      </p>
-    </div>
-  </template>
-  <p x-show="!getStep(step)?.agent_steps?.length" class="text-center">End of episode</p>
+<div id="replayDetailsChild" class="w-full card-alt p-4 ml-3 mr-4 justify-self-center">
+  <div class="flex flex-wrap gap-2 justify-around">
+    <template x-for="agent_step in getStep(step).agent_steps">
+      <div class="flex-grow-1 min-w-fit p-2 border rounded shadow-sm">
+        <div class="flex flex-col space-y-1 text-sm">
+          <div><strong>Agent:</strong> <span x-text="agent_step.agent"></span></div>
+          <div><strong>Action:</strong> <span x-text="agent_step.action"></span></div>
+          <div><strong>Reward:</strong> <span x-text="parseFloat(agent_step.total_reward).toFixed(4)"></span></div>
+        </div>
+      </div>
+    </template>
+  </div>
 </div>

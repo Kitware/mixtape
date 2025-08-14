@@ -13,8 +13,8 @@
       document.addEventListener('alpine:init', () => {
         Alpine.store('theme', {
           darkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
-          darkbg: '#111827',
-          lightbg: '#F1F2F6',
+          darkbg: '#15191e',
+          lightbg: '#eeeeee',
           lightline: '#4a5565',
           darkline: '#d1d5dc',
           get paper_bgcolor() { return this.darkMode ? this.darkbg : this.lightbg; },
@@ -42,7 +42,7 @@
       }
     </style>
   </head>
-  <body>
+  <body class="max-h-screen overflow-hidden">
     <div id="toolbar">
       {% include "core/toolbar.html" %}
     </div>

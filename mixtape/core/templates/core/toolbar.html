@@ -1,14 +1,138 @@
 <div class="navbar bg-base-100 shadow-md">
   <div class="navbar-start">
-    {% if request.path != '/' %}
+    <!-- {% if request.path != '/' %}
       {% include "core/drawer.html" %}
-    {% endif %}
+    {% endif %} -->
     <span class="text-3xl">MIXTAPE</span>
   </div>
+  {% if request.path == '/' %}
   <div class="navbar-center">
+    <i class="ri-home-2-line mr-2 text-xl"></i>
     Explore Episodes
   </div>
+  {% else %}
+  <div class="navbar-center">
+    Episode Insights
+    <i class="ri-bar-chart-line ml-2 text-xl"></i>
+  </div>
+  {% endif %}
   <div class="navbar-end">
+    <a href="{% url 'home' %}" class="btn btn-icon btn-ghost">
+      <i class="ri-home-2-line text-lg"></i>
+    </a>
+    <!-- <button
+      class="btn btn-icon mr-1 btn-ghost"
+      @click="showVisMenu = !showVisMenu"
+    >
+      <i class="ri-settings-5-line text-lg"></i>
+    </button>
+    <div
+      class="menu card raised"
+      x-show="showVisMenu"
+      @click.away="showVisMenu = false"
+    >
+      <ul class="p-3 space-y-3 text-sm">
+        <li>
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="actionRewardFrequency"
+              class="checkbox"
+              x-model="visOptions"
+              value="actionRewardFrequency"
+            >
+            <label for="actionRewardFrequency" class="ms-2 text-sm">
+              Action VS Reward Frequency
+            </label>
+          </div>
+        </li>
+        <li>
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="rewardFrequency"
+              class="checkbox"
+              x-model="visOptions"
+              value="rewardFrequency"
+            >
+            <label for="rewardFrequency" class="ms-2 text-sm">
+              Reward VS Frequency
+            </label>
+          </div>
+        </li>
+        <li>
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="actionFrequency"
+              class="checkbox"
+              x-model="visOptions"
+              value="actionFrequency"
+            >
+            <label for="actionFrequency" class="ms-2 text-sm">
+              Action VS Frequency
+            </label>
+          </div>
+        </li>
+        <li>
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="rewardsOverTime"
+              class="checkbox"
+              x-model="visOptions"
+              value="rewardsOverTime"
+            >
+            <label for="rewardsOverTime" class="ms-2 text-sm">
+              Rewards Over Time
+            </label>
+          </div>
+        </li>
+        <li>
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="episodeDetails"
+              class="checkbox"
+              x-model="visOptions"
+              value="episodeDetails"
+            >
+            <label for="episodeDetails" class="ms-2 text-sm">
+              Episode Details
+            </label>
+          </div>
+        </li>
+        <li>
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="obsClustering"
+              class="checkbox"
+              x-model="visOptions"
+              value="obsClustering"
+            >
+            <label for="obsClustering" class="ms-2 text-sm">
+              Observation Clustering
+            </label>
+          </div>
+        </li>
+        <hr/>
+        <li>
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="plotLegends"
+              class="checkbox"
+              x-model="visOptions"
+              value="plotLegends"
+            >
+            <label for="plotLegends" class="ms-2 text-sm">
+              Show Legends
+            </label>
+          </div>
+        </li>
+      </ul>
+    </div> -->
     <label class="toggle text-base-content">
       <input type="checkbox" checked="checked" x-model="$store.theme.darkMode" @change="document.documentElement.setAttribute('data-theme', $store.theme.darkMode ? 'dark' : 'light')"/>
       <i class="ri-sun-line flex items-center justify-center text-sm" style="contain: size;"></i>

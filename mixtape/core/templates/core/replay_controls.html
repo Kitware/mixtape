@@ -1,35 +1,31 @@
-<div class="card raised flex justify-around justify-self-center">
+<div id="replayControls" class="card raised flex justify-center justify-self-stretch flex-row! ml-3 mr-4 items-center">
   <button
-    class="cursor-pointer hover:text-gray-900 rounded-lg p-1 text-center disabled:text-gray-500"
-    :disabled="currentStep === 0"
+    class="btn btn-square btn-neutral btn-sm mx-3"
     @click="currentStep = 0"
   >
     <i class="ri-rewind-start-line"></i>
   </button>
   <button
-    class="cursor-pointer hover:text-gray-900 rounded-lg p-1 text-center disabled:text-gray-500"
-    :disabled="currentStep === 0"
+    class="btn btn-square btn-neutral btn-sm mx-3"
     @click="currentStep--"
   >
     <i class="ri-rewind-line"></i>
   </button>
   <button
-    class="cursor-pointer hover:text-gray-900 rounded-lg p-1 text-center disabled:text-gray-500"
+    class="btn btn-square btn-neutral mx-3"
     @click="playing = !playing; if (playing) stepForward()"
   >
     <i x-show="!playing" class="ri-play-line"></i>
     <i x-show="playing" class="ri-pause-line"></i>
   </button>
   <button
-    class="cursor-pointer hover:text-gray-900 rounded-lg p-1 text-center disabled:text-gray-500"
-    :disabled="currentStep === maxSteps"
+    class="btn btn-square btn-neutral btn-sm mx-3"
     @click="currentStep++"
   >
     <i class="ri-speed-line"></i>
   </button>
   <button
-    class="cursor-pointer hover:text-gray-900 rounded-lg p-1 text-center disabled:text-gray-500"
-    :disabled="currentStep === maxSteps"
+    class="btn btn-square btn-neutral btn-sm mx-3"
     @click="currentStep = maxSteps"
   >
     <i class="ri-forward-end-line"></i>
