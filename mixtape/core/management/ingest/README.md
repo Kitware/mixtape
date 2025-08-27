@@ -12,11 +12,17 @@ The JSON file is required to contain information about both the training as well
     action_mapping: Optional.
         If provided, this will map integer action values to string values.
         This is used in the UI for improved labeling of results.
+        Top level key-pairs are agent actions to string values.
+        Nested key-pairs are unit actions to string values.
         Continuous action spaces should skip this.
     */
     "action_mapping": {
         "0": "string",
-        "1": "string"
+        "1": "string",
+        "unit_mapping": {
+            "0": "string",
+            "1": "string"
+        }
     },
     "training": {
         "environment": "string",
@@ -24,17 +30,17 @@ The JSON file is required to contain information about both the training as well
         "parallel": false,                          // Optional, defaults to false
         "num_gpus": 0.0,                            // Optional
         "iterations": 100,
-        "config": {},                               // Optional
-        "reward_mapping": ["string"]                // Optional
+        "config": {},                               // Optional. Any valid JSON object with config settings for the training environment.
+        "reward_mapping": ["string"]                // Optional. If provided, this will map integer reward values to string values.
     },
     "inference": {
         "parallel": false,                          // Optional, defaults to false
-        "config": {},                               // Optional
+        "config": {},                               // Optional. Any valid JSON object with config settings for the inference environment.
         "steps": [                                  // Must have at least one step
             {
                 "number": 0,                        // This is the step number
                 "image": "base64_encoded_string",   // Optional
-                "agent_steps": [                    // Optional, one agent_step per agent that performs an action in the current step
+                "agent_steps": [                    // Optional, one agent_step per agent for the current step
                     {
                         "agent": "string",
                         /**
@@ -48,7 +54,58 @@ The JSON file is required to contain information about both the training as well
                         "reward": "float | int",              // Users must provide either reward or rewards, not both
                         "rewards": ["float | int"],           // Users must provide either reward or rewards, not both
                         "observation_space": ["float | int"], // Currently only supports 1D or 2D array of floats
-                        "action_distribution": ["float"]   // Optional
+                        "action_distribution": ["float"],   // Optional
+                        /**
+                        health: Optional.
+                            Object containing health metrics for agents or units.
+                            For example: {"friendly": 100.0, "enemy": 75.5}
+                        */
+                        "health": {},
+                        /**
+                        value_estimate: Optional.
+                            The predicted value estimate from the agent's value function.
+                        */
+                        "value_estimate": "float",
+                        /**
+                        predicted_reward: Optional.
+                            The predicted reward from the agent's policy.
+                        */
+                        "predicted_reward": "float",
+                        /**
+                        custom_metrics: Optional.
+                            Any custom metrics that you would like to store for the agent step.
+                            Each top-level key is a plot title that points to an object.
+                            Each nested object key is an axis ("x", "y", "z", etc.) or an axis title
+                            ("x_label", "y_label", etc.) that points to an array of values.
+                            Must be valid JSON.
+                        */
+                        "custom_metrics": {},
+                        /**
+                        unit_steps: Optional.
+                            An array of unit steps for team-based agents where individual units can have their own actions and metrics.
+                            Each unit step can have the same fields as agent_step (action, rewards, health, etc.).
+                            The agent_step represents the team-level action, while unit_steps represent individual unit actions.
+                        */
+                        "unit_steps": [
+                            {
+                                "unit": "string",
+                                "action": "float | int",
+                                "reward": "float | int",              // Users must provide either reward or rewards, not both
+                                "rewards": ["float | int"],           // Users must provide either reward or rewards, not both
+                                "health": "float | int",              // Optional. Value representing health metrics for units.
+                                "value_estimate": "float",
+                                "predicted_reward": "float",
+                                /**
+                                custom_metrics: Optional.
+                                    Any custom metrics that you would like to store for the unit step.
+                                    Each top-level key is a plot title that points to an object.
+                                    Each nested object key is an axis ("x", "y", "z", etc.) or an axis title
+                                    ("x_label", "y_label", etc.) that points to an array of values.
+                                    Must be valid JSON.
+                                */
+                                "custom_metrics": {}
+                            }
+                        ]
                     }
                 ]
             }

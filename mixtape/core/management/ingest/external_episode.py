@@ -4,6 +4,37 @@ from PIL import Image
 from pydantic import Base64Bytes, BaseModel, Field, field_validator, model_validator
 
 
+class ExternalUnitStep(BaseModel):
+    unit: str = Field(max_length=200)
+    action: float
+    # Support environments that use either single reward or multiple rewards
+    reward: float | None = None
+    rewards: list[float | int] | None = None
+    action_distribution: list[float] | None = None
+    health: dict | None = None
+    value_estimate: float | None = None
+    predicted_reward: float | None = None
+    custom_metrics: dict | None = None
+
+    @field_validator('rewards')
+    @classmethod
+    def validate_rewards_list(cls, v: list[float] | None) -> list[float] | None:
+        if v is not None:
+            if len(v) == 0:
+                raise ValueError('Rewards list cannot be empty')
+        return v
+
+    @model_validator(mode='after')
+    def validate_reward_fields(self) -> 'ExternalUnitStep':
+        reward_defined = self.reward is not None
+        rewards_defined = self.rewards is not None
+
+        if reward_defined and rewards_defined:
+            raise ValueError('Cannot define both reward and rewards - use only one')
+
+        return self
+
+
 class ExternalAgentStep(BaseModel):
     agent: str = Field(max_length=200)
     action: float
@@ -12,6 +43,11 @@ class ExternalAgentStep(BaseModel):
     rewards: list[float | int] | None = None
     observation_space: list[float] | list[list[float]]
     action_distribution: list[float] | None = None
+    health: dict | None = None
+    value_estimate: float | None = None
+    predicted_reward: float | None = None
+    custom_metrics: dict | None = None
+    unit_steps: list[ExternalUnitStep] | None = None
 
     @field_validator('rewards')
     @classmethod
@@ -86,22 +122,46 @@ class ExternalTraining(BaseModel):
 class ExternalImport(BaseModel):
     training: ExternalTraining
     inference: ExternalInference
-    action_mapping: dict[int, str] | None = None
+    action_mapping: dict | None = None
 
     @field_validator('action_mapping')
     @classmethod
-    def validate_action_mapping(cls, v: dict[int, str] | None) -> dict[int, str] | None:
+    def validate_action_mapping(cls, v: dict | None) -> dict | None:
         if v is None:
             return v
 
         if not isinstance(v, dict):
-            raise ValueError('Mapping must be a dictionary')
+            raise ValueError('Action mapping must be a dictionary')
 
-        for action, label in v.items():
-            if not isinstance(action, int):
-                raise ValueError('Action keys must be integers')
-            if not isinstance(label, str):
+        # Check top-level action mappings (excluding unit_mapping)
+        for key, value in v.items():
+            if key == "unit_mapping":
+                continue
+
+            try:
+                # Try to convert key to int for action keys
+                int(key)
+            except (ValueError, TypeError):
+                raise ValueError('Action keys must be convertible to integers')
+
+            if not isinstance(value, str):
                 raise ValueError('Action labels must be strings')
+
+        # Check unit_mapping if present
+        if "unit_mapping" in v:
+            unit_mapping = v["unit_mapping"]
+            if not isinstance(unit_mapping, dict):
+                raise ValueError('Unit mapping must be a dictionary')
+
+            for key, value in unit_mapping.items():
+                try:
+                    # Try to convert key to int for unit action keys
+                    int(key)
+                except (ValueError, TypeError):
+                    raise ValueError('Unit action keys must be convertible to integers')
+
+                if not isinstance(value, str):
+                    raise ValueError('Unit action labels must be strings')
 
         return v
 

@@ -11,6 +11,7 @@ from mixtape.core.models import (
     Episode,
     Step,
     Training,
+    UnitStep,
 )
 from mixtape.core.models.action_mapping import ActionMapping
 from mixtape.core.models.checkpoint import Checkpoint
@@ -128,6 +129,37 @@ def ingest_episode(json_file: TextIO, allow_existing: bool) -> None:
                         action=agent_step_data.action,
                         rewards=rewards,
                         observation_space=agent_step_data.observation_space,
+                        action_distribution=agent_step_data.action_distribution,
+                        health=agent_step_data.health,
+                        value_estimate=agent_step_data.value_estimate,
+                        predicted_reward=agent_step_data.predicted_reward,
+                        custom_metrics=agent_step_data.custom_metrics,
                     )
                     agent_step.full_clean()
                     agent_step.save()
+
+                    # Create unit steps if they exist
+                    if agent_step_data.unit_steps:
+                        for unit_step_data in agent_step_data.unit_steps:
+                            # Support either single reward or multiple rewards for unit steps
+                            unit_rewards = unit_step_data.rewards
+                            if unit_rewards is None:
+                                if unit_step_data.reward is None:
+                                    raise ValueError(
+                                        'Either reward or rewards must be defined for unit step'
+                                    )
+                                unit_rewards = [unit_step_data.reward]
+
+                            unit_step = UnitStep(
+                                agent_step=agent_step,
+                                unit=unit_step_data.unit,
+                                action=unit_step_data.action,
+                                rewards=unit_rewards,
+                                action_distribution=unit_step_data.action_distribution,
+                                health=unit_step_data.health,
+                                value_estimate=unit_step_data.value_estimate,
+                                predicted_reward=unit_step_data.predicted_reward,
+                                custom_metrics=unit_step_data.custom_metrics,
+                            )
+                            unit_step.full_clean()
+                            unit_step.save()
