@@ -2,33 +2,20 @@
   x-data="{
     data: [],
     layout: {
+      ...basePlotLayout,
       title: {text: 'Rewards Over Time (Decomposed)'},
-      xaxis: {title: {text: 'Time Step'}},
-      yaxis: {title: {text: 'Cumulative Reward'}},
-      autosize: true,
-      showlegend: visOptions.includes('plotLegends'),
-      paper_bgcolor: $store.theme.paper_bgcolor,
-      plot_bgcolor: $store.theme.plot_bgcolor,
-      font: $store.theme.font,
-      annotations: [],
+      xaxis: { ...basePlotLayout.xaxis, title: {text: 'Time Step'} },
+      yaxis: { ...basePlotLayout.yaxis, title: {text: 'Cumulative Reward'} },
       shapes: [],
-      xaxis: {
-        gridcolor: $store.theme.axis.gridcolor,
-        zerolinecolor: $store.theme.axis.zerolinecolor
-      },
-      yaxis: {
-        gridcolor: $store.theme.axis.gridcolor,
-        zerolinecolor: $store.theme.axis.zerolinecolor
-      },
-    },
-    config: {
-      displayModeBar: false,
-      responsive: true
     },
     plot: null,
     initPlot() {
       // Plot decomposed rewards for each episode
+      let eps = '';
       decomposedRewards.forEach((episodeRewards, episodeIdx) => {
+        if (episodeIds.length > 1) {
+          eps = `Episode ${episodeIds[episodeIdx]}`;
+        }
         Object.keys(episodeRewards).forEach((rewardType, rewardIdx) => {
           const rewardData = episodeRewards[rewardType];
           this.data.push({
@@ -36,7 +23,7 @@
             y: rewardData,
             type: 'scatter',
             mode: 'lines',
-            name: `Episode ${episodeIds[episodeIdx]} - ${rewardType}`,
+            name: `${eps}${rewardType}`,
           });
         });
       });
@@ -52,7 +39,7 @@
       // Add annotations for current step values
       this.layout.annotations = this.createAnnotations();
 
-      this.plot = Plotly.newPlot($refs.rewardsOverTime, this.data, this.layout, {displayModeBar: false});
+      this.plot = Plotly.newPlot($refs.rewardsOverTime, this.data, this.layout, basePlotConfig);
     },
     createShapes(allYValues) {
       const maxY = Math.max(...allYValues);
@@ -67,7 +54,7 @@
         line: {
           color: 'red',
           width: 2,
-          dash: 'dash'
+          dash: 'dot'
         }
       }];
     },
@@ -77,8 +64,7 @@
         const componentCount = Object.keys(episodeRewards).length;
         const offset = 40 / (componentCount * episodeCount);
         return Object.entries(episodeRewards).map(([rewardType, rewardData]) => {
-          const currentValue = rewardData[currentStep] || rewardData[rewardData.length - 1];
-
+          const currentValue = rewardData[currentStep];
           return {
             x: currentStep,
             y: currentValue,
@@ -116,13 +102,13 @@
     }
   }"
   x-init="initPlot();
-  $watch('visOptions', () => {
+  $watch('$store.visOptions', () => {
     $nextTick(() => {
       Plotly.relayout(
         $refs.rewardsOverTime,
         {
           autosize: true,
-          showlegend: visOptions.includes('plotLegends')
+          showlegend: $store.visOptions.includes('plotLegends')
         })
     });
   });"

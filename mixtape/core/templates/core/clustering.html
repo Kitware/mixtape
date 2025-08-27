@@ -1,40 +1,40 @@
+<!-- Clustering -->
 <div
   x-data="{
     data: [],
     layout: {
+      ...basePlotLayout,
       title: {text: 'Agent {{title}}'},
-      height: 450,
       xaxis: {
+        ...basePlotLayout.xaxis,
         showticklabels: false,
-        gridcolor: $store.theme.axis.gridcolor,
-        zerolinecolor: $store.theme.axis.zerolinecolor
       },
       yaxis: {
+        ...basePlotLayout.yaxis,
         showticklabels: false,
-        gridcolor: $store.theme.axis.gridcolor,
-        zerolinecolor: $store.theme.axis.zerolinecolor
       },
-      paper_bgcolor: $store.theme.paper_bgcolor,
-      plot_bgcolor: $store.theme.plot_bgcolor,
-      font: $store.theme.font,
     },
     plot: null,
   }"
   x-init="
     data = [];
+    let eps = '';
     for (let agent_idx = 0; agent_idx < uniqueAgents.length; agent_idx++) {
       clustering[{{key}}].episode_manifolds.forEach((episode_manifold, episode_idx) => {
+        if (episodeIds.length > 1) {
+          eps = `Episode ${episodeIds[episode_idx]}`;
+        }
         data.push({
           x: episode_manifold.map(row => row[agent_idx][0]),
           y: episode_manifold.map(row => row[agent_idx][1]),
           type: 'scatter',
           mode: 'lines',
-          colorscale: 'YlOrRd',
+          colorscale: 'Viridis',
           line: {
             opacity: 1,
             width: 2
           },
-          name: `Episode ${episodeIds[episode_idx]} ${uniqueAgents[agent_idx]}`
+          name: `${eps}${uniqueAgents[agent_idx]}`
         });
       });
     }
@@ -53,14 +53,14 @@
       },
       name: 'All Episodes'
     })
-    plot = Plotly.newPlot($refs.allManifolds, data, layout, {displayModeBar: false});
-    $watch('visOptions', () => {
+    plot = Plotly.newPlot($refs.allManifolds, data, layout, basePlotConfig);
+    $watch('$store.visOptions', () => {
       $nextTick(() => {
         Plotly.relayout(
           $refs.allManifolds,
           {
             autosize: true,
-            showlegend: visOptions.includes('plotLegends')
+            showlegend: $store.visOptions.includes('plotLegends')
           })
       });
     });"
@@ -117,12 +117,70 @@
             color: 'transparent',
             size: 20,
             line: {
-              width: 3,
-              color: 'red'
+              width: 2,
+              color: 'red',
+              dash: 'dot'
             }
           }
         }]);
       }
+    }"
+>
+  <div x-ref="allManifolds"></div>
+</div>
+
+<!-- Clustering Timeline -->
+<div
+  x-data="{
+    data: [],
+    layout: {
+      ...basePlotLayout,
+      title: {text: 'Agent {{title}} Timeline'},
+      height: 150,
+      margin: {r: 0, t: 25},
+    },
+    plot: null,
+  }"
+  x-init="
+    data = [
+      {
+        z: clustering[{{key}}].episode_clusters,
+        type: 'heatmap',
+        showscale: false,
+        colorscale: 'Viridis',
+      },
+      {
+        x: [[currentStep, currentStep]],
+        y: [[0, clustering[{{key}}].episode_clusters.length - 1]],
+        type: 'scatter',
+        mode: 'lines',
+        showlegend: false,
+        line: {
+          color: 'red',
+          width: 2,
+          dash: 'dot',
+        },
+      }
+    ];
+    plot = Plotly.newPlot($refs.allManifolds, data, layout, basePlotConfig);
+    $watch('$store.visOptions', () => {
+      $nextTick(() => {
+        Plotly.relayout(
+          $refs.allManifolds, {
+            autosize: true,
+            showlegend: $store.visOptions.includes('plotLegends')
+          })
+      });
+    });"
+  x-effect="
+    if (plot) {
+      // Use the heatmap data dimensions directly
+      const yMin = 0;
+      const yMax = clustering[{{key}}].episode_clusters.length - 1;
+      Plotly.update($refs.allManifolds, {
+        x: [[currentStep, currentStep]],
+        y: [[yMin - 0.5, yMax + 0.5]],
+      }, {}, [1]);
     }"
 >
   <div x-ref="allManifolds"></div>

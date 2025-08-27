@@ -1,6 +1,7 @@
 from collections import defaultdict
 from itertools import accumulate
 import os
+
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 import einops
@@ -192,30 +193,119 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
     # Prefetch all related data in a single query
     episode = get_object_or_404(
         Episode.objects.select_related('inference__checkpoint__training').prefetch_related(
-            'steps', 'steps__agent_steps'
+            'steps', 'steps__agent_steps', 'steps__agent_steps__unit_steps'
         ),
         pk=episode_pk,
     )
 
-    # Prepare step data
-    step_data = {
-        step.number: {
+    # Initialize data structures
+    friendly_health_data = {}
+    enemy_health_data = {}
+    unit_actions_over_time = {}
+    unit_lifetimes = {}
+    environment_rewards = []
+    value_estimates = {}
+
+    # Prepare step data and collect health data
+    step_data = {}
+    for step in episode.steps.all().order_by('number'):
+        step_environment_reward = 0.0
+        step_data[step.number] = {
             'image_url': step.image.url if step.image else None,
-            'agent_steps': [
+            'agent_steps': [],
+        }
+
+        # Track unit actions for this step
+        step_unit_actions = {}
+
+        for agent_step in step.agent_steps.all():
+            agent_key = agent_step.agent
+
+            # Track value estimates
+            if agent_step.value_estimate is not None:
+                if agent_key not in value_estimates:
+                    value_estimates[agent_key] = []
+                value_estimates[agent_key].append(agent_step.value_estimate)
+
+            # Sum rewards for environment reward
+            step_environment_reward += agent_step.total_reward
+
+            # Process agent health
+            if agent_step.health and 'friendly' in agent_step.health:
+                if agent_key not in friendly_health_data:
+                    friendly_health_data[agent_key] = []
+                friendly_health_data[agent_key].append(agent_step.health['friendly'])
+            if agent_step.health and 'enemy' in agent_step.health:
+                if agent_key not in enemy_health_data:
+                    enemy_health_data[agent_key] = []
+                enemy_health_data[agent_key].append(agent_step.health['enemy'])
+
+            # Process unit steps
+            for unit_step in agent_step.unit_steps.all():
+                unit_key = unit_step.unit
+
+                # Track unit actions
+                if unit_key not in step_unit_actions:
+                    step_unit_actions[unit_key] = {
+                        'action': unit_step.action,
+                        'is_alive': unit_step.action != -1,
+                    }
+
+                # Track health data
+                if unit_step.health and 'friendly' in unit_step.health:
+                    if unit_key not in friendly_health_data:
+                        friendly_health_data[unit_key] = []
+                    friendly_health_data[unit_key].append(unit_step.health['friendly'])
+                if unit_step.health and 'enemy' in unit_step.health:
+                    if unit_key not in enemy_health_data:
+                        enemy_health_data[unit_key] = []
+                    enemy_health_data[unit_key].append(unit_step.health['enemy'])
+
+            # Add agent step to step_data
+            step_data[step.number]['agent_steps'].append(
                 {
-                    'agent': agent_step.agent,
+                    'agent': agent_key,
                     'action': agent_step.action_string,
                     'total_reward': agent_step.total_reward,
+                    'value_estimate': agent_step.value_estimate,
                 }
-                for agent_step in step.agent_steps.all()
-            ],
+            )
+
+        # Store environment reward for this step
+        environment_rewards.append(step_environment_reward)
+
+        # Update unit actions over time
+        for unit_id, action_data in step_unit_actions.items():
+            if unit_id not in unit_actions_over_time:
+                unit_actions_over_time[unit_id] = []
+            unit_actions_over_time[unit_id].append(
+                {
+                    'step': step.number,
+                    'action': action_data['action'],
+                    'is_alive': action_data['is_alive'],
+                }
+            )
+
+    # Calculate unit lifetimes based on first death action (-1)
+    for unit_id, actions in unit_actions_over_time.items():
+        death_step = None
+        for action in actions:
+            if action['action'] == -1:
+                death_step = action['step']
+                break
+        unit_lifetimes[unit_id] = {
+            'death_step': death_step,
+            'total_steps': (
+                death_step if death_step else (actions[-1]['step'] + 1 if actions else 0)
+            ),
         }
-        for step in episode.steps.all()
-    }
 
     # Prepare plot data
     env_name = episode.inference.checkpoint.training.environment
     training = episode.inference.checkpoint.training
+
+    # Get unit mapping for the environment
+    unit_mapping = get_environment_mapping(env_name).get('unit_mapping', {})
 
     reward_histogram = [
         a.total_reward for step in episode.steps.all() for a in step.agent_steps.all()
@@ -232,8 +322,14 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
     unique_agents = set()
     reward_mapping = training.reward_mapping or []
     decomposed_rewards: dict[str, list[float]] = {v: [] for v in reward_mapping}
-    for step in episode.steps.all():
+    unit_navigation_rewards = defaultdict(lambda: [])
+    unit_combat_rewards = defaultdict(lambda: [])
+
+    for step in episode.steps.all().prefetch_related('agent_steps__unit_steps'):
         step_decomposed_rewards = {v: 0.0 for v in reward_mapping}
+        step_unit_rewards = defaultdict(lambda: {v: 0.0 for v in reward_mapping})
+
+        # Process agent steps
         for agent_step in step.agent_steps.all():
             unique_agents.add(agent_step.agent)
             action = action_map.get(f'{int(agent_step.action)}', f'{agent_step.action}')
@@ -244,8 +340,28 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
             else:
                 action_v_reward[key][action] += agent_step.total_reward  # type: ignore
                 action_v_frequency[key][action] += 1  # type: ignore
+
+            # Process agent rewards
             for i, reward_name in enumerate(reward_mapping):
-                step_decomposed_rewards[reward_name] += agent_step.rewards[i]
+                if i < len(agent_step.rewards):
+                    step_decomposed_rewards[reward_name] += agent_step.rewards[i]
+
+            # Process unit steps for this agent step
+            for unit_step in agent_step.unit_steps.all():
+                for i, reward_name in enumerate(reward_mapping):
+                    if i < len(unit_step.rewards):
+                        step_unit_rewards[unit_step.unit][reward_name] += unit_step.rewards[i]
+
+        # Update unit rewards for this step
+        for unit, rewards in step_unit_rewards.items():
+            if 'navigation' in rewards:
+                unit_navigation_rewards[unit].append(rewards['navigation'])
+            if 'combat' in rewards:
+                unit_combat_rewards[unit].append(rewards['combat'])
+            elif 'navigation' not in rewards:  # Only append 0 if neither reward exists yet
+                unit_navigation_rewards[unit].append(0.0)
+
+        # Update main rewards
         for reward_name in reward_mapping:
             decomposed_rewards[reward_name].append(step_decomposed_rewards[reward_name])
 
@@ -253,6 +369,16 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
     cumulative_decomposed_rewards = {}
     for reward_name, rewards_list in decomposed_rewards.items():
         cumulative_decomposed_rewards[reward_name] = list(accumulate(rewards_list))
+
+    # Calculate cumulative navigation rewards for units
+    unit_cumulative_navigation = {}
+    for unit, rewards in unit_navigation_rewards.items():
+        unit_cumulative_navigation[unit] = list(accumulate(rewards))
+
+    # Calculate cumulative combat rewards for units
+    unit_cumulative_combat = {}
+    for unit, rewards in unit_combat_rewards.items():
+        unit_cumulative_combat[unit] = list(accumulate(rewards))
 
     # Used to populate the timeline
     key_steps = episode.steps.all().order_by('number')
@@ -299,6 +425,15 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
         'reward_mapping': reward_mapping,
         'step_data': step_data,
         'unique_agents': list(unique_agents),
+        'friendly_health_data': friendly_health_data,
+        'enemy_health_data': enemy_health_data,
+        'unit_actions': unit_actions_over_time,
+        'unit_lifetimes': unit_lifetimes,
+        'environment_rewards': environment_rewards,
+        'value_estimates': value_estimates,
+        'unit_mapping': unit_mapping,
+        'unit_navigation_rewards': unit_cumulative_navigation,
+        'unit_combat_rewards': unit_cumulative_combat,
     }
 
 
@@ -325,6 +460,14 @@ def insights(request: HttpRequest) -> HttpResponse:
     all_step_data: list[dict] = []
     all_timeline_steps: list[dict] = []
     all_decomposed_rewards: list[dict] = []
+    all_friendly_health_data: list[dict] = []
+    all_enemy_health_data: list[dict] = []
+    all_unit_actions: list[dict] = []
+    all_unit_lifetimes: list[dict] = []
+    all_environment_rewards: list[list[float]] = []
+    all_value_estimates: list[dict] = []
+    all_unit_navigation_rewards: list[dict] = []
+    all_unit_combat_rewards: list[dict] = []
 
     group_by_episode = len(episode_pks) > 1
     for episode_pk in episode_pks:
@@ -337,6 +480,14 @@ def insights(request: HttpRequest) -> HttpResponse:
         all_decomposed_rewards.append(insight_results['decomposed_rewards'])
         all_step_data.append(insight_results['step_data'])
         all_timeline_steps.append(insight_results['timeline_key_steps'])
+        all_friendly_health_data.append(insight_results['friendly_health_data'])
+        all_enemy_health_data.append(insight_results['enemy_health_data'])
+        all_unit_actions.append(insight_results['unit_actions'])
+        all_unit_lifetimes.append(insight_results['unit_lifetimes'])
+        all_environment_rewards.append(insight_results['environment_rewards'])
+        all_value_estimates.append(insight_results['value_estimates'])
+        all_unit_navigation_rewards.append(insight_results['unit_navigation_rewards'])
+        all_unit_combat_rewards.append(insight_results['unit_combat_rewards'])
 
     # Get unique agents across all episodes
     unique_agents = insight_results['unique_agents']
@@ -364,8 +515,17 @@ def insights(request: HttpRequest) -> HttpResponse:
             'unique_agents': unique_agents,
             'episode_ids': episode_pks,
             'max_steps': max(len(step_data) for step_data in all_step_data),
+            'steps': all_step_data,
+            'friendly_health_data': all_friendly_health_data,
+            'enemy_health_data': all_enemy_health_data,
+            'unit_actions': all_unit_actions,
+            'unit_lifetimes': all_unit_lifetimes,
+            'environment_rewards': all_environment_rewards,
+            'value_estimates': all_value_estimates,
             'step_data': all_step_data,
             'timeline_key_steps': all_timeline_steps,
+            'unit_navigation_rewards': all_unit_navigation_rewards,
+            'unit_combat_rewards': all_unit_combat_rewards,
         },
         'clustering': {
             'obs': {
@@ -386,6 +546,7 @@ def insights(request: HttpRequest) -> HttpResponse:
         'has_reward_mapping': any(
             episode.inference.checkpoint.training.reward_mapping for episode in all_episode_details
         ),
+        'group_by_episode': group_by_episode,
     }
 
     return render(

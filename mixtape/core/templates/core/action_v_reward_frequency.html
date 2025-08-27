@@ -5,8 +5,9 @@
       xaxis: {title: {text: 'Action'}},
       yaxis: {title: {text: 'Reward Frequency'}},
       autosize: true,
+      height: 'auto',
       barmode: Object.keys(actionVReward).length > 1 ? 'group' : 'stack',
-      showlegend: visOptions.includes('plotLegends'),
+      showlegend: $store.visOptions.includes('plotLegends'),
       paper_bgcolor: $store.theme.paper_bgcolor,
       plot_bgcolor: $store.theme.plot_bgcolor,
       font: $store.theme.font,
@@ -18,6 +19,7 @@
         gridcolor: $store.theme.axis.gridcolor,
         zerolinecolor: $store.theme.axis.zerolinecolor
       },
+      margin: {l: 40, r: 40, t: 40, b: 40},
     },
     config: {
       displayModeBar: false,
@@ -39,12 +41,12 @@
       }
     }));
     plot = Plotly.react($refs.actionsRewards, data, layout, config);
-    $watch('visOptions', () => {
+    $watch('$store.visOptions', () => {
       $nextTick(() => {
         Plotly.relayout(
           $refs.actionsRewards, {
             autosize: true,
-            showlegend: visOptions.includes('plotLegends')
+            showlegend: $store.visOptions.includes('plotLegends')
           })
       });
     });"

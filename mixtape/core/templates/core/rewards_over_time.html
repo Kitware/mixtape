@@ -2,14 +2,10 @@
   x-data="{
     data: [],
     layout: {
-      title: {text: 'Rewards Over Time'},
-      xaxis: {title: {text: 'Time Step'}},
-      yaxis: {title: {text: 'Cumulative Reward'}},
-      autosize: true,
-      showlegend: visOptions.includes('plotLegends'),
-      paper_bgcolor: $store.theme.paper_bgcolor,
-      plot_bgcolor: $store.theme.plot_bgcolor,
-      font: $store.theme.font,
+      ...basePlotLayout,
+      title: { text: 'Rewards Over Time' },
+      xaxis: { ...basePlotLayout.xaxis, title: { text: 'Time Step' } },
+      yaxis: { ...basePlotLayout.yaxis, title: { text: 'Cumulative Reward' } },
       annotations: [
         {
           x: currentStep,
@@ -17,18 +13,6 @@
           text: rewardsOverTime[0][currentStep].toFixed(2),
         }
       ],
-      xaxis: {
-        gridcolor: $store.theme.axis.gridcolor,
-        zerolinecolor: $store.theme.axis.zerolinecolor
-      },
-      yaxis: {
-        gridcolor: $store.theme.axis.gridcolor,
-        zerolinecolor: $store.theme.axis.zerolinecolor
-      },
-    },
-    config: {
-      displayModeBar: false,
-      responsive: true
     },
     plot: null,
     getStep(episode) {
@@ -60,18 +44,18 @@
       line: {
         color: 'red',
         width: 2,
-        dash: 'dash'
+        dash: 'dot'
       },
       name: 'Current Step'
     });
-    plot = Plotly.newPlot($refs.rewardsOverTime, data, layout, {displayModeBar: false});
-    $watch('visOptions', () => {
+    plot = Plotly.newPlot($refs.rewardsOverTime, data, layout, basePlotConfig);
+    $watch('$store.visOptions', () => {
       $nextTick(() => {
         Plotly.relayout(
           $refs.rewardsOverTime,
           {
             autosize: true,
-            showlegend: visOptions.includes('plotLegends')
+            showlegend: $store.visOptions.includes('plotLegends')
           })
       });
     });"
