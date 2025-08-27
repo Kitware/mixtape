@@ -5,6 +5,7 @@ from .episode import Episode
 from .inference import Inference
 from .step import Step
 from .training import Training
+from .unit_step import UnitStep
 
 __all__ = [
     'Checkpoint',
@@ -14,4 +15,5 @@ __all__ = [
     'Inference',
     'Step',
     'ActionMapping',
+    'UnitStep',
 ]
