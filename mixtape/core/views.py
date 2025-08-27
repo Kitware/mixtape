@@ -199,15 +199,17 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
     )
 
     # Initialize data structures
-    friendly_health_data = {}
-    enemy_health_data = {}
-    unit_actions_over_time = {}
-    unit_lifetimes = {}
-    environment_rewards = []
-    value_estimates = {}
+    friendly_health_data: dict[str, list[float]] = {}
+    enemy_health_data: dict[str, list[float]] = {}
+    unit_actions_over_time: dict[str, list[dict]] = {}
+    unit_lifetimes: dict[str, dict] = {}
+    environment_rewards: list[float] = []
+    value_estimates: dict[str, list[float]] = {}
+    predicted_rewards: dict[str, list[float]] = {}
+    total_rewards: dict[str, list[float]] = {}
 
     # Prepare step data and collect health data
-    step_data = {}
+    step_data: dict[int, dict] = {}
     for step in episode.steps.all().order_by('number'):
         step_environment_reward = 0.0
         step_data[step.number] = {
@@ -226,6 +228,23 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
                 if agent_key not in value_estimates:
                     value_estimates[agent_key] = []
                 value_estimates[agent_key].append(agent_step.value_estimate)
+
+            # Track value estimates
+            if agent_step.value_estimate is not None:
+                if agent_key not in value_estimates:
+                    value_estimates[agent_key] = []
+                value_estimates[agent_key].append(agent_step.value_estimate)
+
+            # Track predicted rewards if available
+            if agent_step.custom_metrics and 'predicted_rewards' in agent_step.custom_metrics:
+                if agent_key not in predicted_rewards:
+                    predicted_rewards[agent_key] = []
+                predicted_rewards[agent_key].append(agent_step.custom_metrics['predicted_rewards'])
+
+            # Initialize total rewards tracking
+            if agent_key not in total_rewards:
+                total_rewards[agent_key] = []
+            total_rewards[agent_key].append(agent_step.total_reward)
 
             # Sum rewards for environment reward
             step_environment_reward += agent_step.total_reward
@@ -260,6 +279,21 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
                     if unit_key not in enemy_health_data:
                         enemy_health_data[unit_key] = []
                     enemy_health_data[unit_key].append(unit_step.health['enemy'])
+
+                # Track unit predicted rewards if available
+                if unit_step.custom_metrics and 'predicted_rewards' in unit_step.custom_metrics:
+                    unit_pred_key = f'unit_{unit_key}'
+                    if unit_pred_key not in predicted_rewards:
+                        predicted_rewards[unit_pred_key] = []
+                    predicted_rewards[unit_pred_key].append(
+                        unit_step.custom_metrics['predicted_rewards']
+                    )
+
+                # Track unit total rewards
+                unit_total_key = f'unit_{unit_key}'
+                if unit_total_key not in total_rewards:
+                    total_rewards[unit_total_key] = []
+                total_rewards[unit_total_key].append(sum(unit_step.rewards))
 
             # Add agent step to step_data
             step_data[step.number]['agent_steps'].append(
@@ -322,12 +356,12 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
     unique_agents = set()
     reward_mapping = training.reward_mapping or []
     decomposed_rewards: dict[str, list[float]] = {v: [] for v in reward_mapping}
-    unit_navigation_rewards = defaultdict(lambda: [])
-    unit_combat_rewards = defaultdict(lambda: [])
+    unit_navigation_rewards: dict[str, list[float]] = {}
+    unit_combat_rewards: dict[str, list[float]] = {}
 
     for step in episode.steps.all().prefetch_related('agent_steps__unit_steps'):
         step_decomposed_rewards = {v: 0.0 for v in reward_mapping}
-        step_unit_rewards = defaultdict(lambda: {v: 0.0 for v in reward_mapping})
+        step_unit_rewards: dict[str, dict[str, float]] = {}
 
         # Process agent steps
         for agent_step in step.agent_steps.all():
@@ -350,16 +384,18 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
             for unit_step in agent_step.unit_steps.all():
                 for i, reward_name in enumerate(reward_mapping):
                     if i < len(unit_step.rewards):
+                        unit_info = step_unit_rewards.setdefault(unit_step.unit, {})
+                        unit_info.setdefault(reward_name, 0)
                         step_unit_rewards[unit_step.unit][reward_name] += unit_step.rewards[i]
 
         # Update unit rewards for this step
         for unit, rewards in step_unit_rewards.items():
             if 'navigation' in rewards:
+                unit_navigation_rewards.setdefault(unit, [])
                 unit_navigation_rewards[unit].append(rewards['navigation'])
             if 'combat' in rewards:
+                unit_combat_rewards.setdefault(unit, [])
                 unit_combat_rewards[unit].append(rewards['combat'])
-            elif 'navigation' not in rewards:  # Only append 0 if neither reward exists yet
-                unit_navigation_rewards[unit].append(0.0)
 
         # Update main rewards
         for reward_name in reward_mapping:
@@ -371,14 +407,16 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
         cumulative_decomposed_rewards[reward_name] = list(accumulate(rewards_list))
 
     # Calculate cumulative navigation rewards for units
-    unit_cumulative_navigation = {}
-    for unit, rewards in unit_navigation_rewards.items():
-        unit_cumulative_navigation[unit] = list(accumulate(rewards))
+    unit_cumulative_navigation: dict[str, list[float]] = {}
+    for unit in unit_navigation_rewards.keys():
+        nav_rewards: list[float] = unit_navigation_rewards[unit]
+        unit_cumulative_navigation[unit] = list(accumulate(nav_rewards))
 
     # Calculate cumulative combat rewards for units
-    unit_cumulative_combat = {}
-    for unit, rewards in unit_combat_rewards.items():
-        unit_cumulative_combat[unit] = list(accumulate(rewards))
+    unit_cumulative_combat: dict[str, list[float]] = {}
+    for unit in unit_combat_rewards.keys():
+        combat_rewards: list[float] = unit_combat_rewards[unit]
+        unit_cumulative_combat[unit] = list(accumulate(combat_rewards))
 
     # Used to populate the timeline
     key_steps = episode.steps.all().order_by('number')
@@ -434,6 +472,8 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
         'unit_mapping': unit_mapping,
         'unit_navigation_rewards': unit_cumulative_navigation,
         'unit_combat_rewards': unit_cumulative_combat,
+        'predicted_rewards': predicted_rewards,
+        'total_rewards': total_rewards,
     }
 
 
@@ -449,13 +489,9 @@ def insights(request: HttpRequest) -> HttpResponse:
 
     # Process each episode and combine the data
     all_episode_details: list[Episode] = []
-    all_action_v_reward: defaultdict[str, defaultdict[str, float]] = defaultdict(
-        lambda: defaultdict(float)
-    )
+    all_action_v_reward: dict[str, dict[str, float]] = {}
     all_reward_histogram: list[float] = []
-    all_action_v_frequency: defaultdict[str, defaultdict[str, int]] = defaultdict(
-        lambda: defaultdict(int)
-    )
+    all_action_v_frequency: dict[str, dict[str, int]] = {}
     all_rewards_over_time: list[int] = []
     all_step_data: list[dict] = []
     all_timeline_steps: list[dict] = []
@@ -468,6 +504,8 @@ def insights(request: HttpRequest) -> HttpResponse:
     all_value_estimates: list[dict] = []
     all_unit_navigation_rewards: list[dict] = []
     all_unit_combat_rewards: list[dict] = []
+    all_predicted_rewards: list[dict] = []
+    all_total_rewards: list[dict] = []
 
     group_by_episode = len(episode_pks) > 1
     for episode_pk in episode_pks:
@@ -488,6 +526,8 @@ def insights(request: HttpRequest) -> HttpResponse:
         all_value_estimates.append(insight_results['value_estimates'])
         all_unit_navigation_rewards.append(insight_results['unit_navigation_rewards'])
         all_unit_combat_rewards.append(insight_results['unit_combat_rewards'])
+        all_predicted_rewards.append(insight_results['predicted_rewards'])
+        all_total_rewards.append(insight_results['total_rewards'])
 
     # Get unique agents across all episodes
     unique_agents = insight_results['unique_agents']
@@ -526,6 +566,8 @@ def insights(request: HttpRequest) -> HttpResponse:
             'timeline_key_steps': all_timeline_steps,
             'unit_navigation_rewards': all_unit_navigation_rewards,
             'unit_combat_rewards': all_unit_combat_rewards,
+            'predicted_rewards': all_predicted_rewards,
+            'total_rewards': all_total_rewards,
         },
         'clustering': {
             'obs': {

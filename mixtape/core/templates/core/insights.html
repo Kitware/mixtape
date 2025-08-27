@@ -21,6 +21,8 @@
     episode_ids,
     max_steps,
     timeline_key_steps,
+    predicted_rewards,
+    total_rewards,
   } = data;
 
   const basePlotLayout = {
@@ -61,6 +63,8 @@
     currentStep: 0,
     playing: false,
     maxSteps: max_steps - 1,
+    predictedRewards: predicted_rewards,
+    totalRewards: total_rewards,
     showVisMenu: false,
     showReplayDetails: true,
     basePlotLayout: basePlotLayout,

@@ -9,38 +9,53 @@
     },
     plot: null,
     yRange: [Infinity, -Infinity],
-    allAgentRewards: [],
+    totalRewards: Array.isArray(totalRewards) ? totalRewards[0] : totalRewards,
+    predictedRewards: Array.isArray(predictedRewards) ? predictedRewards[0] : predictedRewards,
   }"
   x-init="
-    if (Object.keys(actionVReward).length > 0) {
-      const episodeKey = Object.keys(actionVReward)[0];
-      const episodeData = actionVReward[episodeKey] || {};
+    // Add actual rewards
+    Object.entries(totalRewards).forEach(([entity, rewards]) => {
+      if (rewards && rewards.length) {
+        const cumulative = rewards.reduce((acc, r) => {
+          acc.push((acc[acc.length-1] || 0) + r);
+          return acc;
+        }, []);
+        data.push({
+          x: Array.from({length: cumulative.length}, (_, i) => i),
+          y: cumulative,
+          type: 'scatter',
+          mode: 'lines',
+          name: `${entity} (Actual)`,
+          line: {
+            dash: entity.startsWith('unit') ? 'dashdot' : 'solid',
+          }
+        });
+        const currentRange = [Math.min(...cumulative), Math.max(...cumulative)];
+        yRange = [Math.min(yRange[0], currentRange[0]), Math.max(yRange[1], currentRange[1])];
+      }
+    });
 
-      Object.entries(episodeData).forEach(([agentId, agentData], index) => {
-        const steps = [];
-        const agentRewards = [0];
-
-        if (agentData && typeof agentData === 'object') {
-          Object.values(agentData).forEach(reward => {
-            if (typeof reward === 'number') {
-              const lastReward = agentRewards[agentRewards.length - 1];
-              agentRewards.push(lastReward + reward);
-              steps.push(steps.length);
+    // Add predicted rewards
+    if (predictedRewards) {
+      Object.entries(predictedRewards).forEach(([entity, preds]) => {
+        if (preds && preds.length) {
+          const cumulative = preds.reduce((acc, p) => {
+            const val = p && p[0] ? p[0] : 0;
+            acc.push((acc[acc.length-1] || 0) + val);
+            return acc;
+          }, []);
+          data.push({
+            x: Array.from({length: cumulative.length}, (_, i) => i),
+            y: cumulative,
+            type: 'scatter',
+            mode: 'lines',
+            name: `${entity} (Predicted)`,
+            line: {
+              dash: entity.startsWith('unit') ? 'dashdot' : 'solid',
             }
           });
-
-          if (agentRewards.length > 1) {
-            data.push({
-              x: steps,
-              y: agentRewards.slice(1),
-              type: 'scatter',
-              mode: 'lines',
-              name: agentId,
-            });
-            const currentYRange = [Math.min(...agentRewards.slice(1)), Math.max(...agentRewards.slice(1))];
-            yRange = [Math.min(yRange[0], currentYRange[0]), Math.max(yRange[1], currentYRange[1])];
-            allAgentRewards.push(agentRewards.slice(1));
-          }
+          const currentRange = [Math.min(...cumulative), Math.max(...cumulative)];
+          yRange = [Math.min(yRange[0], currentRange[0]), Math.max(yRange[1], currentRange[1])];
         }
       });
     }
@@ -55,11 +70,9 @@
         width: 2,
         dash: 'dot'
       },
-      name: 'Current Step'
+      name: 'Current Step',
     });
-
     plot = Plotly.newPlot($refs.predVsActual, data, layout, basePlotConfig);
-    // Watch for changes in visualization options
     $watch('$store.visOptions', () => {
       $nextTick(() => {
         Plotly.relayout(
@@ -73,14 +86,16 @@
   "
   x-effect="
     if (plot) {
+      data[data.length - 1].x = [currentStep, currentStep];
+      const annotations = data.slice(0, -1).map((d) => {
+        return {
+          x: currentStep,
+          y: d.y[currentStep],
+          text: d.y[currentStep].toFixed(2),
+        }
+      });
       Plotly.update($refs.predVsActual, data, {
-        annotations: allAgentRewards.map(agentRewards => {
-          return {
-            x: currentStep,
-            y: agentRewards[currentStep],
-            text: agentRewards[currentStep].toFixed(2),
-          }
-        }),
+        annotations: annotations,
       });
     }
   "

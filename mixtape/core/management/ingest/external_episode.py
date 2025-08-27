@@ -135,7 +135,7 @@ class ExternalImport(BaseModel):
 
         # Check top-level action mappings (excluding unit_mapping)
         for key, value in v.items():
-            if key == "unit_mapping":
+            if key == 'unit_mapping':
                 continue
 
             try:
@@ -148,8 +148,8 @@ class ExternalImport(BaseModel):
                 raise ValueError('Action labels must be strings')
 
         # Check unit_mapping if present
-        if "unit_mapping" in v:
-            unit_mapping = v["unit_mapping"]
+        if 'unit_mapping' in v:
+            unit_mapping = v['unit_mapping']
             if not isinstance(unit_mapping, dict):
                 raise ValueError('Unit mapping must be a dictionary')
 
