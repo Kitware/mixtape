@@ -34,6 +34,7 @@ class TrainingAdmin(admin.ModelAdmin):
         'completed',
         'last_checkpoint',
         'parallel',
+        'has_config',
     ]
     list_filter = [
         'environment',
@@ -56,6 +57,10 @@ class TrainingAdmin(admin.ModelAdmin):
             return format_html('<a href="{}">Edit {}</a>', last_checkpoint_url, last_checkpoint.pk)
         else:
             return '-'
+
+    @admin.display(description='Config', boolean=True)
+    def has_config(self, obj):
+        return obj.config is not None and bool(obj.config)
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
