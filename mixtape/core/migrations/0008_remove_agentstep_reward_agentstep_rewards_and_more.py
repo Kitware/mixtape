@@ -2,7 +2,7 @@
 
 from django.db import migrations, models
 
-import mixtape.core.models.agent_step
+import mixtape.core.models.episode_step
 
 
 class Migration(migrations.Migration):
@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='agentstep',
             name='rewards',
-            field=models.JSONField(default=mixtape.core.models.agent_step._rewards_default),
+            field=models.JSONField(default=mixtape.core.models.episode_step._rewards_default),
         ),
         migrations.AddField(
             model_name='training',
