@@ -1,0 +1,79 @@
+<div
+  x-data="{
+    data: [],
+    layout: {
+      ...basePlotLayout,
+      title: {text: 'Per-Unit Actions Over Time'},
+      xaxis: { ...basePlotLayout.xaxis, title: {text: 'Time Step'} },
+      yaxis: { ...basePlotLayout.yaxis, title: {text: 'Units'}, type: 'category' },
+      margin: {l: 100, r: 40, t: 40, b: 40},
+      showlegend: false,
+      showscale: $store.visOptions.includes('plotLegends'),
+    },
+    plot: null,
+    units: [],
+  }"
+  x-init="
+    const unitMapping = (parsedData.unit_mapping && parsedData.unit_mapping[0]) || {};
+    const unitActions = (parsedData.unit_actions && parsedData.unit_actions[0]) || {};
+    units = Object.keys(unitActions).sort();
+    const timeSteps = [];
+    units.forEach(unit => {
+      unitActions[unit].forEach(stepData => {
+        if (!timeSteps.includes(stepData.step)) {
+          timeSteps.push(stepData.step);
+        }
+      });
+    });
+    timeSteps.sort((a, b) => a - b);
+
+    const z = [];
+    units.forEach(unit => {
+      const unitRow = [];
+      timeSteps.forEach(step => {
+        const action = step in unitActions[unit] ? unitActions[unit][step].action : -1;
+        unitRow.push(action);
+      });
+      z.push(unitRow);
+    });
+
+    data = [{
+      z: z,
+      x: timeSteps,
+      y: units,
+      type: 'heatmap',
+      colorscale: [
+        [0, 'rgba(0, 0, 0, 0)'],
+        [.25, 'rgba(0, 0, 0, 0)'],
+        [0.25, 'rgba(0, 127, 255, 1)'],
+        [0.5, 'rgba(0, 127, 255, 1)'],
+        [0.5, 'rgba(0, 255, 127, 1)'],
+        [0.75, 'rgba(0, 255, 127, 1)'],
+        [0.75, 'rgba(255, 255, 127, 1)'],
+        [1, 'rgba(255, 255, 127, 1)'],
+      ],
+      showscale: true,
+      colorbar: {
+        title: 'Action',
+        tickmode: 'array',
+        tickvals: [-1, 0, 1, 2],
+        ticktext: ['Dead', 'Noop', 'Move', 'Attack'],
+      },
+    }];
+
+    plot = Plotly.newPlot($refs.unitActionsPlot, data, layout, basePlotConfig);
+    $watch('$store.visOptions', () => {
+      $nextTick(() => {
+        Plotly.relayout(
+          $refs.unitActionsPlot,
+          {
+            autosize: true,
+            showlegend: $store.visOptions.includes('plotLegends')
+          });
+      });
+    });
+  "
+  class="w-full"
+>
+  <div x-ref="unitActionsPlot"></div>
+</div>

@@ -1,0 +1,90 @@
+<div
+  x-data="{
+    data: [],
+    layout: {
+      ...basePlotLayout,
+      title: { text: 'Predicted vs Actual Rewards Over Time' },
+      xaxis: { ...basePlotLayout.xaxis, title: { text: 'Step' } },
+      yaxis: { ...basePlotLayout.yaxis, title: { text: 'Reward' } },
+    },
+    plot: null,
+    yRange: [Infinity, -Infinity],
+    allAgentRewards: [],
+  }"
+  x-init="
+    if (Object.keys(actionVReward).length > 0) {
+      const episodeKey = Object.keys(actionVReward)[0];
+      const episodeData = actionVReward[episodeKey] || {};
+
+      Object.entries(episodeData).forEach(([agentId, agentData], index) => {
+        const steps = [];
+        const agentRewards = [0];
+
+        if (agentData && typeof agentData === 'object') {
+          Object.values(agentData).forEach(reward => {
+            if (typeof reward === 'number') {
+              const lastReward = agentRewards[agentRewards.length - 1];
+              agentRewards.push(lastReward + reward);
+              steps.push(steps.length);
+            }
+          });
+
+          if (agentRewards.length > 1) {
+            data.push({
+              x: steps,
+              y: agentRewards.slice(1),
+              type: 'scatter',
+              mode: 'lines',
+              name: agentId,
+            });
+            const currentYRange = [Math.min(...agentRewards.slice(1)), Math.max(...agentRewards.slice(1))];
+            yRange = [Math.min(yRange[0], currentYRange[0]), Math.max(yRange[1], currentYRange[1])];
+            allAgentRewards.push(agentRewards.slice(1));
+          }
+        }
+      });
+    }
+
+    data.push({
+      x: [currentStep, currentStep],
+      y: yRange,
+      type: 'scatter',
+      mode: 'lines',
+      line: {
+        color: 'red',
+        width: 2,
+        dash: 'dot'
+      },
+      name: 'Current Step'
+    });
+
+    plot = Plotly.newPlot($refs.predVsActual, data, layout, basePlotConfig);
+    // Watch for changes in visualization options
+    $watch('$store.visOptions', () => {
+      $nextTick(() => {
+        Plotly.relayout(
+          $refs.predVsActual,
+          {
+            autosize: true,
+            showlegend: $store.visOptions.includes('plotLegends')
+          });
+      });
+    });
+  "
+  x-effect="
+    if (plot) {
+      Plotly.update($refs.predVsActual, data, {
+        annotations: allAgentRewards.map(agentRewards => {
+          return {
+            x: currentStep,
+            y: agentRewards[currentStep],
+            text: agentRewards[currentStep].toFixed(2),
+          }
+        }),
+      });
+    }
+  "
+  class="w-full"
+>
+  <div x-ref="predVsActual"></div>
+</div>

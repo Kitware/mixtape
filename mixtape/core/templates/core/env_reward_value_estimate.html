@@ -1,0 +1,91 @@
+<div
+  x-data="{
+    data: [],
+    layout: {
+      ...basePlotLayout,
+      title: {text: 'Environment Reward vs Value Estimate Over Time'},
+      xaxis: { ...basePlotLayout.xaxis, title: {text: 'Time Step'} },
+      yaxis: { ...basePlotLayout.yaxis, title: {text: 'Value'} },
+    },
+    plot: null,
+    yRange: [Infinity, -Infinity],
+    envRewards: [],
+    valueEstimates: {},
+  }"
+  x-init="
+    envRewards = (parsedData.environment_rewards && parsedData.environment_rewards[0]) || [];
+    valueEstimates = (parsedData.value_estimates && parsedData.value_estimates[0]) || {};
+    const timeSteps = Array.from({length: envRewards.length}, (_, i) => i);
+    if (envRewards.length > 0) {
+      data.push({
+        x: timeSteps,
+        y: envRewards,
+        type: 'scatter',
+        mode: 'lines',
+        name: 'Reward',
+      });
+      yRange = [Math.min(...envRewards), Math.max(...envRewards)];
+    }
+    Object.entries(valueEstimates).forEach(([agent, values]) => {
+      data.push({
+        x: timeSteps,
+        y: values,
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: `${agent} Value Estimate`,
+      });
+      const currentRange = [Math.min(...values), Math.max(...values)];
+      yRange = [Math.min(yRange[0], currentRange[0]), Math.max(yRange[1], currentRange[1])];
+    });
+    data.push({
+      x: [currentStep, currentStep],
+      y: yRange,
+      type: 'scatter',
+      mode: 'lines',
+      line: {
+        color: 'red',
+        width: 2,
+        dash: 'dot'
+      },
+      name: 'Current Step',
+    });
+
+    plot = Plotly.newPlot($refs.valueEstimatePlot, data, layout, basePlotConfig);
+    // Watch for changes in visualization options
+    $watch('$store.visOptions', () => {
+      $nextTick(() => {
+        Plotly.relayout(
+          $refs.valueEstimatePlot,
+          {
+            autosize: true,
+            showlegend: $store.visOptions.includes('plotLegends')
+          });
+      });
+    });
+  "
+  x-effect="
+    if (plot) {
+      data[data.length - 1].x = [currentStep, currentStep];
+      const annotations = Object.keys(valueEstimates).map(agent => {
+        return {
+          x: currentStep,
+          y: valueEstimates[agent][currentStep],
+          text: valueEstimates[agent][currentStep].toFixed(2),
+        }
+      });
+      if (envRewards.length > 0) {
+        annotations.push({
+          x: currentStep,
+          y: envRewards[currentStep],
+          text: envRewards[currentStep].toFixed(2),
+        });
+      }
+      Plotly.update($refs.valueEstimatePlot, data, {
+        annotations: annotations,
+      });
+    }
+  "
+  class="w-full"
+>
+  <div x-ref="valueEstimatePlot"></div>
+</div>

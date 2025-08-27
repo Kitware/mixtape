@@ -1,0 +1,88 @@
+<div
+  x-data="{
+    data: [],
+    layout: {
+      ...basePlotLayout,
+      title: { text: 'Friendly Health Over Time' },
+      xaxis: { ...basePlotLayout.xaxis, title: { text: 'Step' } },
+      yaxis: { ...basePlotLayout.yaxis, title: { text: 'Health' } },
+    },
+    plot: null,
+    yRange: [Infinity, -Infinity],
+    healthData: {},
+  }"
+  x-init="
+    healthData = (parsedData.friendly_health_data && parsedData.friendly_health_data[0]) || {};
+    let annotations = [];
+
+    Object.keys(healthData).forEach(entity => {
+      const healthValues = healthData[entity];
+      if (!healthValues || healthValues.length === 0) return;
+
+      const xValues = Array.from({length: healthValues.length}, (_, i) => i);
+
+      data.push({
+        name: entity,
+        x: xValues,
+        y: healthValues,
+        type: 'scatter',
+        mode: 'lines',
+        line: {
+          dash: entity.toLowerCase().startsWith('agent') ? 'solid' : 'dashdot',
+        },
+        connectgaps: true,
+      });
+      const currentYRange = [Math.min(...healthValues), Math.max(...healthValues)];
+      yRange = [Math.min(yRange[0], currentYRange[0]), Math.max(yRange[1], currentYRange[1])];
+      annotations.push({
+        x: currentStep,
+        y: healthValues[currentStep],
+        text: healthValues[currentStep].toFixed(2),
+      });
+    });
+
+    // Add a vertical line at the current step
+    data.push({
+      x: [currentStep, currentStep],
+      y: yRange,
+      type: 'scatter',
+      mode: 'lines',
+      line: {
+        color: 'red',
+        width: 2,
+        dash: 'dot'
+      },
+      name: 'Current Step'
+    });
+
+    plot = Plotly.newPlot($refs.friendlyHealthPlot, data, layout, basePlotConfig);
+    $watch('$store.visOptions', () => {
+      $nextTick(() => {
+        Plotly.relayout(
+          $refs.friendlyHealthPlot,
+          {
+            autosize: true,
+            showlegend: $store.visOptions.includes('plotLegends')
+          })
+      });
+    })
+  "
+  x-effect="
+    if (plot) {
+      data[data.length - 1].x = [currentStep, currentStep];
+      const layout_update = {
+        annotations: Object.keys(healthData).map(entity => {
+          return {
+            x: currentStep,
+            y: healthData[entity][currentStep],
+            text: healthData[entity][currentStep].toFixed(2),
+          }
+        })
+      };
+      Plotly.update($refs.friendlyHealthPlot, data, layout_update);
+    }
+  "
+  class="w-full"
+>
+  <div x-ref="friendlyHealthPlot"></div>
+</div>

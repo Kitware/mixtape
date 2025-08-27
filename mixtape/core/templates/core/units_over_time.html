@@ -1,0 +1,56 @@
+<div
+  x-data="{
+    data: [],
+    layout: {
+      ...basePlotLayout,
+      title: { text: 'Units Over Time' },
+      xaxis: {
+        ...basePlotLayout.xaxis,
+        title: { text: 'Steps Alive' },
+      },
+      yaxis: {
+        ...basePlotLayout.yaxis,
+        title: { text: 'Units' },
+        type: 'category'
+      },
+      margin: { l: 100, r: 40, t: 40, b: 40 },
+    },
+    plot: null,
+    unitLifetimesData: {},
+  }"
+  x-init="
+    unitLifetimesData = parsedData.unit_lifetimes[0];
+
+    const unitData = Object.entries(unitLifetimesData)
+      .map(([unitId, unitData]) => ({
+        unit: unitId,
+        stepsAlive: unitData?.total_steps || 0,
+        deathStep: unitData?.death_step || 0
+      }))
+      .filter(unit => unit.unit && unit.unit.startsWith('marine_'))
+      .sort((a, b) => b.stepsAlive - a.stepsAlive);
+
+    data = [{
+      type: 'bar',
+      orientation: 'h',
+      x: unitData.map(d => d.stepsAlive),
+      y: unitData.map(d => d.unit),
+      width: 0.9
+    }];
+
+    plot = Plotly.newPlot($refs.unitsOverTime, data, layout, basePlotConfig);
+    $watch('$store.visOptions', () => {
+      $nextTick(() => {
+        Plotly.relayout(
+          $refs.unitsOverTime,
+          {
+            autosize: true,
+            showlegend: $store.visOptions.includes('plotLegends')
+          })
+      });
+    });
+  "
+  class="w-full"
+>
+  <div x-ref="unitsOverTime"></div>
+</div>

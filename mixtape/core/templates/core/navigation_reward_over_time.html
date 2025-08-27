@@ -1,0 +1,101 @@
+<div
+  x-data="{
+    data: [],
+    layout: {
+      ...basePlotLayout,
+      title: { text: 'Navigation Reward Over Time' },
+      xaxis: { ...basePlotLayout.xaxis, title: { text: 'Step' } },
+      yaxis: { ...basePlotLayout.yaxis, title: { text: 'Cumulative Reward' } },
+    },
+    plot: null,
+    yRange: [Infinity, -Infinity],
+    agentRewards: [],
+    unitRewards: {},
+  }"
+  x-init="
+    const parsedData = JSON.parse(document.getElementById('parsed_data_json').textContent);
+    agentRewards = (parsedData.decomposed_rewards && parsedData.decomposed_rewards[0]?.navigation) || [];
+    unitRewards = (parsedData.unit_navigation_rewards && parsedData.unit_navigation_rewards[0]) || {};
+    const timeSteps = Array.from({length: agentRewards.length || Object.values(unitRewards)[0]?.length || 0}, (_, i) => i);
+
+    if (agentRewards.length > 0) {
+      data.push({
+        name: 'agent_0',
+        x: timeSteps,
+        y: agentRewards,
+        type: 'scatter',
+        mode: 'lines',
+        line: {
+          dash: 'solid',
+        }
+      });
+    }
+
+    Object.entries(unitRewards).forEach(([unit, rewards], index) => {
+      if (rewards && rewards.length > 0) {
+        data.push({
+          name: unit,
+          x: timeSteps.slice(0, rewards.length),
+          y: rewards,
+          type: 'scatter',
+          mode: 'lines',
+          line: {
+            dash: 'dashdot',
+          }
+        });
+      }
+      const currentRange = [Math.min(...rewards), Math.max(...rewards)];
+      yRange = [Math.min(yRange[0], currentRange[0]), Math.max(yRange[1], currentRange[1])];
+    });
+
+    data.push({
+      x: [currentStep, currentStep],
+      y: yRange,
+      type: 'scatter',
+      mode: 'lines',
+      line: {
+        color: 'red',
+        width: 2,
+        dash: 'dot'
+      },
+      name: 'Current Step',
+    });
+
+    plot = Plotly.newPlot($refs.navRewardOverTime, data, layout, basePlotConfig);
+    $watch('$store.visOptions', () => {
+      $nextTick(() => {
+        Plotly.relayout(
+          $refs.navRewardOverTime,
+          {
+            autosize: true,
+            showlegend: $store.visOptions.includes('plotLegends')
+          })
+      });
+    });
+  "
+  x-effect="
+    if (plot) {
+      data[data.length - 1].x = [currentStep, currentStep];
+      const annotations = Object.keys(unitRewards).map(unit => {
+        return {
+          x: currentStep,
+          y: unitRewards[unit][currentStep],
+          text: unitRewards[unit][currentStep].toFixed(2),
+        }
+      });
+      if (agentRewards.length > 0) {
+        annotations.push({
+          x: currentStep,
+          y: agentRewards[currentStep],
+          text: agentRewards[currentStep].toFixed(2),
+        });
+      }
+      Plotly.update($refs.navRewardOverTime, data, {
+        annotations: annotations,
+      });
+    }
+  "
+  class="w-full"
+>
+  <div x-ref="navRewardOverTime"></div>
+</div>
