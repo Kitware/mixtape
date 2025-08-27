@@ -70,6 +70,7 @@
     if (plot) {
       data[data.length - 1].x = [currentStep, currentStep];
       const layout_update = {
+        ...basePlotStyling(),
         annotations: Object.keys(healthData).map(entity => {
           return {
             x: currentStep,

@@ -82,6 +82,7 @@
       }
       Plotly.update($refs.valueEstimatePlot, data, {
         annotations: annotations,
+        ...basePlotStyling(),
       });
     }
   "

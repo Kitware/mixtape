@@ -25,22 +25,28 @@
     total_rewards,
   } = data;
 
+  const basePlotStyling = (() => {
+    return {
+      paper_bgcolor: $store.theme.paper_bgcolor,
+      plot_bgcolor: $store.theme.plot_bgcolor,
+      font: $store.theme.font,
+      xaxis: {
+        gridcolor: $store.theme.axis.gridcolor,
+        zerolinecolor: $store.theme.axis.zerolinecolor
+      },
+      yaxis: {
+        gridcolor: $store.theme.axis.gridcolor,
+        zerolinecolor: $store.theme.axis.zerolinecolor
+      },
+    }
+  });
+
   const basePlotLayout = {
     autosize: true,
     height: 'auto',
     showlegend: $store.visOptions.includes('plotLegends'),
-    paper_bgcolor: $store.theme.paper_bgcolor,
-    plot_bgcolor: $store.theme.plot_bgcolor,
-    font: $store.theme.font,
-    xaxis: {
-      gridcolor: $store.theme.axis.gridcolor,
-      zerolinecolor: $store.theme.axis.zerolinecolor
-    },
-    yaxis: {
-      gridcolor: $store.theme.axis.gridcolor,
-      zerolinecolor: $store.theme.axis.zerolinecolor
-    },
     margin: {l: 40, r: 40, t: 40, b: 40},
+    ...basePlotStyling(),
   };
 
   const basePlotConfig = {
@@ -67,6 +73,7 @@
     totalRewards: total_rewards,
     showVisMenu: false,
     showReplayDetails: true,
+    basePlotStyling: basePlotStyling,
     basePlotLayout: basePlotLayout,
     basePlotConfig: basePlotConfig,
     getStep(step) {
@@ -115,8 +122,8 @@ class="flex h-screen"
         <div x-show="$store.visOptions.includes('timelines')" class="max-w-full my-2">
           {% include "core/timeline.html" %}
         </div>
-        <div x-show="$store.visOptions.includes('episodeDetails')" class="w-full mt-2">
-          <div class="flex items-center justify-between bg-info px-4 py-2 rounded-t-md border-b border-base-100">
+        <div x-show="$store.visOptions.includes('episodeDetails')" class="w-full mt-2 mr-1">
+          <div class="flex items-center justify-between bg-info text-info-content px-4 py-2 rounded-t-md">
             <h3 class="text-sm font-semibold">Agent Details</h3>
             <button
               @click="showReplayDetails = !showReplayDetails"
@@ -125,7 +132,7 @@ class="flex h-screen"
               <i x-show="showReplayDetails" class="ri-arrow-up-s-line"></i>
             </button>
           </div>
-          <div x-show="showReplayDetails" class="bg-info-content border-x border-b rounded-b-md border-base-100" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 transform scale-100" x-transition:leave-end="opacity-0 transform scale-95">
+          <div x-show="showReplayDetails" class="bg-transparent border border-info rounded-b-md border-base-100" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 transform scale-100" x-transition:leave-end="opacity-0 transform scale-95">
             {% include "core/replay_details.html" %}
           </div>
         </div>

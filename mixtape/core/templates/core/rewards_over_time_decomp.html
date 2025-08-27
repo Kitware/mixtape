@@ -96,7 +96,8 @@
 
         Plotly.relayout($refs.rewardsOverTime, {
           shapes: this.createShapes(allYValues),
-          annotations: this.createAnnotations()
+          annotations: this.createAnnotations(),
+          ...basePlotStyling(),
         });
       }
     }

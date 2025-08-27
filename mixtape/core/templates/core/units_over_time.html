@@ -50,6 +50,11 @@
       });
     });
   "
+  x-effect="
+    if (plot) {
+      Plotly.update($refs.unitsOverTime, {}, { ...basePlotStyling() });
+    }
+  "
   class="w-full"
 >
   <div x-ref="unitsOverTime"></div>

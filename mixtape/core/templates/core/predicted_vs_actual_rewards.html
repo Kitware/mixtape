@@ -96,6 +96,7 @@
       });
       Plotly.update($refs.predVsActual, data, {
         annotations: annotations,
+        ...basePlotStyling(),
       });
     }
   "

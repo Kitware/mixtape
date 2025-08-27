@@ -87,6 +87,7 @@
           class="grow"
           placeholder="Search"
           x-model="searchQuery"
+          disabled
         />
       </label>
     </div>
@@ -94,7 +95,9 @@
       <ul class="menu menu-horizontal px-1 z-10">
         <li>
           <details>
-            <summary>Algorithm</summary>
+            <summary class="btn btn-ghost content-center!" disabled>
+              Algorithm
+            </summary>
             <ul class="bg-base-100 rounded-t-none p-2">
               {% for algorithm in algorithms %}
               <li>
@@ -108,10 +111,12 @@
           </details>
         </li>
       </ul>
-      <ul class="menu menu-horizontal px-1 z-10 mt-4">
+      <ul class="menu menu-horizontal px-1 z-10">
         <li>
           <details>
-            <summary>Environment</summary>
+            <summary class="btn btn-ghost content-center!" disabled>
+              Environment
+            </summary>
             <ul class="bg-base-100 rounded-t-none p-2">
               {% for environment in environments %}
               <li>
@@ -128,7 +133,7 @@
       <ul class="menu menu-horizontal px-1 z-10">
         <li>
           <details>
-            <summary>
+            <summary class="btn btn-ghost content-center!" disabled>
               <i class="ri-arrow-up-down-line"></i>
             </summary>
             <ul class="bg-base-100 rounded-t-none p-2">
@@ -160,10 +165,10 @@
           </details>
         </li>
       </ul>
-      <button class="btn btn-square btn-ghost">
+      <button class="btn btn-square btn-ghost self-center" disabled>
         <i class="ri-filter-fill"></i>
       </button>
-      <button class="btn btn-square btn-ghost">
+      <button class="btn btn-square btn-ghost self-center" disabled>
         <i class="ri-list-check-3"></i>
       </button>
     </div>

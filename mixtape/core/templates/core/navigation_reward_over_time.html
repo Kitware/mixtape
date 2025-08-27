@@ -91,6 +91,7 @@
       }
       Plotly.update($refs.navRewardOverTime, data, {
         annotations: annotations,
+        ...basePlotStyling(),
       });
     }
   "

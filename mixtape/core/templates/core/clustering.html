@@ -124,7 +124,9 @@
           }
         }]);
       }
-    }"
+      Plotly.update($refs.allManifolds, {}, { ...basePlotStyling() });
+    }
+  "
 >
   <div x-ref="allManifolds"></div>
 </div>
@@ -180,7 +182,7 @@
       Plotly.update($refs.allManifolds, {
         x: [[currentStep, currentStep]],
         y: [[yMin - 0.5, yMax + 0.5]],
-      }, {}, [1]);
+      }, { ...basePlotStyling() }, [1]);
     }"
 >
   <div x-ref="allManifolds"></div>

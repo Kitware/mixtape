@@ -56,7 +56,8 @@
           {
             autosize: true,
             showlegend: $store.visOptions.includes('plotLegends')
-          })
+          }
+        );
       });
     });"
   x-effect="
@@ -65,6 +66,7 @@
         x: [[currentStep, currentStep]],
         y: [[Math.min(...rewardsOverTime.flat()), Math.max(...rewardsOverTime.flat())]]
       }, {
+        ...basePlotStyling(),
         annotations: rewardsOverTime.map((episode, idx) => {
           return {
             x: getStep(episode),

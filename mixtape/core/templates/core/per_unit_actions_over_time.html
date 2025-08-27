@@ -73,6 +73,11 @@
       });
     });
   "
+  x-effect="
+    if (plot) {
+      Plotly.update($refs.unitActionsPlot, {}, { ...basePlotStyling() });
+    }
+  "
   class="w-full"
 >
   <div x-ref="unitActionsPlot"></div>
