@@ -8,7 +8,7 @@
       yaxis: { ...basePlotLayout.yaxis, title: {text: 'Units'}, type: 'category' },
       margin: {l: 100, r: 40, t: 40, b: 40},
       showlegend: false,
-      showscale: $store.visOptions.includes('plotLegends'),
+      showscale: $store.visOptions.visible.includes('plotLegends'),
     },
     plot: null,
     units: [],
@@ -68,7 +68,8 @@
           $refs.unitActionsPlot,
           {
             autosize: true,
-            showlegend: $store.visOptions.includes('plotLegends')
+            showlegend: $store.visOptions.visible.includes('plotLegends'),
+            legend: legendLayout(),
           });
       });
     });

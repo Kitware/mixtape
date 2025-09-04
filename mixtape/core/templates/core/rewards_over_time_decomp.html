@@ -23,7 +23,7 @@
             y: rewardData,
             type: 'scatter',
             mode: 'lines',
-            name: `${eps}${rewardType}`,
+            name: `${eps} - ${rewardType}`,
           });
         });
       });
@@ -109,7 +109,8 @@
         $refs.rewardsOverTime,
         {
           autosize: true,
-          showlegend: $store.visOptions.includes('plotLegends')
+          showlegend: $store.visOptions.visible.includes('plotLegends'),
+          legend: legendLayout(),
         })
     });
   });"

@@ -35,34 +35,29 @@
           }
         });
         // Visualization options store
-        Alpine.store('visOptions', [
-          'actionClustering',
-          'combatReward',
-          'decomposedRewards',
-          'enemyHealth',
-          'episodeDetails',
-          'episodeImages',
-          'friendlyHealth',
-          'navigation',
-          'obsClustering',
-          'perUnitActions',
-          'playbackControls',
-          'plotLegends',
-          'predictedRewards',
-          'rewardsOverTime',
-          'timelines',
-          'valueEstimate',
-          'unitsOverTime',
-        ]);
-        // Color Palette store
-        Alpine.store('colorPalette', [
-          '#003D30', '#5A0A33', '#5745', '#810D49', '#00735C', '#AB0D61', '#9175', '#D80D7B',
-          '#00AF8E', '#FF2E95', '#00CBA7', '#FF78AD', '#00EBC1', '#FFACC6', '#86FFDE', '#FFD7E1',
-          '#00306F', '#460B70', '#00489E', '#6B069F', '#005FCC', '#8E06CD', '#0079FA', '#B40AFC',
-          '#009FFA', '#ED0DFD', '#00C2F9', '#FF66FD', '#00E5F8', '#FFA3FC', '#7CFFFA', '#FFD5FD',
-          '#4002', '#5F0914', '#005A01', '#86081C', '#7702', '#B20725', '#9503', '#DE0D2E',
-          '#00B408', '#FF4235', '#00D302', '#FF8735', '#00F407', '#FFB935', '#AFFF2A', '#FFE239'
-        ]);
+        Alpine.store('visOptions', {
+          'visible': [
+            'actionClustering',
+            'combatReward',
+            'decomposedRewards',
+            'enemyHealth',
+            'episodeDetails',
+            'episodeImages',
+            'friendlyHealth',
+            'navigation',
+            'obsClustering',
+            'perUnitActions',
+            'playbackControls',
+            'plotLegends',
+            'predictedRewards',
+            'rewardsOverTime',
+            'timelines',
+            'valueEstimate',
+            'unitsOverTime',
+          ],
+          'legendPosition': 'horizontal',
+          'legendOverlap': 'outside',
+        });
       });
     </script>
     <title>{% block title %}MIXTAPE{% endblock %}</title>

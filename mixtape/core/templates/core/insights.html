@@ -41,10 +41,20 @@
     }
   });
 
+  const legendLayout = () => {
+    return {
+      orientation: $store.visOptions.legendPosition === 'vertical' ? 'v' : 'h',
+      x: $store.visOptions.legendPosition === 'vertical' ? 1 : 0,
+      y: ($store.visOptions.legendPosition === 'horizontal' && $store.visOptions.legendOverlap === 'outside') ? -0.1 : 1,
+      xanchor: ($store.visOptions.legendOverlap === 'inside' && $store.visOptions.legendPosition === 'vertical') ? 'right' : 'left',
+    };
+  };
+
   const basePlotLayout = {
     autosize: true,
     height: 'auto',
-    showlegend: $store.visOptions.includes('plotLegends'),
+    showlegend: $store.visOptions.visible.includes('plotLegends'),
+    legend: legendLayout(),
     margin: {l: 40, r: 40, t: 40, b: 40},
     ...basePlotStyling(),
   };
@@ -76,6 +86,7 @@
     basePlotStyling: basePlotStyling,
     basePlotLayout: basePlotLayout,
     basePlotConfig: basePlotConfig,
+    legendLayout: legendLayout,
     getStep(step) {
       if (this.currentStep < Object.keys(step).length) {
         return step[Math.max(0, this.currentStep - 1)];
@@ -99,17 +110,20 @@
 class="flex h-screen"
 >
   <div class="w-1/2 flex flex-col overflow-y-auto overflow-x-hidden">
-    <div x-show="$store.visOptions.includes('playbackControls')" class="max-w-full pa-1 rounded-md mx-1 my-2">
+    <div x-show="$store.visOptions.visible.includes('playbackControls')" class="max-w-full pa-1 rounded-md mx-1 my-2">
       {% include "core/replay_controls.html" %}
     </div>
     <template x-for="(step, index) in stepData">
-      <div x-show="$store.visOptions.includes('episodeImages')" class="episode-container w-full">
+      <div class="episode-container w-full">
         <div class="card raised flex flex-col overflow-hidden w-full min-h-fit">
           <h1 class="text-xl font-bold text-center flex-none mb-4">Step <span x-text="currentStep"></span> of <span x-text="maxSteps"></span></h1>
           <div class="grid gap-4 grid-cols-1 md:grid-cols-2">
               <div class="min-h-0" :class="stepData.length % 2 === 1 && index === stepData.length - 1 ? 'md:col-span-2' : ''">
                 <div class="flex p-2 min-h-0 col-span-12">
-                  <div class="flex-1 min-h-0 flex items-center justify-center relative">
+                  <div
+                    x-show="$store.visOptions.visible.includes('episodeImages')"
+                    class="flex-1 min-h-0 flex items-center justify-center relative"
+                  >
                     <img x-show="getStep(step).image_url" class="m-auto h-full" :src="getStep(step).image_url" alt="Step Image">
                     <div class="absolute bottom-0 left-0 right-0 text-center">
                       Episode <span x-text="episodeIds[index]"></span>: Step <span x-text="currentStep < Object.keys(step).length ? currentStep : Object.keys(step).length - 1"></span>
@@ -119,10 +133,10 @@ class="flex h-screen"
               </div>
           </div>
         </div>
-        <div x-show="$store.visOptions.includes('timelines')" class="max-w-full my-2">
+        <div x-show="$store.visOptions.visible.includes('timelines')" class="max-w-full my-2">
           {% include "core/timeline.html" %}
         </div>
-        <div x-show="$store.visOptions.includes('episodeDetails')" class="w-full mt-2 mr-1">
+        <div x-show="$store.visOptions.visible.includes('episodeDetails')" class="w-full mt-2 mr-1">
           <div class="flex items-center justify-between bg-info text-info-content px-4 py-2 rounded-t-md">
             <h3 class="text-sm font-semibold">Agent Details</h3>
             <button
@@ -143,72 +157,78 @@ class="flex h-screen"
   <div class="w-1/2 flex flex-col overflow-y-auto">
     <div class="flex flex-wrap w-full">
       <div
-        x-show="$store.visOptions.includes('friendlyHealth')"
+        x-show="$store.visOptions.visible.includes('friendlyHealth')"
         class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
       >
         {% include "core/friendly_health_over_time.html" %}
       </div>
       <div
-        x-show="$store.visOptions.includes('enemyHealth')"
+        x-show="$store.visOptions.visible.includes('enemyHealth')"
         class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
       >
         {% include "core/enemy_health_over_time.html" %}
       </div>
       <div
-        x-show="$store.visOptions.includes('navigation')"
+        x-show="$store.visOptions.visible.includes('navigation')"
         class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
       >
         {% include "core/navigation_reward_over_time.html" %}
       </div>
       <div
         class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
-        x-show="$store.visOptions.includes('combatReward')"
+        x-show="$store.visOptions.visible.includes('combatReward')"
       >
         {% include "core/combat_reward_over_time.html" %}
       </div>
       <div
-        x-show="$store.visOptions.includes('predictedRewards')"
+        x-show="$store.visOptions.visible.includes('predictedRewards')"
         class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
       >
         {% include "core/predicted_vs_actual_rewards.html" %}
       </div>
       <div
-        x-show="$store.visOptions.includes('unitsOverTime')"
+        x-show="$store.visOptions.visible.includes('unitsOverTime')"
         class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
       >
         {% include "core/units_over_time.html" %}
       </div>
       <div
-        x-show="$store.visOptions.includes('valueEstimate')"
+        x-show="$store.visOptions.visible.includes('valueEstimate')"
         class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
       >
         {% include "core/env_reward_value_estimate.html" %}
       </div>
       <div
-        x-show="$store.visOptions.includes('perUnitActions')"
+        x-show="$store.visOptions.visible.includes('perUnitActions')"
         class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
       >
         {% include "core/per_unit_actions_over_time.html" %}
       </div>
       <div
-        x-show="$store.visOptions.includes('rewardsOverTime')"
+        x-show="$store.visOptions.visible.includes('rewardsOverTime')"
         class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
       >
         {% include "core/rewards_over_time.html" %}
       </div>
       <div
-        x-show="$store.visOptions.includes('decomposedRewards')"
+        x-show="$store.visOptions.visible.includes('decomposedRewards')"
         class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit">
         {% include "core/rewards_over_time_decomp.html" %}
       </div>
     </div>
     <div class="flex flex-wrap w-full">
-      <div class="flex-2 flex-grow-[2] min-w-[800px] max-w-full p-1 h-fit">
+      <div
+        x-show="$store.visOptions.visible.includes('obsClustering')"
+        class="flex-2 flex-grow-[2] min-w-[800px] max-w-full p-1 h-fit"
+      >
         <div class="content-center">
           {% include "core/clustering.html" with key="'obs'" title="Observations" %}
         </div>
       </div>
-      <div class="flex-2 flex-grow-[2] min-w-[800px] max-w-full p-1 h-fit">
+      <div
+        x-show="$store.visOptions.visible.includes('actionClustering')"
+        class="flex-2 flex-grow-[2] min-w-[800px] max-w-full p-1 h-fit"
+      >
         <div class="content-center">
           {% include "core/clustering.html" with key="'agent_outs'" title="Actions" %}
         </div>

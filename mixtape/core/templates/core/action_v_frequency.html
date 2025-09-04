@@ -5,7 +5,7 @@
       autosize: true,
       height: 'auto',
       barmode: Object.keys(actionVFrequency).length > 1 ? 'group' : 'stack',
-      showlegend: $store.visOptions.includes('plotLegends'),
+      showlegend: $store.visOptions.visible.includes('plotLegends'),
       paper_bgcolor: $store.theme.paper_bgcolor,
       plot_bgcolor: $store.theme.plot_bgcolor,
       font: $store.theme.font,
@@ -47,7 +47,8 @@
           $refs.actionsFrequency,
           {
             autosize: true,
-            showlegend: $store.visOptions.includes('plotLegends')
+            showlegend: $store.visOptions.visible.includes('plotLegends'),
+            legend: legendLayout(),
           })
       });
     });"

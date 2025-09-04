@@ -4,11 +4,11 @@ from .base import *
 
 # Import these afterwards, to override
 from resonant_settings.development.celery import *  # isort: skip
-from resonant_settings.development.debug_toolbar import *  # isort: skip
+# from resonant_settings.development.debug_toolbar import *  # isort: skip
 from resonant_settings.development.minio_storage import *  # isort: skip
 
 INSTALLED_APPS += [
-    'debug_toolbar',
+    # 'debug_toolbar',
     'django_browser_reload',
 ]
 # Force WhiteNoice to serve static files, even when using 'manage.py runserver_plus'
@@ -18,10 +18,10 @@ INSTALLED_APPS.insert(staticfiles_index, 'whitenoise.runserver_nostatic')
 # Include Debug Toolbar middleware as early as possible in the list.
 # However, it must come after any other middleware that encodes the response's content,
 # such as GZipMiddleware.
-MIDDLEWARE.insert(
-    MIDDLEWARE.index('django.middleware.gzip.GZipMiddleware') + 1,
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
-)  # Should be listed after middleware that encode the response.
+# MIDDLEWARE.insert(
+#     MIDDLEWARE.index('django.middleware.gzip.GZipMiddleware') + 1,
+#     'debug_toolbar.middleware.DebugToolbarMiddleware',
+# )  # Should be listed after middleware that encode the response.
 MIDDLEWARE += [
     'django_browser_reload.middleware.BrowserReloadMiddleware',
 ]

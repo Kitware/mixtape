@@ -45,7 +45,8 @@
           $refs.unitsOverTime,
           {
             autosize: true,
-            showlegend: $store.visOptions.includes('plotLegends')
+            showlegend: $store.visOptions.visible.includes('plotLegends'),
+            legend: legendLayout(),
           })
       });
     });

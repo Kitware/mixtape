@@ -18,7 +18,7 @@
   <div class="navbar-end">
     <div class="dropdown dropdown-end">
       <button class="btn btn-ghost rounded-field">
-        <i class="ri-settings-5-line text-lg"></i>
+        <i class="ri-bar-chart-box-ai-line font-normal text-xl"></i>
       </button>
       <ul
         class="menu dropdown-content bg-base-200 rounded-box z-1 mt-4 p-2 shadow-sm"
@@ -30,7 +30,7 @@
               <input
                 type="checkbox"
                 class="checkbox mr-2"
-                x-model="$store.visOptions"
+                x-model="$store.visOptions.visible"
                 value="actionClustering"
               />
               Action Clustering
@@ -43,7 +43,7 @@
               <input
                 type="checkbox"
                 class="checkbox mr-2"
-                x-model="$store.visOptions"
+                x-model="$store.visOptions.visible"
                 value="combatReward"
               />
               Combat Reward
@@ -56,7 +56,7 @@
               <input
                 type="checkbox"
                 class="checkbox mr-2"
-                x-model="$store.visOptions"
+                x-model="$store.visOptions.visible"
                 value="decomposedRewards"
               />
               Decomposed Rewards
@@ -69,7 +69,7 @@
               <input
                 type="checkbox"
                 class="checkbox mr-2"
-                x-model="$store.visOptions"
+                x-model="$store.visOptions.visible"
                 value="enemyHealth"
               />
               Enemy Health
@@ -82,7 +82,7 @@
               <input
                 type="checkbox"
                 class="checkbox mr-2"
-                x-model="$store.visOptions"
+                x-model="$store.visOptions.visible"
                 value="episodeDetails"
               />
               Episode Details
@@ -95,7 +95,7 @@
               <input
                 type="checkbox"
                 class="checkbox mr-2"
-                x-model="$store.visOptions"
+                x-model="$store.visOptions.visible"
                 value="episodeImages"
               />
               Episode Images
@@ -108,7 +108,7 @@
               <input
                 type="checkbox"
                 class="checkbox mr-2"
-                x-model="$store.visOptions"
+                x-model="$store.visOptions.visible"
                 value="friendlyHealth"
               />
               Friendly Health
@@ -121,7 +121,7 @@
               <input
                 type="checkbox"
                 class="checkbox mr-2"
-                x-model="$store.visOptions"
+                x-model="$store.visOptions.visible"
                 value="navigation"
               />
               Navigation Rewards
@@ -134,7 +134,7 @@
               <input
                 type="checkbox"
                 class="checkbox mr-2"
-                x-model="$store.visOptions"
+                x-model="$store.visOptions.visible"
                 value="obsClustering"
               />
               Observation Clustering
@@ -147,7 +147,7 @@
               <input
                 type="checkbox"
                 class="checkbox mr-2"
-                x-model="$store.visOptions"
+                x-model="$store.visOptions.visible"
                 value="perUnitActions"
               />
               Per Unit Actions
@@ -160,7 +160,7 @@
               <input
                 type="checkbox"
                 class="checkbox mr-2"
-                x-model="$store.visOptions"
+                x-model="$store.visOptions.visible"
                 value="playbackControls"
               />
               Playback Controls
@@ -173,7 +173,7 @@
               <input
                 type="checkbox"
                 class="checkbox mr-2"
-                x-model="$store.visOptions"
+                x-model="$store.visOptions.visible"
                 value="predictedRewards"
               />
               Predicted Rewards
@@ -186,7 +186,7 @@
               <input
                 type="checkbox"
                 class="checkbox mr-2"
-                x-model="$store.visOptions"
+                x-model="$store.visOptions.visible"
                 value="rewardsOverTime"
               />
               Rewards Over Time
@@ -199,7 +199,7 @@
               <input
                 type="checkbox"
                 class="checkbox mr-2"
-                x-model="$store.visOptions"
+                x-model="$store.visOptions.visible"
                 value="timelines"
               />
               Timelines
@@ -212,7 +212,7 @@
               <input
                 type="checkbox"
                 class="checkbox mr-2"
-                x-model="$store.visOptions"
+                x-model="$store.visOptions.visible"
                 value="valueEstimate"
               />
               Value Estimate
@@ -225,30 +225,95 @@
               <input
                 type="checkbox"
                 class="checkbox mr-2"
-                x-model="$store.visOptions"
+                x-model="$store.visOptions.visible"
                 value="unitsOverTime"
               />
               Units Over Time
             </label>
           </div>
         </li>
-        <hr/>
+      </ul>
+    </div>
+    <div class="dropdown dropdown-end">
+      <button class="btn btn-ghost rounded-field">
+        <i class="ri-list-settings-line font-normal text-xl"></i>
+      </button>
+      <ul
+          class="menu dropdown-content bg-base-200 rounded-box z-1 mt-4 p-2 shadow-sm"
+          style="width: max-content;"
+        >
         <li>
           <div class="flex items-center">
             <label class="ms-2 text-sm">
               <input
                 type="checkbox"
                 class="checkbox mr-2"
-                x-model="$store.visOptions"
+                x-model="$store.visOptions.visible"
                 value="plotLegends"
               />
               Show Legends
             </label>
           </div>
         </li>
+        <li>
+          <div class="flex items-center">
+            <label class="ms-2 text-sm">
+              <input
+                type="radio"
+                class="radio mr-2"
+                x-model="$store.visOptions.legendPosition"
+                value="horizontal"
+                :disabled="!$store.visOptions.visible.includes('plotLegends')"
+              />
+              Horizontal Legend
+            </label>
+          </div>
+        </li>
+        <li>
+          <div class="flex items-center">
+            <label class="ms-2 text-sm">
+              <input
+                type="radio"
+                class="radio mr-2"
+                x-model="$store.visOptions.legendPosition"
+                value="vertical"
+                :disabled="!$store.visOptions.visible.includes('plotLegends')"
+              />
+              Vertical Legend
+            </label>
+          </div>
+        </li>
+        <li>
+          <div class="flex items-center">
+            <label class="ms-2 text-sm">
+              <input
+                type="radio"
+                class="radio mr-2"
+                x-model="$store.visOptions.legendOverlap"
+                value="inside"
+                :disabled="!$store.visOptions.visible.includes('plotLegends')"
+              />
+              Inside of Plot
+            </label>
+          </div>
+        </li>
+        <li>
+          <div class="flex items-center">
+            <label class="ms-2 text-sm">
+              <input
+                type="radio"
+                class="radio mr-2"
+                x-model="$store.visOptions.legendOverlap"
+                value="outside"
+                :disabled="!$store.visOptions.visible.includes('plotLegends')"
+              />
+              Outside of Plot
+            </label>
+          </div>
+        </li>
       </ul>
     </div>
-    <label class="toggle text-base-content">
+    <label class="toggle text-base-content ml-2">
       <input type="checkbox" checked="checked" x-model="$store.theme.darkMode" @change="document.documentElement.setAttribute('data-theme', $store.theme.darkMode ? 'dark' : 'light')"/>
       <i class="ri-sun-line flex items-center justify-center text-sm" style="contain: size;"></i>
       <i class="ri-moon-line flex items-center justify-center text-sm" style="contain: size;"></i>

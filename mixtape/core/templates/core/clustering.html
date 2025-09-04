@@ -34,7 +34,7 @@
             opacity: 1,
             width: 2
           },
-          name: `${eps}${uniqueAgents[agent_idx]}`
+          name: `${eps} - ${uniqueAgents[agent_idx]}`
         });
       });
     }
@@ -60,7 +60,8 @@
           $refs.allManifolds,
           {
             autosize: true,
-            showlegend: $store.visOptions.includes('plotLegends')
+            showlegend: $store.visOptions.visible.includes('plotLegends'),
+            legend: legendLayout(),
           })
       });
     });"
@@ -92,7 +93,7 @@
           if (currentStep < agentTrace.x.length && agentTrace && (!agentTrace.visible || agentTrace.visible === true)) {
             highlightX.push(agentTrace.x[currentStep]);
             highlightY.push(agentTrace.y[currentStep]);
-            highlightText.push(`${uniqueAgents[agentIdx]} Episode ${episodeIds[episodeIdx]}`);
+            highlightText.push(`${uniqueAgents[agentIdx]} Ep. ${episodeIds[episodeIdx]}`);
           }
         }
       }
@@ -140,6 +141,21 @@
       title: {text: 'Agent {{title}} Timeline'},
       height: 150,
       margin: {r: 0, t: 25},
+      xaxis: {...basePlotLayout.xaxis},
+      yaxis: {...basePlotLayout.yaxis},
+      shapes: [{
+        type: 'line',
+        x0: currentStep,
+        x1: currentStep,
+        y0: 0,
+        y1: 1,
+        yref: 'paper',
+        line: {
+          color: 'red',
+          width: 2,
+          dash: 'dot'
+        }
+      }]
     },
     plot: null,
   }"
@@ -147,43 +163,32 @@
     data = [
       {
         z: clustering[{{key}}].episode_clusters,
+        x: Array.from({length: clustering[{{key}}].episode_clusters.length}, (_, i) => i),
+        y: Object.values(uniqueAgents),
         type: 'heatmap',
         showscale: false,
         colorscale: 'Viridis',
-      },
-      {
-        x: [[currentStep, currentStep]],
-        y: [[0, clustering[{{key}}].episode_clusters.length - 1]],
-        type: 'scatter',
-        mode: 'lines',
-        showlegend: false,
-        line: {
-          color: 'red',
-          width: 2,
-          dash: 'dot',
-        },
       }
     ];
-    plot = Plotly.newPlot($refs.allManifolds, data, layout, basePlotConfig);
+    plot = Plotly.newPlot($refs.allClusters, data, layout, basePlotConfig);
     $watch('$store.visOptions', () => {
       $nextTick(() => {
         Plotly.relayout(
-          $refs.allManifolds, {
+          $refs.allClusters, {
             autosize: true,
-            showlegend: $store.visOptions.includes('plotLegends')
+            showlegend: $store.visOptions.visible.includes('plotLegends'),
+            legend: legendLayout(),
           })
       });
     });"
   x-effect="
     if (plot) {
-      // Use the heatmap data dimensions directly
-      const yMin = 0;
-      const yMax = clustering[{{key}}].episode_clusters.length - 1;
-      Plotly.update($refs.allManifolds, {
-        x: [[currentStep, currentStep]],
-        y: [[yMin - 0.5, yMax + 0.5]],
-      }, { ...basePlotStyling() }, [1]);
+      Plotly.update($refs.allClusters, {}, {
+        'shapes[0].x0': currentStep,
+        'shapes[0].x1': currentStep,
+        ...basePlotStyling(),
+      });
     }"
 >
-  <div x-ref="allManifolds"></div>
+  <div x-ref="allClusters"></div>
 </div>

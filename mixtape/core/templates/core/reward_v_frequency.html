@@ -7,7 +7,7 @@
     autosize: true,
     height: 'auto',
     barmode: 'overlay',
-    showlegend: $store.visOptions.includes('plotLegends'),
+    showlegend: $store.visOptions.visible.includes('plotLegends'),
     paper_bgcolor: $store.theme.paper_bgcolor,
     plot_bgcolor: $store.theme.plot_bgcolor,
     font: $store.theme.font,
@@ -47,7 +47,8 @@ rewardHistogram.forEach((episode, idx) => {
         $refs.rewardsFrequency,
         {
           autosize: true,
-          showlegend: $store.visOptions.includes('plotLegends')
+          showlegend: $store.visOptions.visible.includes('plotLegends'),
+          legend: legendLayout(),
         })
     });
   });"
