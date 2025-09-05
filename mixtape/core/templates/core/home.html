@@ -76,7 +76,7 @@
     }
   }"
   class="flex flex-col overflow-hidden"
-  style="height: calc(100vh - 64px);"
+  style="height: calc(100vh - 4rem);"
 >
   <div class="flex items-center self-center mx-2 my-3 w-full flex-shrink-0">
     <div class="flex flex-grow-2 gap-2 justify-end">
@@ -256,7 +256,7 @@
   <div class="w-full flex justify-end flex-shrink-0 my-2">
     <button
       class="bg-blue-500 hover:bg-blue-800 rounded-lg px-5 py-2.5 me-2 mb-2 disabled:bg-gray-300 disabled:text-gray-400"
-      :disabled="selectedEpisodes.length === 0"
+      :disabled="selectedEpisodes.length <= 1"
       @click="viewSelectedEpisodes"
     >
       View Selected Episodes

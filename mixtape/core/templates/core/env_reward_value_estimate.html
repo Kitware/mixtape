@@ -10,47 +10,116 @@
     plot: null,
     yRange: [Infinity, -Infinity],
     envRewards: [],
-    valueEstimates: {},
+    valueEstimates: [],
+    shapesAndAnnotationsByStep: {},
+    previousStep: 0,
   }"
   x-init="
-    envRewards = (parsedData.environment_rewards && parsedData.environment_rewards[0]) || [];
-    valueEstimates = (parsedData.value_estimates && parsedData.value_estimates[0]) || {};
-    const timeSteps = Array.from({length: envRewards.length}, (_, i) => i);
-    if (envRewards.length > 0) {
+    envRewards = parsedData.environment_rewards || [];
+    valueEstimates = parsedData.value_estimates || [];
+    const timeSteps = Array.from({length: maxSteps}, (_, i) => i);
+
+    envRewards.forEach((episodeRewards, idx) => {
+      if (!episodeRewards || episodeRewards.length === 0) return;
+      const ep = envRewards.length > 1 ? `episode ${episodeIds[idx]} - ` : '';
       data.push({
-        x: timeSteps,
-        y: envRewards,
+        x: timeSteps.slice(0, episodeRewards.length),
+        y: episodeRewards,
         type: 'scatter',
         mode: 'lines',
-        name: 'Reward',
+        name: `${ep}reward`,
       });
-      yRange = [Math.min(...envRewards), Math.max(...envRewards)];
-    }
-    Object.entries(valueEstimates).forEach(([agent, values]) => {
-      data.push({
-        x: timeSteps,
-        y: values,
-        type: 'scatter',
-        mode: 'lines+markers',
-        name: `${agent} Value Estimate`,
-      });
-      const currentRange = [Math.min(...values), Math.max(...values)];
+      const currentRange = [Math.min(...episodeRewards), Math.max(...episodeRewards)];
       yRange = [Math.min(yRange[0], currentRange[0]), Math.max(yRange[1], currentRange[1])];
     });
-    data.push({
-      x: [currentStep, currentStep],
-      y: yRange,
-      type: 'scatter',
-      mode: 'lines',
-      line: {
-        color: 'red',
-        width: 2,
-        dash: 'dot'
-      },
-      name: 'Current Step',
+
+    valueEstimates.forEach((episodeValues, idx) => {
+      if (!episodeValues) return;
+      const ep = valueEstimates.length > 1 ? `episode ${episodeIds[idx]} - ` : '';
+      Object.entries(episodeValues).forEach(([agent, values]) => {
+        if (!values || values.length === 0) return;
+        data.push({
+          x: timeSteps.slice(0, values.length),
+          y: values,
+          type: 'scatter',
+          mode: 'lines+markers',
+          name: `${ep}${agent} (est)`,
+        });
+        const currentRange = [Math.min(...values), Math.max(...values)];
+        yRange = [Math.min(yRange[0], currentRange[0]), Math.max(yRange[1], currentRange[1])];
+      });
     });
 
-    plot = Plotly.newPlot($refs.valueEstimatePlot, data, layout, basePlotConfig);
+    // Create all steps and annotations at once
+    timeSteps.forEach((ts) => {
+      if (!shapesAndAnnotationsByStep[ts]) {
+        shapesAndAnnotationsByStep[ts] = [];
+      }
+
+      // Add vertical line shape for this step
+      shapesAndAnnotationsByStep[ts].push({
+        shape: {
+          type: 'line',
+          x0: ts,
+          x1: ts,
+          y0: yRange[0],
+          y1: yRange[1],
+          line: {
+            color: 'red',
+            width: 2,
+            dash: 'dot'
+          },
+          visible: ts === 0 // Only visible for initial step
+        }
+      });
+
+      // Add annotations for value estimates at this step
+      valueEstimates.forEach((episodeValues, idx) => {
+        if (!episodeValues) return;
+
+        Object.entries(episodeValues).forEach(([agent, values], agentIdx) => {
+          if (values && values[ts] !== undefined) {
+            shapesAndAnnotationsByStep[ts].push({
+              annotation: {
+                x: ts,
+                y: values[ts],
+                text: values[ts].toFixed(2),
+                font: {
+                  color: $store.categoricalColors[(agentIdx + 1) % $store.categoricalColors.length],
+                },
+                visible: ts === 0 // Only visible for initial step
+              }
+            });
+          }
+        });
+      });
+
+      // Add annotations for environment rewards at this step
+      envRewards.forEach((episodeRewards, idx) => {
+        if (!episodeRewards || episodeRewards.length === 0) return;
+
+        if (episodeRewards[ts] !== undefined) {
+          shapesAndAnnotationsByStep[ts].push({
+            annotation: {
+              x: ts,
+              y: episodeRewards[ts],
+              text: episodeRewards[ts].toFixed(2),
+              font: {
+                color: $store.categoricalColors[idx % $store.categoricalColors.length],
+              },
+              visible: ts === 0 // Only visible for initial step
+            }
+          });
+        }
+      });
+    });
+
+    plot = Plotly.newPlot($refs.valueEstimatePlot, data, {
+      ...layout,
+      shapes: shapesAndAnnotationsByStep[0].map(({shape}) => shape).filter(Boolean),
+      annotations: shapesAndAnnotationsByStep[0].map(({annotation}) => annotation).filter(Boolean),
+    }, basePlotConfig);
+
     // Watch for changes in visualization options
     $watch('$store.visOptions', () => {
       $nextTick(() => {
@@ -66,25 +135,31 @@
   "
   x-effect="
     if (plot) {
-      data[data.length - 1].x = [currentStep, currentStep];
-      const annotations = Object.keys(valueEstimates).map(agent => {
-        return {
-          x: currentStep,
-          y: valueEstimates[agent][currentStep],
-          text: valueEstimates[agent][currentStep].toFixed(2),
-        }
-      });
-      if (envRewards.length > 0) {
-        annotations.push({
-          x: currentStep,
-          y: envRewards[currentStep],
-          text: envRewards[currentStep].toFixed(2),
+      // Hide the previous step shapes and annotations
+      if (shapesAndAnnotationsByStep[previousStep]) {
+        shapesAndAnnotationsByStep[previousStep].forEach(({shape, annotation}) => {
+          if (shape) shape.visible = false;
+          if (annotation) annotation.visible = false;
         });
       }
-      Plotly.update($refs.valueEstimatePlot, data, {
-        annotations: annotations,
-        ...basePlotStyling(),
+
+      // Show the current step shapes and annotations
+      if (shapesAndAnnotationsByStep[currentStep]) {
+        shapesAndAnnotationsByStep[currentStep].forEach(({shape, annotation}) => {
+          if (shape) shape.visible = true;
+          if (annotation) annotation.visible = true;
+        });
+      }
+
+      // Update the plot with visibility changes
+      Plotly.relayout($refs.valueEstimatePlot, {
+        shapes: shapesAndAnnotationsByStep[currentStep].map(({shape}) => shape).filter(Boolean),
+        annotations: shapesAndAnnotationsByStep[currentStep].map(({annotation}) => annotation).filter(Boolean),
+        ...basePlotStyling()
       });
+
+      // Update previous step
+      previousStep = currentStep;
     }
   "
   class="w-full"

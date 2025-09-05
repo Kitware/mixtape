@@ -14,52 +14,68 @@
     units: [],
   }"
   x-init="
-    const unitMapping = (parsedData.unit_mapping && parsedData.unit_mapping[0]) || {};
-    const unitActions = (parsedData.unit_actions && parsedData.unit_actions[0]) || {};
-    units = Object.keys(unitActions).sort();
+    const unitMapping = parsedData.unit_mapping || [];
+    const unitActions = parsedData.unit_actions || [];
+    const episodeIds = parsedData.episode_ids || [];
     const timeSteps = [];
-    units.forEach(unit => {
-      unitActions[unit].forEach(stepData => {
-        if (!timeSteps.includes(stepData.step)) {
-          timeSteps.push(stepData.step);
-        }
-      });
-    });
-    timeSteps.sort((a, b) => a - b);
-
+    let prefixedUnits = [];
     const z = [];
-    units.forEach(unit => {
-      const unitRow = [];
-      timeSteps.forEach(step => {
-        const action = step in unitActions[unit] ? unitActions[unit][step].action : -1;
-        unitRow.push(action);
+
+    // Process each episode
+    unitActions.forEach((episodeActions, idx) => {
+      if (!episodeActions) return;
+
+      const ep = unitActions.length > 1 ? `ep ${episodeIds[idx]} - ` : '';
+      const episodeUnits = Object.keys(episodeActions).sort();
+
+      // Collect all time steps for this episode
+      episodeUnits.forEach(unit => {
+        episodeActions[unit].forEach(stepData => {
+          if (!timeSteps.includes(stepData.step)) {
+            timeSteps.push(stepData.step);
+          }
+        });
       });
-      z.push(unitRow);
+
+      // Create prefixed unit names
+      prefixedUnits = [...prefixedUnits, ...episodeUnits.map(unit => `${ep}${unit}`)];
+      units = [...units, ...prefixedUnits];
+
+      // Create z-data for heatmap
+      episodeUnits.forEach(unit => {
+        const unitRow = [];
+        timeSteps.forEach(step => {
+          const actionData = episodeActions[unit].find(d => d.step === step);
+          const action = actionData ? actionData.action : -1;
+          unitRow.push(action);
+        });
+        z.push(unitRow);
+      });
     });
 
-    data = [{
+    // Add this episode's data
+    data.push({
       z: z,
       x: timeSteps,
-      y: units,
+      y: prefixedUnits,
       type: 'heatmap',
       colorscale: [
-        [0, 'rgba(0, 0, 0, 0)'],
-        [.25, 'rgba(0, 0, 0, 0)'],
-        [0.25, 'rgba(0, 127, 255, 1)'],
-        [0.5, 'rgba(0, 127, 255, 1)'],
-        [0.5, 'rgba(0, 255, 127, 1)'],
-        [0.75, 'rgba(0, 255, 127, 1)'],
-        [0.75, 'rgba(255, 255, 127, 1)'],
-        [1, 'rgba(255, 255, 127, 1)'],
+        [0, '#00000000'],
+        [.25, '#00000000'],
+        [0.25, '#1f77b4'],
+        [0.5, '#1f77b4'],
+        [0.5, '#ff7f0e'],
+        [0.75, '#ff7f0e'],
+        [0.75, '#2ca02c'],
+        [1, '#2ca02c'],
       ],
-      showscale: true,
       colorbar: {
         title: 'Action',
         tickmode: 'array',
         tickvals: [-1, 0, 1, 2],
         ticktext: ['Dead', 'Noop', 'Move', 'Attack'],
       },
-    }];
+    });
 
     plot = Plotly.newPlot($refs.unitActionsPlot, data, layout, basePlotConfig);
     $watch('$store.visOptions', () => {

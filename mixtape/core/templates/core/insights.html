@@ -93,44 +93,56 @@
       }
       return step[Object.keys(step).length - 1];
     },
+    playbackSpeed: 10,  // frames per second
+    lastFrameTime: 0,
+
     stepForward() {
+      this.playing = true;
+      this.lastFrameTime = performance.now();
+      requestAnimationFrame(this.animationLoop.bind(this));
+    },
+
+    animationLoop(timestamp) {
       if (!this.playing) return;
-      if (this.currentStep < this.maxSteps) {
-        setTimeout(() => {
+
+      const elapsed = timestamp - this.lastFrameTime;
+      if (elapsed > (1000 / this.playbackSpeed)) {
+        this.lastFrameTime = timestamp;
+
+        if (this.currentStep < this.maxSteps) {
           this.currentStep++;
-          this.stepForward()
-        }, 100);
-      } else {
-        this.playing = false;
-        this.currentStep = 0;
+        } else {
+          this.playing = false;
+          this.currentStep = 0;
+          return;
+        }
       }
+
+      requestAnimationFrame(this.animationLoop.bind(this));
     }
   };
 })()"
-class="flex h-screen"
+class="flex"
+style="height: calc(100vh - 4rem);"
 >
   <div class="w-1/2 flex flex-col overflow-y-auto overflow-x-hidden">
-    <div x-show="$store.visOptions.visible.includes('playbackControls')" class="max-w-full pa-1 rounded-md mx-1 my-2">
+    <div x-show="$store.visOptions.visible.includes('playbackControls')" class="max-w-full pa-1 rounded-md mx-1 my-2 sticky top-0 z-1 bg-base-300">
       {% include "core/replay_controls.html" %}
     </div>
     <template x-for="(step, index) in stepData">
-      <div class="episode-container w-full">
-        <div class="card raised flex flex-col overflow-hidden w-full min-h-fit">
+      <div class="episode-container w-full mb-2">
+        <div class="card raised flex flex-col w-full min-h-fit">
           <h1 class="text-xl font-bold text-center flex-none mb-4">Step <span x-text="currentStep"></span> of <span x-text="maxSteps"></span></h1>
-          <div class="grid gap-4 grid-cols-1 md:grid-cols-2">
-              <div class="min-h-0" :class="stepData.length % 2 === 1 && index === stepData.length - 1 ? 'md:col-span-2' : ''">
-                <div class="flex p-2 min-h-0 col-span-12">
-                  <div
-                    x-show="$store.visOptions.visible.includes('episodeImages')"
-                    class="flex-1 min-h-0 flex items-center justify-center relative"
-                  >
-                    <img x-show="getStep(step).image_url" class="m-auto h-full" :src="getStep(step).image_url" alt="Step Image">
-                    <div class="absolute bottom-0 left-0 right-0 text-center">
-                      Episode <span x-text="episodeIds[index]"></span>: Step <span x-text="currentStep < Object.keys(step).length ? currentStep : Object.keys(step).length - 1"></span>
-                    </div>
-                  </div>
-                </div>
+          <div class="flex p-2 min-h-0 col-span-12">
+            <div
+              x-show="$store.visOptions.visible.includes('episodeImages')"
+              class="flex-1 min-h-0 flex items-center justify-center relative"
+            >
+              <img x-show="getStep(step).image_url" class="m-auto h-full" :src="getStep(step).image_url" alt="Step Image">
+              <div class="absolute bottom-0 left-0 right-0 text-center">
+                Episode <span x-text="episodeIds[index]"></span>: Step <span x-text="currentStep < Object.keys(step).length ? currentStep : Object.keys(step).length - 1"></span>
               </div>
+            </div>
           </div>
         </div>
         <div x-show="$store.visOptions.visible.includes('timelines')" class="max-w-full my-2">
@@ -154,7 +166,7 @@ class="flex h-screen"
     </template>
   </div>
 
-  <div class="w-1/2 flex flex-col overflow-y-auto">
+  <div class="w-1/2 flex flex-col overflow-y-auto overflow-x-hidden">
     <div class="flex flex-wrap w-full">
       <div
         x-show="$store.visOptions.visible.includes('friendlyHealth')"

@@ -6,15 +6,17 @@
       title: {text: 'Rewards Over Time (Decomposed)'},
       xaxis: { ...basePlotLayout.xaxis, title: {text: 'Time Step'} },
       yaxis: { ...basePlotLayout.yaxis, title: {text: 'Cumulative Reward'} },
-      shapes: [],
     },
     plot: null,
+    shapesAndAnnotationsByStep: {},
+    previousStep: 0,
+    allYValues: [],
     initPlot() {
       // Plot decomposed rewards for each episode
       let eps = '';
       decomposedRewards.forEach((episodeRewards, episodeIdx) => {
         if (episodeIds.length > 1) {
-          eps = `Episode ${episodeIds[episodeIdx]}`;
+          eps = `episode ${episodeIds[episodeIdx]}`;
         }
         Object.keys(episodeRewards).forEach((rewardType, rewardIdx) => {
           const rewardData = episodeRewards[rewardType];
@@ -29,77 +31,69 @@
       });
 
       // Calculate overall min and max Y values from all data
-      const allYValues = decomposedRewards.flatMap(episodeRewards =>
+      this.allYValues = decomposedRewards.flatMap(episodeRewards =>
         Object.values(episodeRewards).flatMap(rewardData => rewardData)
       );
 
-      // Add current step indicator as a shape
-      this.layout.shapes = this.createShapes(allYValues);
+      const maxY = Math.max(...this.allYValues);
+      const minY = Math.min(...this.allYValues);
 
-      // Add annotations for current step values
-      this.layout.annotations = this.createAnnotations();
-
-      this.plot = Plotly.newPlot($refs.rewardsOverTime, this.data, this.layout, basePlotConfig);
-    },
-    createShapes(allYValues) {
-      const maxY = Math.max(...allYValues);
-      const minY = Math.min(...allYValues);
-
-      return [{
-        type: 'line',
-        x0: currentStep,
-        x1: currentStep,
-        y0: minY,
-        y1: maxY,
-        line: {
-          color: 'red',
-          width: 2,
-          dash: 'dot'
+      // Create all steps and annotations at once
+      const timeSteps = Array.from({length: maxSteps}, (_, i) => i);
+      timeSteps.forEach((ts) => {
+        if (!this.shapesAndAnnotationsByStep[ts]) {
+          this.shapesAndAnnotationsByStep[ts] = [];
         }
-      }];
-    },
-    createAnnotations() {
-      const episodeCount = Object.keys(decomposedRewards).length;
-      const annotations = decomposedRewards.flatMap((episodeRewards, episodeIdx) => {
-        const componentCount = Object.keys(episodeRewards).length;
-        const offset = 40 / (componentCount * episodeCount);
-        return Object.entries(episodeRewards).map(([rewardType, rewardData]) => {
-          const currentValue = rewardData[currentStep];
-          return {
-            x: currentStep,
-            y: currentValue,
-            text: currentValue.toFixed(2),
-            showarrow: true,
-            arrowhead: 2,
-            arrowsize: 1,
-            arrowwidth: 2,
-            ax: 20,
-            ay: -20,
-            font: {
-              size: 10
+
+        // Add vertical line shape for this step
+        this.shapesAndAnnotationsByStep[ts].push({
+          shape: {
+            type: 'line',
+            x0: ts,
+            x1: ts,
+            y0: minY,
+            y1: maxY,
+            line: {
+              color: 'red',
+              width: 2,
+              dash: 'dot'
+            },
+            visible: ts === 0 // Only visible for initial step
+          }
+        });
+
+        // Add annotations for each reward type at this step
+        decomposedRewards.forEach((episodeRewards, episodeIdx) => {
+          Object.entries(episodeRewards).forEach(([rewardType, rewardData], rewardIdx) => {
+            if (ts < rewardData.length) {
+              this.shapesAndAnnotationsByStep[ts].push({
+                annotation: {
+                  x: ts,
+                  y: rewardData[ts],
+                  text: rewardData[ts].toFixed(2),
+                  showarrow: true,
+                  arrowhead: 2,
+                  arrowsize: 1,
+                  arrowwidth: 2,
+                  ax: 20,
+                  ay: -20 * (rewardIdx + 1), // Offset annotations vertically
+                  font: {
+                    size: 10,
+                    color: $store.categoricalColors[(episodeIdx * Object.keys(episodeRewards).length + rewardIdx) % $store.categoricalColors.length]
+                  },
+                  visible: ts === 0 // Only visible for initial step
+                }
+              });
             }
-          };
-        })
-      });
-      return annotations;
-    },
-    updateCurrentStep() {
-      if (this.plot) {
-        // Calculate overall min and max Y values from all data
-        let allYValues = [];
-        // Get all Y values from decomposed rewards
-        decomposedRewards.forEach(episodeRewards => {
-          Object.values(episodeRewards).forEach(rewardData => {
-            allYValues = allYValues.concat(rewardData);
           });
         });
+      });
 
-        Plotly.relayout($refs.rewardsOverTime, {
-          shapes: this.createShapes(allYValues),
-          annotations: this.createAnnotations(),
-          ...basePlotStyling(),
-        });
-      }
+      this.plot = Plotly.newPlot($refs.rewardsOverTime, this.data, {
+        ...this.layout,
+        shapes: this.shapesAndAnnotationsByStep[0].map(({shape}) => shape).filter(Boolean),
+        annotations: this.shapesAndAnnotationsByStep[0].map(({annotation}) => annotation).filter(Boolean),
+      }, basePlotConfig);
     }
   }"
   x-init="initPlot();
@@ -114,7 +108,35 @@
         })
     });
   });"
-  x-effect="updateCurrentStep()"
+  x-effect="
+    if (plot) {
+      // Hide the previous step shapes and annotations
+      if (shapesAndAnnotationsByStep[previousStep]) {
+        shapesAndAnnotationsByStep[previousStep].forEach(({shape, annotation}) => {
+          if (shape) shape.visible = false;
+          if (annotation) annotation.visible = false;
+        });
+      }
+
+      // Show the current step shapes and annotations
+      if (shapesAndAnnotationsByStep[currentStep]) {
+        shapesAndAnnotationsByStep[currentStep].forEach(({shape, annotation}) => {
+          if (shape) shape.visible = true;
+          if (annotation) annotation.visible = true;
+        });
+      }
+
+      // Update the plot with visibility changes
+      Plotly.relayout($refs.rewardsOverTime, {
+        shapes: shapesAndAnnotationsByStep[currentStep].map(({shape}) => shape).filter(Boolean),
+        annotations: shapesAndAnnotationsByStep[currentStep].map(({annotation}) => annotation).filter(Boolean),
+        ...basePlotStyling()
+      });
+
+      // Update previous step
+      previousStep = currentStep;
+    }
+  "
 >
   <div x-ref="rewardsOverTime"></div>
 </div>

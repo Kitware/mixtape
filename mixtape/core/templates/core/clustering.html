@@ -15,16 +15,21 @@
       },
     },
     plot: null,
+    shapesAndAnnotationsByStep: {},
+    previousStep: null,
   }"
   x-init="
-    data = [];
     let eps = '';
+
+    // First create all the trace data and pre-compute shapes
     for (let agent_idx = 0; agent_idx < uniqueAgents.length; agent_idx++) {
       clustering[{{key}}].episode_manifolds.forEach((episode_manifold, episode_idx) => {
         if (episodeIds.length > 1) {
-          eps = `Episode ${episodeIds[episode_idx]}`;
+          eps = `episode ${episodeIds[episode_idx]} - `;
         }
-        data.push({
+
+        // Create the trace data
+        const traceData = {
           x: episode_manifold.map(row => row[agent_idx][0]),
           y: episode_manifold.map(row => row[agent_idx][1]),
           type: 'scatter',
@@ -32,12 +37,52 @@
           colorscale: 'Viridis',
           line: {
             opacity: 1,
-            width: 2
+            width: 2,
           },
-          name: `${eps} - ${uniqueAgents[agent_idx]}`
-        });
+          name: `${eps}${uniqueAgents[agent_idx]}`
+        };
+
+        data.push(traceData);
+
+        // Pre-compute shapes for each step in this trace
+        for (let step = 0; step < traceData.x.length; step++) {
+          if (!shapesAndAnnotationsByStep[step]) {
+            shapesAndAnnotationsByStep[step] = [];
+          }
+
+          // Create shape for this agent at this step
+          const shape = {
+            type: 'circle',
+            xsizemode: 'pixel',
+            ysizemode: 'pixel',
+            xanchor: traceData.x[step],
+            yanchor: traceData.y[step],
+            x0: -12,
+            x1: 12,
+            y0: -12,
+            y1: 12,
+            line: {
+              width: 2,
+              color: 'red',
+            },
+          };
+
+          // Create annotation for this agent at this step
+          const annotation = {
+            x: traceData.x[step],
+            y: traceData.y[step],
+            text: `${eps}${uniqueAgents[agent_idx]}`,
+            font: {
+              color: $store.categoricalColors[agent_idx % $store.categoricalColors.length],
+            },
+          };
+
+          shapesAndAnnotationsByStep[step].push({shape, annotation});
+        }
       });
     }
+
+    // Add the scatter plot for all episodes
     data.push({
       x: clustering[{{key}}].all_manifolds_x,
       y: clustering[{{key}}].all_manifolds_y,
@@ -52,8 +97,24 @@
         opacity: Array(clustering[{{key}}].all_manifolds_x.length).fill(1)
       },
       name: 'All Episodes'
-    })
-    plot = Plotly.newPlot($refs.allManifolds, data, layout, basePlotConfig);
+    });
+
+    // Make shapes for step 0 visible initially
+    if (shapesAndAnnotationsByStep[0]) {
+      shapesAndAnnotationsByStep[0].forEach(({shape, annotation}) => {
+        shape.visible = true;
+        annotation.visible = true;
+      });
+    }
+    previousStep = 0;
+
+    // Initialize the plot with all shapes (only step 0 shapes will be visible)
+    plot = Plotly.newPlot($refs.allManifolds, data, {
+      ...layout,
+      shapes: shapesAndAnnotationsByStep[0].map(({shape}) => shape),
+      annotations: shapesAndAnnotationsByStep[0].map(({annotation}) => annotation),
+    }, basePlotConfig);
+
     $watch('$store.visOptions', () => {
       $nextTick(() => {
         Plotly.relayout(
@@ -67,65 +128,31 @@
     });"
   x-effect="
     if (plot) {
-      const numAgents = uniqueAgents.length;
-      const numEpisodes = episodeIds.length;
-      const startIdx = currentStep * numAgents;
-      const endIdx = startIdx + numAgents;
-
-      // Get the current plot data from the DOM element
-      const plotElement = $refs.allManifolds;
-      const currentData = plotElement.data;
-
-      // Remove the highlight trace if it exists (it will be last, at numEpisodes * numAgents + 1)
-      if (currentData && currentData.length > (numEpisodes * numAgents + 1)) {
-        Plotly.deleteTraces($refs.allManifolds, [numEpisodes * numAgents + 1]);
+      // Hide shapes and annotations from previous step
+      if (shapesAndAnnotationsByStep[previousStep]) {
+        shapesAndAnnotationsByStep[previousStep].forEach(({shape, annotation}) => {
+          shape.visible = false;
+          annotation.visible = false;
+        });
       }
 
-      // Create arrays for the highlighted points
-      const highlightX = [];
-      const highlightY = [];
-      const highlightText = [];
-
-      for (let agentIdx = 0; agentIdx < numAgents; agentIdx++) {
-        for (let episodeIdx = 0; episodeIdx < numEpisodes; episodeIdx++) {
-          const idx = agentIdx + episodeIdx * numAgents;
-          const agentTrace = currentData[idx];
-          if (currentStep < agentTrace.x.length && agentTrace && (!agentTrace.visible || agentTrace.visible === true)) {
-            highlightX.push(agentTrace.x[currentStep]);
-            highlightY.push(agentTrace.y[currentStep]);
-            highlightText.push(`${uniqueAgents[agentIdx]} Ep. ${episodeIds[episodeIdx]}`);
-          }
-        }
+      // Show shapes for current step
+      if (shapesAndAnnotationsByStep[currentStep]) {
+        shapesAndAnnotationsByStep[currentStep].forEach(({shape, annotation}) => {
+          shape.visible = true;
+          annotation.visible = true;
+        });
       }
 
-      // Only add the highlight trace if there are visible points
-      if (highlightX.length > 0) {
-        // Add new trace for highlighted points
-        const textPosition = ['top left', 'middle left', 'bottom left', 'top center', 'middle center', 'bottom center', 'top right', 'middle right', 'bottom right'];
-        Plotly.addTraces($refs.allManifolds, [{
-          x: highlightX,
-          y: highlightY,
-          text: highlightText,
-          type: 'scatter',
-          mode: 'markers+text',
-          showlegend: false,
-          textposition: textPosition,
-          textfont: {
-            size: 12,
-            color: $store.theme.font.color
-          },
-          marker: {
-            color: 'transparent',
-            size: 20,
-            line: {
-              width: 2,
-              color: 'red',
-              dash: 'dot'
-            }
-          }
-        }]);
-      }
-      Plotly.update($refs.allManifolds, {}, { ...basePlotStyling() });
+      // Update the plot with visibility changes
+      Plotly.update($refs.allManifolds, {}, {
+        shapes: shapesAndAnnotationsByStep[currentStep].map(({shape}) => shape).filter(Boolean),
+        annotations: shapesAndAnnotationsByStep[currentStep].map(({annotation}) => annotation).filter(Boolean),
+        ...basePlotStyling()
+      });
+
+      // Update previous step
+      previousStep = currentStep;
     }
   "
 >

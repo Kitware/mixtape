@@ -9,35 +9,47 @@
     },
     plot: null,
     yRange: [Infinity, -Infinity],
-    totalRewards: Array.isArray(totalRewards) ? totalRewards[0] : totalRewards,
-    predictedRewards: Array.isArray(predictedRewards) ? predictedRewards[0] : predictedRewards,
+    totalRewards: totalRewards || [],
+    predictedRewards: predictedRewards || [],
+    shapesAndAnnotationsByStep: {},
+    previousStep: 0,
   }"
   x-init="
     // Add actual rewards
-    Object.entries(totalRewards).forEach(([entity, rewards]) => {
-      if (rewards && rewards.length) {
-        const cumulative = rewards.reduce((acc, r) => {
-          acc.push((acc[acc.length-1] || 0) + r);
-          return acc;
-        }, []);
-        data.push({
-          x: Array.from({length: cumulative.length}, (_, i) => i),
-          y: cumulative,
-          type: 'scatter',
-          mode: 'lines',
-          name: `${entity} (Actual)`,
-          line: {
-            dash: entity.startsWith('unit') ? 'dashdot' : 'solid',
-          }
-        });
-        const currentRange = [Math.min(...cumulative), Math.max(...cumulative)];
-        yRange = [Math.min(yRange[0], currentRange[0]), Math.max(yRange[1], currentRange[1])];
-      }
+    totalRewards.forEach((episodeRewards, idx) => {
+      if (!episodeRewards) return;
+
+      const ep = totalRewards.length > 1 ? `episode ${episodeIds[idx]} - ` : '';
+
+      Object.entries(episodeRewards).forEach(([entity, rewards]) => {
+        if (rewards && rewards.length) {
+          const cumulative = rewards.reduce((acc, r) => {
+            acc.push((acc[acc.length-1] || 0) + r);
+            return acc;
+          }, []);
+          data.push({
+            x: Array.from({length: cumulative.length}, (_, i) => i),
+            y: cumulative,
+            type: 'scatter',
+            mode: 'lines',
+            name: `${ep}${entity} (Actual)`,
+            line: {
+              dash: entity.startsWith('unit') ? 'dashdot' : 'solid',
+            }
+          });
+          const currentRange = [Math.min(...cumulative), Math.max(...cumulative)];
+          yRange = [Math.min(yRange[0], currentRange[0]), Math.max(yRange[1], currentRange[1])];
+        }
+      });
     });
 
     // Add predicted rewards
-    if (predictedRewards) {
-      Object.entries(predictedRewards).forEach(([entity, preds]) => {
+    predictedRewards.forEach((episodePredictions, idx) => {
+      if (!episodePredictions) return;
+
+      const ep = predictedRewards.length > 1 ? `episode ${episodeIds[idx]} - ` : '';
+
+      Object.entries(episodePredictions).forEach(([entity, preds]) => {
         if (preds && preds.length) {
           const cumulative = preds.reduce((acc, p) => {
             const val = p && p[0] ? p[0] : 0;
@@ -49,7 +61,7 @@
             y: cumulative,
             type: 'scatter',
             mode: 'lines',
-            name: `${entity} (Predicted)`,
+            name: `${ep}${entity} (Predicted)`,
             line: {
               dash: entity.startsWith('unit') ? 'dashdot' : 'solid',
             }
@@ -58,21 +70,56 @@
           yRange = [Math.min(yRange[0], currentRange[0]), Math.max(yRange[1], currentRange[1])];
         }
       });
-    }
-
-    data.push({
-      x: [currentStep, currentStep],
-      y: yRange,
-      type: 'scatter',
-      mode: 'lines',
-      line: {
-        color: 'red',
-        width: 2,
-        dash: 'dot'
-      },
-      name: 'Current Step',
     });
-    plot = Plotly.newPlot($refs.predVsActual, data, layout, basePlotConfig);
+
+    // Create all steps and annotations at once
+    const timeSteps = Array.from({length: maxSteps}, (_, i) => i);
+    timeSteps.forEach((ts) => {
+      if (!shapesAndAnnotationsByStep[ts]) {
+        shapesAndAnnotationsByStep[ts] = [];
+      }
+
+      // Add vertical line shape for this step
+      shapesAndAnnotationsByStep[ts].push({
+        shape: {
+          type: 'line',
+          x0: ts,
+          x1: ts,
+          y0: yRange[0],
+          y1: yRange[1],
+          line: {
+            color: 'red',
+            width: 2,
+            dash: 'dot'
+          },
+          visible: ts === 0 // Only visible for initial step
+        }
+      });
+
+      // Add annotations for each data series at this step
+      data.forEach((series, seriesIdx) => {
+        if (series.y && series.y[ts] !== undefined) {
+          shapesAndAnnotationsByStep[ts].push({
+            annotation: {
+              x: ts,
+              y: series.y[ts],
+              text: series.y[ts].toFixed(2),
+              font: {
+                color: $store.categoricalColors[seriesIdx % $store.categoricalColors.length],
+              },
+              visible: ts === 0 // Only visible for initial step
+            }
+          });
+        }
+      });
+    });
+
+    plot = Plotly.newPlot($refs.predVsActual, data, {
+      ...layout,
+      shapes: shapesAndAnnotationsByStep[0].map(({shape}) => shape).filter(Boolean),
+      annotations: shapesAndAnnotationsByStep[0].map(({annotation}) => annotation).filter(Boolean),
+    }, basePlotConfig);
+
     $watch('$store.visOptions', () => {
       $nextTick(() => {
         Plotly.relayout(
@@ -87,18 +134,31 @@
   "
   x-effect="
     if (plot) {
-      data[data.length - 1].x = [currentStep, currentStep];
-      const annotations = data.slice(0, -1).map((d) => {
-        return {
-          x: currentStep,
-          y: d.y[currentStep],
-          text: d.y[currentStep].toFixed(2),
-        }
+      // Hide the previous step shapes and annotations
+      if (shapesAndAnnotationsByStep[previousStep]) {
+        shapesAndAnnotationsByStep[previousStep].forEach(({shape, annotation}) => {
+          if (shape) shape.visible = false;
+          if (annotation) annotation.visible = false;
+        });
+      }
+
+      // Show the current step shapes and annotations
+      if (shapesAndAnnotationsByStep[currentStep]) {
+        shapesAndAnnotationsByStep[currentStep].forEach(({shape, annotation}) => {
+          if (shape) shape.visible = true;
+          if (annotation) annotation.visible = true;
+        });
+      }
+
+      // Update the plot with visibility changes
+      Plotly.relayout($refs.predVsActual, {
+        shapes: shapesAndAnnotationsByStep[currentStep].map(({shape}) => shape).filter(Boolean),
+        annotations: shapesAndAnnotationsByStep[currentStep].map(({annotation}) => annotation).filter(Boolean),
+        ...basePlotStyling()
       });
-      Plotly.update($refs.predVsActual, data, {
-        annotations: annotations,
-        ...basePlotStyling(),
-      });
+
+      // Update previous step
+      previousStep = currentStep;
     }
   "
   class="w-full"

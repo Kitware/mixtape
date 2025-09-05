@@ -9,60 +9,107 @@
     },
     plot: null,
     yRange: [Infinity, -Infinity],
-    agentRewards: [],
-    unitRewards: {},
+    unitCombatRewards: parsedData?.unit_combat_rewards,
+    shapesAndAnnotationsByStep: {},
+    previousStep: 0,
+    ep: '',
   }"
   x-init="
-    const parsedData = JSON.parse(document.getElementById('parsed_data_json').textContent);
-    agentRewards = (parsedData.decomposed_rewards && parsedData.decomposed_rewards[0]?.combat) || [];
-    unitRewards = (parsedData.unit_combat_rewards && parsedData.unit_combat_rewards[0]) || {};
-    const timeSteps = Array.from({length: agentRewards.length || Object.values(unitRewards)[0]?.length || 0}, (_, i) => i);
+    if (!decomposedRewards || !unitCombatRewards) return;
 
-    if (agentRewards.length > 0) {
+    const timeSteps = Array.from({length: maxSteps}, (_, i) => i);
+    getPrefix = (idx) => {
+      if (decomposedRewards.length > 1) {
+        return `episode ${episodeIds[idx]} - agent_${idx}`;
+      }
+      return '';
+    };
+
+    decomposedRewards.forEach((agentRewards, idx) => {
+      if (!agentRewards.length > 0 && !agentRewards?.combat) {
+        return;
+      }
       data.push({
-        name: 'agent_0',
+        name: `${getPrefix(idx)}${uniqueAgents[idx]}`,
         x: timeSteps,
-        y: agentRewards,
+        y: agentRewards.combat,
         type: 'scatter',
         mode: 'lines',
-        line: {
-          dash: 'solid',
-        }
       });
-    }
+    });
 
-    Object.entries(unitRewards).forEach(([unit, rewards], index) => {
-      if (rewards && rewards.length > 0) {
-        data.push({
-          name: unit,
-          x: timeSteps.slice(0, rewards.length),
-          y: rewards,
-          type: 'scatter',
-          mode: 'lines',
-          line: {
-            dash: 'dashdot',
+    unitCombatRewards.forEach((unitRewards, idx) => {
+      Object.entries(unitRewards).forEach(([unit, rewards], index) => {
+        if (rewards && rewards.length > 0) {
+          data.push({
+            name: `${getPrefix(idx)}${unit}`,
+            x: timeSteps.slice(0, rewards.length),
+            y: rewards,
+            type: 'scatter',
+            mode: 'lines',
+            line: {
+              dash: 'dashdot',
+            }
+          });
+        }
+        const currentRange = [Math.min(...rewards), Math.max(...rewards)];
+        yRange = [Math.min(yRange[0], currentRange[0]), Math.max(yRange[1], currentRange[1])];
+      });
+    });
+
+    // Create all steps and annotations at once
+    const decompLen = decomposedRewards.length + 1;
+    timeSteps.forEach((ts) => {
+      if (!shapesAndAnnotationsByStep[ts]) {
+        shapesAndAnnotationsByStep[ts] = [];
+      }
+      const annotations = decomposedRewards.map((agentRewards, idx) => {
+        const colorIdx = (idx + 1) * (decompLen + decompLen);
+        Object.values(unitCombatRewards[idx]).map((unitRewards, unitIdx) => {
+          const unitColorIdx = (unitIdx + 1) + colorIdx;
+          shapesAndAnnotationsByStep[ts].push({
+            annotations: {
+              x: ts,
+              y: unitRewards[ts],
+              text: unitRewards[ts].toFixed(2),
+              font: {
+                color: $store.categoricalColors[(unitIdx + 1) % $store.categoricalColors.length - 1],
+              },
+            }
+          });
+        });
+        shapesAndAnnotationsByStep[ts].push({
+          annotations: {
+            x: ts,
+            y: agentRewards.combat[ts],
+            text: agentRewards.combat[ts].toFixed(2),
+            font: {
+              color: $store.categoricalColors[(idx + 1) % $store.categoricalColors.length - 1],
+            },
           }
         });
-      }
-      const currentRange = [Math.min(...rewards), Math.max(...rewards)];
-      yRange = [Math.min(yRange[0], currentRange[0]), Math.max(yRange[1], currentRange[1])];
+      });
+      shapesAndAnnotationsByStep[ts].push({
+        shapes: {
+          type: 'line',
+          x0: ts,
+          x1: ts,
+          y0: yRange[0],
+          y1: yRange[1],
+          line: {
+            color: 'red',
+            width: 2,
+            dash: 'dot'
+          },
+        }
+      });
     });
 
-    // Add current step indicator
-    data.push({
-      x: [currentStep, currentStep],
-      y: yRange,
-      type: 'scatter',
-      mode: 'lines',
-      line: {
-        color: 'red',
-        width: 2,
-        dash: 'dot'
-      },
-      name: 'Current Step',
-    });
-
-    plot = Plotly.newPlot($refs.combatRewardPlot, data, layout, basePlotConfig);
+    plot = Plotly.newPlot($refs.combatRewardPlot, data, {
+      ...layout,
+      shapes: shapesAndAnnotationsByStep[0].map(({shapes}) => shapes),
+      annotations: shapesAndAnnotationsByStep[0].map(({annotations}) => annotations),
+    }, basePlotConfig);
 
     // Watch for changes in visualization options
     $watch('$store.visOptions', () => {
@@ -79,25 +126,29 @@
   "
   x-effect="
     if (plot) {
-      data[data.length - 1].x = [currentStep, currentStep];
-      const annotations = Object.keys(unitRewards).map(unit => {
-        return {
-          x: currentStep,
-          y: unitRewards[unit][currentStep],
-          text: unitRewards[unit][currentStep].toFixed(2),
-        }
-      });
-      if (agentRewards.length > 0) {
-        annotations.push({
-          x: currentStep,
-          y: agentRewards[currentStep],
-          text: agentRewards[currentStep].toFixed(2),
+      // Hide the previous step shapes and annotation
+      if (shapesAndAnnotationsByStep[previousStep]) {
+        shapesAndAnnotationsByStep[previousStep].forEach(({shapes, annotations}) => {
+          if (shapes) shapes.visible = false;
+          if (annotations) annotations.visible = false;
         });
       }
-      Plotly.update($refs.combatRewardPlot, data, {
-        annotations: annotations,
-        ...basePlotStyling(),
+
+      // Show the current step shapes and annotation
+      if (shapesAndAnnotationsByStep[currentStep]) {
+        shapesAndAnnotationsByStep[currentStep].forEach(({shapes, annotations}) => {
+          if (shapes) shapes.visible = true;
+          if (annotations) annotations.visible = true;
+        });
+      }
+      Plotly.relayout($refs.combatRewardPlot, {
+        shapes: shapesAndAnnotationsByStep[currentStep].map(({shapes}) => shapes),
+        annotations: shapesAndAnnotationsByStep[currentStep].map(({annotations}) => annotations),
+        ...basePlotStyling()
       });
+
+      // Update previous step
+      previousStep = currentStep;
     }
   "
   class="w-full"

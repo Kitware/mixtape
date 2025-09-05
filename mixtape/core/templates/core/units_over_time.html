@@ -14,29 +14,28 @@
         type: 'category'
       },
       margin: { l: 100, r: 40, t: 40, b: 40 },
+      barmode: 'group',
     },
     plot: null,
-    unitLifetimesData: {},
+    unitLifetimesData: [],
   }"
   x-init="
-    unitLifetimesData = parsedData.unit_lifetimes[0];
-
-    const unitData = Object.entries(unitLifetimesData)
-      .map(([unitId, unitData]) => ({
-        unit: unitId,
+    unitLifetimesData = parsedData.unit_lifetimes || [];
+    unitLifetimesData.forEach((episodeData, idx) => {
+      if (!episodeData) return;
+      const unitData = Object.entries(episodeData).map(([unitId, unitData]) => ({
+        unit: `${unitId}`,
         stepsAlive: unitData?.total_steps || 0,
         deathStep: unitData?.death_step || 0
-      }))
-      .filter(unit => unit.unit && unit.unit.startsWith('marine_'))
-      .sort((a, b) => b.stepsAlive - a.stepsAlive);
-
-    data = [{
-      type: 'bar',
-      orientation: 'h',
-      x: unitData.map(d => d.stepsAlive),
-      y: unitData.map(d => d.unit),
-      width: 0.9
-    }];
+      }));
+      data.push({
+        type: 'bar',
+        orientation: 'h',
+        x: unitData.map(d => d.stepsAlive),
+        y: unitData.map(d => d.unit),
+        name: `episode ${episodeIds[idx]}`,
+      });
+    });
 
     plot = Plotly.newPlot($refs.unitsOverTime, data, layout, basePlotConfig);
     $watch('$store.visOptions', () => {
@@ -52,9 +51,7 @@
     });
   "
   x-effect="
-    if (plot) {
-      Plotly.update($refs.unitsOverTime, {}, { ...basePlotStyling() });
-    }
+    if (plot) Plotly.update($refs.unitsOverTime, {}, { ...basePlotStyling() });
   "
   class="w-full"
 >

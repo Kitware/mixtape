@@ -6,13 +6,6 @@
       title: { text: 'Rewards Over Time' },
       xaxis: { ...basePlotLayout.xaxis, title: { text: 'Time Step' } },
       yaxis: { ...basePlotLayout.yaxis, title: { text: 'Cumulative Reward' } },
-      annotations: [
-        {
-          x: currentStep,
-          y: rewardsOverTime[0][currentStep],
-          text: rewardsOverTime[0][currentStep].toFixed(2),
-        }
-      ],
     },
     plot: null,
     getStep(episode) {
@@ -21,6 +14,10 @@
       }
       return Object.keys(episode).length - 1;
     },
+    yMin: Math.min(...rewardsOverTime.flat()),
+    yMax: Math.max(...rewardsOverTime.flat()),
+    shapesAndAnnotationsByStep: {},
+    previousStep: 0,
   }"
   x-init="
     rewardsOverTime.forEach((episode, idx) => {
@@ -28,7 +25,7 @@
         x: episode.length,
         y: episode,
         type: 'scatter',
-        name: `Episode ${episodeIds[idx]}`,
+        name: `episode ${episodeIds[idx]}`,
         marker: {
           line: {
             width: 2
@@ -36,19 +33,55 @@
         }
       });
     });
-    data.push({
-      x: [{{ currentStep }}, {{ currentStep }}],
-      y: [0, Math.max(...rewardsOverTime.flat())],
-      type: 'scatter',
-      mode: 'lines',
-      line: {
-        color: 'red',
-        width: 2,
-        dash: 'dot'
-      },
-      name: 'Current Step'
+
+    // Create all steps and annotations at once
+    const timeSteps = Array.from({length: maxSteps}, (_, i) => i);
+    timeSteps.forEach((ts) => {
+      if (!shapesAndAnnotationsByStep[ts]) {
+        shapesAndAnnotationsByStep[ts] = [];
+      }
+
+      // Add vertical line shape for this step
+      shapesAndAnnotationsByStep[ts].push({
+        shape: {
+          type: 'line',
+          x0: ts,
+          x1: ts,
+          y0: yMin,
+          y1: yMax,
+          line: {
+            color: 'red',
+            width: 2,
+            dash: 'dot'
+          },
+          visible: ts === 0 // Only visible for initial step
+        }
+      });
+
+      // Add annotations for each episode at this step
+      rewardsOverTime.forEach((episode, idx) => {
+        if (ts < episode.length) {
+          shapesAndAnnotationsByStep[ts].push({
+            annotation: {
+              x: ts,
+              y: episode[ts],
+              text: episode[ts].toFixed(2),
+              font: {
+                color: $store.categoricalColors[idx % $store.categoricalColors.length],
+              },
+              visible: ts === 0 // Only visible for initial step
+            }
+          });
+        }
+      });
     });
-    plot = Plotly.newPlot($refs.rewardsOverTime, data, layout, basePlotConfig);
+
+    plot = Plotly.newPlot($refs.rewardsOverTime, data, {
+      ...layout,
+      shapes: shapesAndAnnotationsByStep[0].map(({shape}) => shape).filter(Boolean),
+      annotations: shapesAndAnnotationsByStep[0].map(({annotation}) => annotation).filter(Boolean),
+    }, basePlotConfig);
+
     $watch('$store.visOptions', () => {
       $nextTick(() => {
         Plotly.relayout(
@@ -63,19 +96,31 @@
     });"
   x-effect="
     if (plot) {
-      Plotly.update($refs.rewardsOverTime, {
-        x: [[currentStep, currentStep]],
-        y: [[Math.min(...rewardsOverTime.flat()), Math.max(...rewardsOverTime.flat())]]
-      }, {
-        ...basePlotStyling(),
-        annotations: rewardsOverTime.map((episode, idx) => {
-          return {
-            x: getStep(episode),
-            y: episode[getStep(episode)],
-            text: episode[getStep(episode)].toFixed(2),
-          }
-        })
-      }, [rewardsOverTime.length]);
+      // Hide the previous step shapes and annotations
+      if (shapesAndAnnotationsByStep[previousStep]) {
+        shapesAndAnnotationsByStep[previousStep].forEach(({shape, annotation}) => {
+          if (shape) shape.visible = false;
+          if (annotation) annotation.visible = false;
+        });
+      }
+
+      // Show the current step shapes and annotations
+      if (shapesAndAnnotationsByStep[currentStep]) {
+        shapesAndAnnotationsByStep[currentStep].forEach(({shape, annotation}) => {
+          if (shape) shape.visible = true;
+          if (annotation) annotation.visible = true;
+        });
+      }
+
+      // Update the plot with visibility changes
+      Plotly.relayout($refs.rewardsOverTime, {
+        shapes: shapesAndAnnotationsByStep[currentStep].map(({shape}) => shape).filter(Boolean),
+        annotations: shapesAndAnnotationsByStep[currentStep].map(({annotation}) => annotation).filter(Boolean),
+        ...basePlotStyling()
+      });
+
+      // Update previous step
+      previousStep = currentStep;
     }"
 >
   <div x-ref="rewardsOverTime"></div>

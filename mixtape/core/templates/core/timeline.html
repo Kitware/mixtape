@@ -2,12 +2,12 @@
   <ul class="timeline min-w-max">
     <template x-for="ts, index in timelineKeySteps[index]">
       <li style="width: 45px; flex-grow: 1;">
-        <hr :class="ts.number >= currentStep ? 'bg-info' : 'bg-success'" />
+        <hr :class="currentStep >= ts.number ? 'bg-success' : 'bg-info'" />
         <div class="timeline-box pa-2! text-xs" x-text="ts.total_rewards.toFixed(2)" :class="index % 2 === 0 ? 'timeline-start' : 'timeline-end'"></div>
         <div class="timeline-middle">
-          <i class="ri-record-circle-fill cursor-pointer" :class="ts.number === currentStep ? 'text-success' : 'text-info'" @click="currentStep = ts.number"></i>
+          <i class="ri-record-circle-fill cursor-pointer" :class="currentStep >= ts.number ? 'text-success' : 'text-info'" @click="currentStep = ts.number"></i>
         </div>
-        <hr :class="ts.number > currentStep ? 'bg-info' : 'bg-success'" />
+        <hr :class="currentStep > ts.number ? 'bg-success' : 'bg-info'" />
       </li>
     </template>
   </ul>
