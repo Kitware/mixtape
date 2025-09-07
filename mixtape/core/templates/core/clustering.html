@@ -99,20 +99,12 @@
       name: 'All Episodes'
     });
 
-    // Make shapes for step 0 visible initially
-    if (shapesAndAnnotationsByStep[0]) {
-      shapesAndAnnotationsByStep[0].forEach(({shape, annotation}) => {
-        shape.visible = true;
-        annotation.visible = true;
-      });
-    }
     previousStep = 0;
-
     // Initialize the plot with all shapes (only step 0 shapes will be visible)
-    plot = Plotly.newPlot($refs.allManifolds, data, {
+    plot = Plotly.react($refs.allManifolds, data, {
       ...layout,
-      shapes: shapesAndAnnotationsByStep[0].map(({shape}) => shape),
-      annotations: shapesAndAnnotationsByStep[0].map(({annotation}) => annotation),
+      shapes: shapesAndAnnotationsByStep[0].map(({shape}) => shape).filter(Boolean),
+      annotations: shapesAndAnnotationsByStep[0].map(({annotation}) => annotation).filter(Boolean),
     }, basePlotConfig);
 
     $watch('$store.visOptions', () => {
@@ -128,24 +120,8 @@
     });"
   x-effect="
     if (plot) {
-      // Hide shapes and annotations from previous step
-      if (shapesAndAnnotationsByStep[previousStep]) {
-        shapesAndAnnotationsByStep[previousStep].forEach(({shape, annotation}) => {
-          shape.visible = false;
-          annotation.visible = false;
-        });
-      }
-
-      // Show shapes for current step
-      if (shapesAndAnnotationsByStep[currentStep]) {
-        shapesAndAnnotationsByStep[currentStep].forEach(({shape, annotation}) => {
-          shape.visible = true;
-          annotation.visible = true;
-        });
-      }
-
       // Update the plot with visibility changes
-      Plotly.update($refs.allManifolds, {}, {
+      Plotly.relayout($refs.allManifolds, {
         shapes: shapesAndAnnotationsByStep[currentStep].map(({shape}) => shape).filter(Boolean),
         annotations: shapesAndAnnotationsByStep[currentStep].map(({annotation}) => annotation).filter(Boolean),
         ...basePlotStyling()
@@ -170,10 +146,27 @@
       margin: {r: 0, t: 25},
       xaxis: {...basePlotLayout.xaxis},
       yaxis: {...basePlotLayout.yaxis},
-      shapes: [{
+    },
+    timesteps: Array.from({length: clustering[{{key}}].episode_clusters.length}, (_, i) => i),
+    allShapes: {},
+    plot: null,
+  }"
+  x-init="
+    data = [
+      {
+        z: clustering[{{key}}].episode_clusters,
+        x: timesteps,
+        y: Object.values(uniqueAgents),
+        type: 'heatmap',
+        showscale: false,
+        colorscale: 'Viridis',
+      }
+    ];
+    timesteps.forEach(ts => {
+      allShapes[ts] = [{
         type: 'line',
-        x0: currentStep,
-        x1: currentStep,
+        x0: ts,
+        x1: ts,
         y0: 0,
         y1: 1,
         yref: 'paper',
@@ -183,21 +176,9 @@
           dash: 'dot'
         }
       }]
-    },
-    plot: null,
-  }"
-  x-init="
-    data = [
-      {
-        z: clustering[{{key}}].episode_clusters,
-        x: Array.from({length: clustering[{{key}}].episode_clusters.length}, (_, i) => i),
-        y: Object.values(uniqueAgents),
-        type: 'heatmap',
-        showscale: false,
-        colorscale: 'Viridis',
-      }
-    ];
-    plot = Plotly.newPlot($refs.allClusters, data, layout, basePlotConfig);
+    });
+    layout.shapes = allShapes[0];
+    plot = Plotly.react($refs.allClusters, data, layout, basePlotConfig);
     $watch('$store.visOptions', () => {
       $nextTick(() => {
         Plotly.relayout(
@@ -210,9 +191,8 @@
     });"
   x-effect="
     if (plot) {
-      Plotly.update($refs.allClusters, {}, {
-        'shapes[0].x0': currentStep,
-        'shapes[0].x1': currentStep,
+      Plotly.relayout($refs.allClusters, {
+        shapes: allShapes[currentStep],
         ...basePlotStyling(),
       });
     }"

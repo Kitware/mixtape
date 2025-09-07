@@ -69,7 +69,6 @@
             width: 2,
             dash: 'dot'
           },
-          visible: ts === 0 // Only visible for initial step
         }
       });
 
@@ -87,7 +86,6 @@
                 font: {
                   color: $store.categoricalColors[(agentIdx + 1) % $store.categoricalColors.length],
                 },
-                visible: ts === 0 // Only visible for initial step
               }
             });
           }
@@ -107,14 +105,13 @@
               font: {
                 color: $store.categoricalColors[idx % $store.categoricalColors.length],
               },
-              visible: ts === 0 // Only visible for initial step
             }
           });
         }
       });
     });
 
-    plot = Plotly.newPlot($refs.valueEstimatePlot, data, {
+    plot = Plotly.react($refs.valueEstimatePlot, data, {
       ...layout,
       shapes: shapesAndAnnotationsByStep[0].map(({shape}) => shape).filter(Boolean),
       annotations: shapesAndAnnotationsByStep[0].map(({annotation}) => annotation).filter(Boolean),
@@ -135,22 +132,6 @@
   "
   x-effect="
     if (plot) {
-      // Hide the previous step shapes and annotations
-      if (shapesAndAnnotationsByStep[previousStep]) {
-        shapesAndAnnotationsByStep[previousStep].forEach(({shape, annotation}) => {
-          if (shape) shape.visible = false;
-          if (annotation) annotation.visible = false;
-        });
-      }
-
-      // Show the current step shapes and annotations
-      if (shapesAndAnnotationsByStep[currentStep]) {
-        shapesAndAnnotationsByStep[currentStep].forEach(({shape, annotation}) => {
-          if (shape) shape.visible = true;
-          if (annotation) annotation.visible = true;
-        });
-      }
-
       // Update the plot with visibility changes
       Plotly.relayout($refs.valueEstimatePlot, {
         shapes: shapesAndAnnotationsByStep[currentStep].map(({shape}) => shape).filter(Boolean),

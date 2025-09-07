@@ -37,7 +37,7 @@
       });
     });
 
-    plot = Plotly.newPlot($refs.unitsOverTime, data, layout, basePlotConfig);
+    plot = Plotly.react($refs.unitsOverTime, data, layout, basePlotConfig);
     $watch('$store.visOptions', () => {
       $nextTick(() => {
         Plotly.relayout(
@@ -51,7 +51,7 @@
     });
   "
   x-effect="
-    if (plot) Plotly.update($refs.unitsOverTime, {}, { ...basePlotStyling() });
+    if (plot) Plotly.relayout($refs.unitsOverTime, { ...basePlotStyling() });
   "
   class="w-full"
 >

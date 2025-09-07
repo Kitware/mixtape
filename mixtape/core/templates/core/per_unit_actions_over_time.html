@@ -77,7 +77,7 @@
       },
     });
 
-    plot = Plotly.newPlot($refs.unitActionsPlot, data, layout, basePlotConfig);
+    plot = Plotly.react($refs.unitActionsPlot, data, layout, basePlotConfig);
     $watch('$store.visOptions', () => {
       $nextTick(() => {
         Plotly.relayout(
@@ -92,7 +92,9 @@
   "
   x-effect="
     if (plot) {
-      Plotly.update($refs.unitActionsPlot, {}, { ...basePlotStyling() });
+      Plotly.relayout($refs.unitActionsPlot, {
+        ...basePlotStyling(),
+      });
     }
   "
   class="w-full"

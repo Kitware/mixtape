@@ -16,18 +16,13 @@
   x-init="
     healthData = parsedData.friendly_health_data || [];
     const timeSteps = Array.from({length: maxSteps}, (_, i) => i);
-
     healthData.forEach((episodeData, idx) => {
       if (!episodeData) return;
-
       const ep = healthData.length > 1 ? `episode ${episodeIds[idx]} - ` : '';
-
       Object.keys(episodeData).forEach(entity => {
         const healthValues = episodeData[entity];
         if (!healthValues || healthValues.length === 0) return;
-
         const xValues = Array.from({length: healthValues.length}, (_, i) => i);
-
         data.push({
           name: `${ep}${entity}`,
           x: xValues,
@@ -43,16 +38,14 @@
         yRange = [Math.min(yRange[0], currentYRange[0]), Math.max(yRange[1], currentYRange[1])];
       });
     });
-
     // Create all steps and annotations at once
     timeSteps.forEach((ts) => {
       if (!shapesAndAnnotationsByStep[ts]) {
         shapesAndAnnotationsByStep[ts] = [];
       }
-
       // Add vertical line shape for this step
       shapesAndAnnotationsByStep[ts].push({
-        shape: {
+        shapes: {
           type: 'line',
           x0: ts,
           x1: ts,
@@ -62,37 +55,32 @@
             color: 'red',
             width: 2,
             dash: 'dot'
-          },
-          visible: ts === 0 // Only visible for initial step
+          }
         }
       });
-
       // Add annotations for each entity at this step
       healthData.forEach((episodeData, idx) => {
         if (!episodeData) return;
-
         Object.keys(episodeData).forEach((entity, entityIdx) => {
           if (episodeData[entity] && episodeData[entity][ts] !== undefined) {
             shapesAndAnnotationsByStep[ts].push({
-              annotation: {
+              annotations: {
                 x: ts,
                 y: episodeData[entity][ts],
                 text: episodeData[entity][ts].toFixed(2),
                 font: {
                   color: $store.categoricalColors[entityIdx % $store.categoricalColors.length],
-                },
-                visible: ts === 0 // Only visible for initial step
+                }
               }
             });
           }
         });
       });
     });
-
-    plot = Plotly.newPlot($refs.friendlyHealthPlot, data, {
+    plot = Plotly.react($refs.friendlyHealthPlot, data, {
       ...layout,
-      shapes: shapesAndAnnotationsByStep[0].map(({shape}) => shape).filter(Boolean),
-      annotations: shapesAndAnnotationsByStep[0].map(({annotation}) => annotation).filter(Boolean),
+      shapes: shapesAndAnnotationsByStep[0].map(({shapes}) => shapes).filter(Boolean),
+      annotations: shapesAndAnnotationsByStep[0].map(({annotations}) => annotations).filter(Boolean),
     }, basePlotConfig);
 
     $watch('$store.visOptions', () => {

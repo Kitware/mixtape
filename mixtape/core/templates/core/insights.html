@@ -93,7 +93,7 @@
       }
       return step[Object.keys(step).length - 1];
     },
-    playbackSpeed: 1000,  // frames per second
+    fps: 10,  // frames per second
     lastFrameTime: 0,
 
     stepForward() {
@@ -106,9 +106,8 @@
       if (!this.playing) return;
 
       const elapsed = timestamp - this.lastFrameTime;
-      if (elapsed > (1000 / this.playbackSpeed)) {
+      if (elapsed > (1000 / this.fps)) {
         this.lastFrameTime = timestamp;
-
         if (this.currentStep < this.maxSteps) {
           this.currentStep++;
         } else {
@@ -119,7 +118,7 @@
       }
 
       requestAnimationFrame(this.animationLoop.bind(this));
-    }
+    },
   };
 })()"
 class="flex"
@@ -130,7 +129,7 @@ style="height: calc(100vh - 4rem);"
     class="flex w-full h-full"
     :class="$store.theme.denseLayout ? 'flex-row' : 'flex-row'"
   >
-    <!-- Column A (Episode details) - Left side in normal layout, Right side in dense layout -->
+    <!-- Column A (Episode details) -->
     <div
       id="episode-details-container"
       class="flex flex-col overflow-y-auto overflow-x-hidden transition-all duration-300"

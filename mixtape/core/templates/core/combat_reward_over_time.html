@@ -105,7 +105,7 @@
       });
     });
 
-    plot = Plotly.newPlot($refs.combatRewardPlot, data, {
+    plot = Plotly.react($refs.combatRewardPlot, data, {
       ...layout,
       shapes: shapesAndAnnotationsByStep[0].map(({shapes}) => shapes),
       annotations: shapesAndAnnotationsByStep[0].map(({annotations}) => annotations),
@@ -126,24 +126,9 @@
   "
   x-effect="
     if (plot) {
-      // Hide the previous step shapes and annotation
-      if (shapesAndAnnotationsByStep[previousStep]) {
-        shapesAndAnnotationsByStep[previousStep].forEach(({shapes, annotations}) => {
-          if (shapes) shapes.visible = false;
-          if (annotations) annotations.visible = false;
-        });
-      }
-
-      // Show the current step shapes and annotation
-      if (shapesAndAnnotationsByStep[currentStep]) {
-        shapesAndAnnotationsByStep[currentStep].forEach(({shapes, annotations}) => {
-          if (shapes) shapes.visible = true;
-          if (annotations) annotations.visible = true;
-        });
-      }
       Plotly.relayout($refs.combatRewardPlot, {
-        shapes: shapesAndAnnotationsByStep[currentStep].map(({shapes}) => shapes),
-        annotations: shapesAndAnnotationsByStep[currentStep].map(({annotations}) => annotations),
+        shapes: shapesAndAnnotationsByStep[currentStep].map(({shapes}) => shapes).filter(Boolean),
+        annotations: shapesAndAnnotationsByStep[currentStep].map(({annotations}) => annotations).filter(Boolean),
         ...basePlotStyling()
       });
 
