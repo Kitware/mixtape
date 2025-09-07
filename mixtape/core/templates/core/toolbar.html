@@ -318,5 +318,9 @@
       <i class="ri-sun-line flex items-center justify-center text-sm" style="contain: size;"></i>
       <i class="ri-moon-line flex items-center justify-center text-sm" style="contain: size;"></i>
     </label>
+    <button class="btn btn-ghost rounded-field text-center" @click="$store.theme.denseLayout = !$store.theme.denseLayout">
+      <i x-show="$store.theme.denseLayout" class="ri-layout-grid-fill h-10 w-10 fill-current font-normal text-xl content-center"></i>
+      <i x-show="!$store.theme.denseLayout" class="ri-layout-grid-2-fill h-10 w-10 fill-current font-normal text-xl content-center"></i>
+    </button>
   </div>
 </div>

@@ -93,7 +93,7 @@
       }
       return step[Object.keys(step).length - 1];
     },
-    playbackSpeed: 10,  // frames per second
+    playbackSpeed: 1000,  // frames per second
     lastFrameTime: 0,
 
     stepForward() {
@@ -125,124 +125,239 @@
 class="flex"
 style="height: calc(100vh - 4rem);"
 >
-  <div class="w-1/2 flex flex-col overflow-y-auto overflow-x-hidden">
-    <div x-show="$store.visOptions.visible.includes('playbackControls')" class="max-w-full pa-1 rounded-md mx-1 my-2 sticky top-0 z-1 bg-base-300">
-      {% include "core/replay_controls.html" %}
-    </div>
-    <template x-for="(step, index) in stepData">
-      <div class="episode-container w-full mb-2">
-        <div class="card raised flex flex-col w-full min-h-fit">
-          <h1 class="text-xl font-bold text-center flex-none mb-4">Step <span x-text="currentStep"></span> of <span x-text="maxSteps"></span></h1>
-          <div class="flex p-2 min-h-0 col-span-12">
-            <div
-              x-show="$store.visOptions.visible.includes('episodeImages')"
-              class="flex-1 min-h-0 flex items-center justify-center relative"
-            >
-              <img x-show="getStep(step).image_url" class="m-auto h-full" :src="getStep(step).image_url" alt="Step Image">
-              <div class="absolute bottom-0 left-0 right-0 text-center">
-                Episode <span x-text="episodeIds[index]"></span>: Step <span x-text="currentStep < Object.keys(step).length ? currentStep : Object.keys(step).length - 1"></span>
+  <!-- Main container with dynamic layout based on denseLayout toggle -->
+  <div
+    class="flex w-full h-full"
+    :class="$store.theme.denseLayout ? 'flex-row' : 'flex-row'"
+  >
+    <!-- Column A (Episode details) - Left side in normal layout, Right side in dense layout -->
+    <div
+      id="episode-details-container"
+      class="flex flex-col overflow-y-auto overflow-x-hidden transition-all duration-300"
+      :class="$store.theme.denseLayout ? 'w-1/3' : 'w-1/2'"
+    >
+      <div x-show="$store.visOptions.visible.includes('playbackControls')" class="max-w-full pa-1 rounded-md mx-1 my-2 sticky top-0 z-1 bg-base-300">
+        {% include "core/replay_controls.html" %}
+      </div>
+      <template x-for="(step, index) in stepData">
+        <div class="episode-container w-full mb-2">
+          <div class="card raised flex flex-col w-full min-h-fit">
+            <h1 class="text-xl font-bold text-center flex-none mb-4">Step <span x-text="currentStep"></span> of <span x-text="maxSteps"></span></h1>
+            <div class="flex p-2 min-h-0 col-span-12">
+              <div
+                x-show="$store.visOptions.visible.includes('episodeImages')"
+                class="flex-1 min-h-0 flex items-center justify-center relative"
+              >
+                <img x-show="getStep(step).image_url" class="m-auto h-full" :src="getStep(step).image_url" alt="Step Image">
+                <div class="absolute bottom-0 left-0 right-0 text-center">
+                  Episode <span x-text="episodeIds[index]"></span>: Step <span x-text="currentStep < Object.keys(step).length ? currentStep : Object.keys(step).length - 1"></span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        <div x-show="$store.visOptions.visible.includes('timelines')" class="max-w-full my-2">
-          {% include "core/timeline.html" %}
-        </div>
-        <div x-show="$store.visOptions.visible.includes('episodeDetails')" class="w-full mt-2 mr-1">
-          <div class="flex items-center justify-between bg-info text-info-content px-4 py-2 rounded-t-md">
-            <h3 class="text-sm font-semibold">Agent Details</h3>
-            <button
-              @click="showReplayDetails = !showReplayDetails"
-            >
-              <i x-show="!showReplayDetails" class="ri-arrow-down-s-line"></i>
-              <i x-show="showReplayDetails" class="ri-arrow-up-s-line"></i>
-            </button>
+          <div x-show="$store.visOptions.visible.includes('timelines')" class="max-w-full my-2">
+            {% include "core/timeline.html" %}
           </div>
-          <div x-show="showReplayDetails" class="bg-transparent border border-info rounded-b-md border-base-100" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 transform scale-100" x-transition:leave-end="opacity-0 transform scale-95">
-            {% include "core/replay_details.html" %}
+          <div x-show="$store.visOptions.visible.includes('episodeDetails')" class="w-full mt-2 mr-1">
+            <div class="flex items-center justify-between bg-info text-info-content px-4 py-2 rounded-t-md">
+              <h3 class="text-sm font-semibold">Agent Details</h3>
+              <button
+                @click="showReplayDetails = !showReplayDetails"
+              >
+                <i x-show="!showReplayDetails" class="ri-arrow-down-s-line"></i>
+                <i x-show="showReplayDetails" class="ri-arrow-up-s-line"></i>
+              </button>
+            </div>
+            <div x-show="showReplayDetails" class="bg-transparent border border-info rounded-b-md border-base-100" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 transform scale-100" x-transition:leave-end="opacity-0 transform scale-95">
+              {% include "core/replay_details.html" %}
+            </div>
           </div>
         </div>
-      </div>
-    </template>
-  </div>
-
-  <div class="w-1/2 flex flex-col overflow-y-auto overflow-x-hidden">
-    <div class="flex flex-wrap w-full">
-      <div
-        x-show="$store.visOptions.visible.includes('friendlyHealth')"
-        class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
-      >
-        {% include "core/friendly_health_over_time.html" %}
-      </div>
-      <div
-        x-show="$store.visOptions.visible.includes('enemyHealth')"
-        class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
-      >
-        {% include "core/enemy_health_over_time.html" %}
-      </div>
-      <div
-        x-show="$store.visOptions.visible.includes('navigation')"
-        class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
-      >
-        {% include "core/navigation_reward_over_time.html" %}
-      </div>
-      <div
-        class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
-        x-show="$store.visOptions.visible.includes('combatReward')"
-      >
-        {% include "core/combat_reward_over_time.html" %}
-      </div>
-      <div
-        x-show="$store.visOptions.visible.includes('predictedRewards')"
-        class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
-      >
-        {% include "core/predicted_vs_actual_rewards.html" %}
-      </div>
-      <div
-        x-show="$store.visOptions.visible.includes('unitsOverTime')"
-        class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
-      >
-        {% include "core/units_over_time.html" %}
-      </div>
-      <div
-        x-show="$store.visOptions.visible.includes('valueEstimate')"
-        class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
-      >
-        {% include "core/env_reward_value_estimate.html" %}
-      </div>
-      <div
-        x-show="$store.visOptions.visible.includes('perUnitActions')"
-        class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
-      >
-        {% include "core/per_unit_actions_over_time.html" %}
-      </div>
-      <div
-        x-show="$store.visOptions.visible.includes('rewardsOverTime')"
-        class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
-      >
-        {% include "core/rewards_over_time.html" %}
-      </div>
-      <div
-        x-show="$store.visOptions.visible.includes('decomposedRewards')"
-        class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit">
-        {% include "core/rewards_over_time_decomp.html" %}
-      </div>
+      </template>
     </div>
-    <div class="flex flex-wrap w-full">
+
+    <!-- Plots container - Right side in normal layout, split into columns B and C in dense layout -->
+    <div
+      id="plots-container"
+      class="flex flex-col overflow-y-auto overflow-x-hidden transition-all duration-300"
+      :class="$store.theme.denseLayout ? 'w-2/3 flex-row' : 'w-1/2'"
+    >
+      <!-- When in normal layout, this is a single column -->
       <div
-        x-show="$store.visOptions.visible.includes('obsClustering')"
-        class="flex-2 flex-grow-[2] min-w-[800px] max-w-full p-1 h-fit"
+        id="plots-normal-layout"
+        class="flex flex-wrap w-full"
+        x-show="!$store.theme.denseLayout"
       >
-        <div class="content-center">
-          {% include "core/clustering.html" with key="'obs'" title="Observations" %}
+        <div
+          id="health-container-B"
+          x-show="$store.visOptions.visible.includes('friendlyHealth')"
+          class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
+        >
+          {% include "core/friendly_health_over_time.html" %}
+        </div>
+        <div
+          id="health-container-C"
+          x-show="$store.visOptions.visible.includes('enemyHealth')"
+          class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
+        >
+          {% include "core/enemy_health_over_time.html" %}
+        </div>
+        <div
+          id="decomp-container-B"
+          x-show="$store.visOptions.visible.includes('navigation')"
+          class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
+        >
+          {% include "core/navigation_reward_over_time.html" %}
+        </div>
+        <div
+          id="decomp-container-C"
+          class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
+          x-show="$store.visOptions.visible.includes('combatReward')"
+        >
+          {% include "core/combat_reward_over_time.html" %}
+        </div>
+        <div
+          id="reward-container-B"
+          x-show="$store.visOptions.visible.includes('predictedRewards')"
+          class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
+        >
+          {% include "core/predicted_vs_actual_rewards.html" %}
+        </div>
+        <div
+          id="reward-container-C"
+          x-show="$store.visOptions.visible.includes('valueEstimate')"
+          class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
+        >
+          {% include "core/env_reward_value_estimate.html" %}
+        </div>
+        <div
+          id="units-container-B"
+          x-show="$store.visOptions.visible.includes('unitsOverTime')"
+          class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
+        >
+          {% include "core/units_over_time.html" %}
+        </div>
+        <div
+          id="units-container-C"
+          x-show="$store.visOptions.visible.includes('perUnitActions')"
+          class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
+        >
+          {% include "core/per_unit_actions_over_time.html" %}
+        </div>
+        <div
+          id="rewards-container-B"
+          x-show="$store.visOptions.visible.includes('rewardsOverTime')"
+          class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
+        >
+          {% include "core/rewards_over_time.html" %}
+        </div>
+        <div
+          id="rewards-container-C"
+          x-show="$store.visOptions.visible.includes('decomposedRewards')"
+          class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit">
+          {% include "core/rewards_over_time_decomp.html" %}
         </div>
       </div>
+
+      <!-- When in dense layout, split into columns B and C -->
       <div
-        x-show="$store.visOptions.visible.includes('actionClustering')"
-        class="flex-2 flex-grow-[2] min-w-[800px] max-w-full p-1 h-fit"
+        id="plots-dense-layout"
+        class="flex w-full h-full"
+        x-show="$store.theme.denseLayout"
       >
-        <div class="content-center">
-          {% include "core/clustering.html" with key="'agent_outs'" title="Actions" %}
+        <!-- Column B (Middle) -->
+        <div class="w-1/2 flex flex-col overflow-y-auto overflow-x-hidden">
+          <div
+            id="health-container-B"
+            x-show="$store.visOptions.visible.includes('friendlyHealth')"
+            class="w-full p-1 h-fit"
+          >
+            {% include "core/friendly_health_over_time.html" %}
+          </div>
+          <div
+            id="decomp-container-B"
+            x-show="$store.visOptions.visible.includes('navigation')"
+            class="w-full p-1 h-fit"
+          >
+            {% include "core/navigation_reward_over_time.html" %}
+          </div>
+          <div
+            id="reward-container-B"
+            x-show="$store.visOptions.visible.includes('predictedRewards')"
+            class="w-full p-1 h-fit"
+          >
+            {% include "core/predicted_vs_actual_rewards.html" %}
+          </div>
+          <div
+            id="units-container-B"
+            x-show="$store.visOptions.visible.includes('unitsOverTime')"
+            class="w-full p-1 h-fit"
+          >
+            {% include "core/units_over_time.html" %}
+          </div>
+          <div
+            id="rewards-container-B"
+            x-show="$store.visOptions.visible.includes('rewardsOverTime')"
+            class="w-full p-1 h-fit"
+          >
+            {% include "core/rewards_over_time.html" %}
+          </div>
+          <div
+            id="clustering-container-B"
+            x-show="$store.visOptions.visible.includes('obsClustering')"
+            class="w-full p-1 h-fit"
+          >
+            <div class="content-center">
+              {% include "core/clustering.html" with key="'obs'" title="Observations" %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Column C (Left) -->
+        <div class="w-1/2 flex flex-col overflow-y-auto overflow-x-hidden">
+          <div
+            id="health-container-C"
+            x-show="$store.visOptions.visible.includes('enemyHealth')"
+            class="w-full p-1 h-fit"
+          >
+            {% include "core/enemy_health_over_time.html" %}
+          </div>
+          <div
+            id="decomp-container-C"
+            class="w-full p-1 h-fit"
+            x-show="$store.visOptions.visible.includes('combatReward')"
+          >
+            {% include "core/combat_reward_over_time.html" %}
+          </div>
+          <div
+            id="reward-container-C"
+            x-show="$store.visOptions.visible.includes('valueEstimate')"
+            class="w-full p-1 h-fit"
+          >
+            {% include "core/env_reward_value_estimate.html" %}
+          </div>
+          <div
+            id="units-container-C"
+            x-show="$store.visOptions.visible.includes('perUnitActions')"
+            class="w-full p-1 h-fit"
+          >
+            {% include "core/per_unit_actions_over_time.html" %}
+          </div>
+          <div
+            id="rewards-container-C"
+            x-show="$store.visOptions.visible.includes('decomposedRewards')"
+            class="w-full p-1 h-fit">
+            {% include "core/rewards_over_time_decomp.html" %}
+          </div>
+          <div
+            id="clustering-container-C"
+            x-show="$store.visOptions.visible.includes('actionClustering')"
+            class="w-full p-1 h-fit"
+          >
+            <div class="content-center">
+              {% include "core/clustering.html" with key="'agent_outs'" title="Actions" %}
+            </div>
+          </div>
         </div>
       </div>
     </div>
