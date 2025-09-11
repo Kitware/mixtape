@@ -18,7 +18,7 @@ class StepBase(models.Model):
     rewards = models.JSONField(default=_rewards_default)
 
     action_distribution = models.JSONField(null=True, blank=True)
-    health = models.JSONField(null=True, blank=True)
+    health = models.FloatField(null=True, blank=True)
     value_estimate = models.FloatField(null=True, blank=True)
     predicted_reward = models.FloatField(null=True, blank=True)
     custom_metrics = models.JSONField(null=True, blank=True)
@@ -65,6 +65,8 @@ class AgentStep(StepBase):
     step = models.ForeignKey(Step, on_delete=models.CASCADE, related_name='agent_steps')
     agent = models.CharField(max_length=200)
     observation_space = models.JSONField()
+    enemy_agent_health = models.JSONField(null=True, blank=True)
+    enemy_unit_health = models.JSONField(null=True, blank=True)
 
     def clean(self):
         training = self.step.episode.inference.checkpoint.training

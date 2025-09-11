@@ -72,11 +72,13 @@
             x: traceData.x[step],
             y: traceData.y[step],
             text: `${eps}${uniqueAgents[agent_idx]}`,
+            bgcolor: 'rgba(0, 0, 0, 0.5)',
+            bordercolor: $store.categoricalColors[agent_idx % $store.categoricalColors.length],
+            borderwidth: 2,
             font: {
               color: $store.categoricalColors[agent_idx % $store.categoricalColors.length],
             },
           };
-
           shapesAndAnnotationsByStep[step].push({shape, annotation});
         }
       });
@@ -147,7 +149,7 @@
       xaxis: {...basePlotLayout.xaxis},
       yaxis: {...basePlotLayout.yaxis},
     },
-    timesteps: Array.from({length: clustering[{{key}}].episode_clusters.length}, (_, i) => i),
+    timesteps: Array.from({length: clustering[{{key}}].all_clusters.length}, (_, i) => i),
     allShapes: {},
     plot: null,
   }"
@@ -189,13 +191,15 @@
           })
       });
     });"
-  x-effect="
-    if (plot) {
-      Plotly.relayout($refs.allClusters, {
-        shapes: allShapes[currentStep],
-        ...basePlotStyling(),
-      });
-    }"
+    x-effect="
+      if (plot) {
+        // Update the plot with visibility changes
+        Plotly.relayout($refs.allClusters, {
+          shapes: allShapes[currentStep],
+          ...basePlotStyling()
+        });
+      }
+    "
 >
   <div x-ref="allClusters"></div>
 </div>

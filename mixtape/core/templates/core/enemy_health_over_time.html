@@ -77,6 +77,8 @@
                 x: ts,
                 y: episodeData[entity][ts],
                 text: episodeData[entity][ts].toFixed(2),
+                bgcolor: 'rgba(0, 0, 0, 0.5)',
+                arrowcolor: $store.categoricalColors[entityIdx % $store.categoricalColors.length],
                 font: {
                   color: $store.categoricalColors[entityIdx % $store.categoricalColors.length],
                 },

@@ -46,7 +46,7 @@
         const unitRow = [];
         timeSteps.forEach(step => {
           const actionData = episodeActions[unit].find(d => d.step === step);
-          const action = actionData ? actionData.action : -1;
+          const action = actionData ? (actionData.action === null ? -1 : actionData.action) : -1;
           unitRow.push(action);
         });
         z.push(unitRow);
@@ -61,13 +61,13 @@
       type: 'heatmap',
       colorscale: [
         [0, '#00000000'],
-        [.25, '#00000000'],
+        [.25, '#00000000'],  // Transparent - Dead
         [0.25, '#1f77b4'],
-        [0.5, '#1f77b4'],
+        [0.5, '#1f77b4'],    // Blue - Noop
         [0.5, '#ff7f0e'],
-        [0.75, '#ff7f0e'],
+        [0.75, '#ff7f0e'],   // Orange - Move
         [0.75, '#2ca02c'],
-        [1, '#2ca02c'],
+        [1, '#2ca02c'],      // Green - Attack
       ],
       colorbar: {
         title: 'Action',

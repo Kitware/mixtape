@@ -68,6 +68,8 @@
                 x: ts,
                 y: episodeData[entity][ts],
                 text: episodeData[entity][ts].toFixed(2),
+                bgcolor: 'rgba(0, 0, 0, 0.5)',
+                arrowcolor: $store.categoricalColors[entityIdx % $store.categoricalColors.length],
                 font: {
                   color: $store.categoricalColors[entityIdx % $store.categoricalColors.length],
                 }
@@ -79,8 +81,8 @@
     });
     plot = Plotly.react($refs.friendlyHealthPlot, data, {
       ...layout,
-      shapes: shapesAndAnnotationsByStep[0].map(({shapes}) => shapes).filter(Boolean),
-      annotations: shapesAndAnnotationsByStep[0].map(({annotations}) => annotations).filter(Boolean),
+      shapes: shapesAndAnnotationsByStep[0]?.filter(item => item.shapes).map(item => item.shapes) || [],
+      annotations: shapesAndAnnotationsByStep[0]?.filter(item => item.annotations).map(item => item.annotations) || [],
     }, basePlotConfig);
 
     $watch('$store.visOptions', () => {
@@ -99,24 +101,24 @@
     if (plot) {
       // Hide the previous step shapes and annotations
       if (shapesAndAnnotationsByStep[previousStep]) {
-        shapesAndAnnotationsByStep[previousStep].forEach(({shape, annotation}) => {
-          if (shape) shape.visible = false;
-          if (annotation) annotation.visible = false;
+        shapesAndAnnotationsByStep[previousStep].forEach(item => {
+          if (item.shapes) item.shapes.visible = false;
+          if (item.annotations) item.annotations.visible = false;
         });
       }
 
       // Show the current step shapes and annotations
       if (shapesAndAnnotationsByStep[currentStep]) {
-        shapesAndAnnotationsByStep[currentStep].forEach(({shape, annotation}) => {
-          if (shape) shape.visible = true;
-          if (annotation) annotation.visible = true;
+        shapesAndAnnotationsByStep[currentStep].forEach(item => {
+          if (item.shapes) item.shapes.visible = true;
+          if (item.annotations) item.annotations.visible = true;
         });
       }
 
       // Update the plot with visibility changes
       Plotly.relayout($refs.friendlyHealthPlot, {
-        shapes: shapesAndAnnotationsByStep[currentStep].map(({shape}) => shape).filter(Boolean),
-        annotations: shapesAndAnnotationsByStep[currentStep].map(({annotation}) => annotation).filter(Boolean),
+        shapes: shapesAndAnnotationsByStep[currentStep]?.filter(item => item.shapes).map(item => item.shapes) || [],
+        annotations: shapesAndAnnotationsByStep[currentStep]?.filter(item => item.annotations).map(item => item.annotations) || [],
         ...basePlotStyling()
       });
 

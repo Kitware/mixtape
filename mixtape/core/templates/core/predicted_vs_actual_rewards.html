@@ -103,6 +103,8 @@
               x: ts,
               y: series.y[ts],
               text: series.y[ts].toFixed(2),
+              bgcolor: 'rgba(0, 0, 0, 0.5)',
+              arrowcolor: $store.categoricalColors[seriesIdx % $store.categoricalColors.length],
               font: {
                 color: $store.categoricalColors[seriesIdx % $store.categoricalColors.length],
               },

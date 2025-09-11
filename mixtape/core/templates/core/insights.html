@@ -256,6 +256,24 @@ style="height: calc(100vh - 4rem);"
           class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit">
           {% include "core/rewards_over_time_decomp.html" %}
         </div>
+        <div
+          id="clustering-container-B"
+          x-show="$store.visOptions.visible.includes('obsClustering')"
+          class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
+        >
+          <div class="content-center">
+            {% include "core/clustering.html" with key="'obs'" title="Observations" %}
+          </div>
+        </div>
+        <div
+          id="clustering-container-C"
+          x-show="$store.visOptions.visible.includes('actionClustering')"
+          class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
+        >
+          <div class="content-center">
+            {% include "core/clustering.html" with key="'agent_outs'" title="Actions" %}
+          </div>
+        </div>
       </div>
 
       <!-- When in dense layout, split into columns B and C -->

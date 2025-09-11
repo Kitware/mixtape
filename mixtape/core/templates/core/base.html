@@ -1,6 +1,18 @@
 <!DOCTYPE html>
 <html lang="en" x-data :data-theme="$store.theme.darkMode ? 'dark' : 'light'" class="bg-base-300">
   <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-TKWJX3L24M"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-TKWJX3L24M', {
+        debug_mode: true,
+        cookie_domain: 'none',
+      });
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
@@ -35,9 +47,39 @@
           },
           denseLayout: false,
         });
+        // Playback store for animating through time steps
+        Alpine.store('playback', {
+          isPlaying: false,
+          currentStep: 0,
+          maxSteps: 1000,
+          fps: 24,
+          _raf: null, _last: 0,
+          start() {
+            if (this._raf) return;
+            this.isPlaying = true;
+            this._last = performance.now();
+            const stepMs = 1000 / this.fps;
+            const loop = (t) => {
+              if (!this.isPlaying) { this._raf = null; return; }
+              const dt = t - this._last;
+              if (dt >= stepMs) {
+                // Advance by exactly 1 step (no catch-up)
+                if (this.currentStep >= this.maxSteps - 1) { this.stop(); return; }
+                this.currentStep += 1;
+                // prevent drift by carrying over extra time
+                // (keeps average fps accurate without multi-step jumps)
+                this._last = t - (dt - stepMs);
+              }
+              this._raf = requestAnimationFrame(loop);
+            };
+            this._raf = requestAnimationFrame(loop);
+          },
+          stop(){ this.isPlaying = false; if (this._raf) cancelAnimationFrame(this._raf); this._raf = null; },
+          seek(s){ this.currentStep = Math.max(0, Math.min(s, this.maxSteps - 1)); },
+        });
         // Visualization options store
         Alpine.store('visOptions', {
-          'visible': [
+          'allOptions': [
             'actionClustering',
             'combatReward',
             'decomposedRewards',
@@ -58,6 +100,42 @@
           ],
           'legendPosition': 'horizontal',
           'legendOverlap': 'outside',
+          'visible': [],
+          init() {
+            // Initialize with all options visible
+            this.visible = [...this.allOptions];
+          },
+          plotIsVisible(plotName) {
+            if (!this.visible) {
+              return false;
+            }
+            return this.visible.includes(plotName);
+          },
+          toggleVisibility(plotName) {
+            if (!this.visible) {
+              this.visible = [];
+            }
+
+            if (this.plotIsVisible(plotName)) {
+              this.visible = this.visible.filter(item => item !== plotName);
+            } else {
+              this.visible.push(plotName);
+            }
+            return this.plotIsVisible(plotName);
+          },
+          allSelected() {
+            return this.visible && this.visible.length === this.allOptions.length;
+          },
+          toggleAll() {
+            if (this.allSelected()) {
+              // If all are selected, clear all
+              this.visible = [];
+            } else {
+              // If some or none are selected, select all
+              this.visible = [...this.allOptions];
+            }
+            return this.allSelected();
+          }
         });
         Alpine.store('categoricalColors',[
           '#1f77b4',

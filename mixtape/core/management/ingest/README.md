@@ -60,7 +60,7 @@ The JSON file is required to contain information about both the training as well
                             Object containing health metrics for agents or units.
                             For example: {"friendly": 100.0, "enemy": 75.5}
                         */
-                        "health": {},
+                        "health": "float" | "int",
                         /**
                         value_estimate: Optional.
                             The predicted value estimate from the agent's value function.
@@ -71,6 +71,18 @@ The JSON file is required to contain information about both the training as well
                             The predicted reward from the agent's policy.
                         */
                         "predicted_reward": "float",
+                        /**
+                        enemy_agent_health: Optional.
+                            Object containing health metrics for enemy agents.
+                            For example: [100.0, 75.5]
+                        */
+                        "enemy_agent_health": ["float" | "int"],
+                        /**
+                        enemy_unit_health: Optional.
+                            Object containing health metrics for enemy units.
+                            For example: [100.0, 75.5]
+                        */
+                        "enemy_unit_health": ["float" | "int"],
                         /**
                         custom_metrics: Optional.
                             Any custom metrics that you would like to store for the agent step.

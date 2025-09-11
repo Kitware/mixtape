@@ -70,12 +70,8 @@
                   x: ts,
                   y: rewardData[ts],
                   text: rewardData[ts].toFixed(2),
-                  showarrow: true,
-                  arrowhead: 2,
-                  arrowsize: 1,
-                  arrowwidth: 2,
-                  ax: 20,
-                  ay: -20 * (rewardIdx + 1), // Offset annotations vertically
+                  bgcolor: 'rgba(0, 0, 0, 0.5)',
+                  arrowcolor: $store.categoricalColors[(episodeIdx * Object.keys(episodeRewards).length + rewardIdx) % $store.categoricalColors.length],
                   font: {
                     size: 10,
                     color: $store.categoricalColors[(episodeIdx * Object.keys(episodeRewards).length + rewardIdx) % $store.categoricalColors.length]

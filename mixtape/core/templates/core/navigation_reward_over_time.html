@@ -34,6 +34,10 @@
           dash: 'solid',
         }
       });
+
+      // Update yRange for agent rewards
+      const currentRange = [Math.min(...episodeRewards.navigation), Math.max(...episodeRewards.navigation)];
+      yRange = [Math.min(yRange[0], currentRange[0]), Math.max(yRange[1], currentRange[1])];
     });
 
     unitRewards.forEach((episodeUnitRewards, idx) => {
@@ -60,71 +64,82 @@
       });
     });
 
-    // Create all steps and annotations at once
-    timeSteps.forEach((ts) => {
-      if (!shapesAndAnnotationsByStep[ts]) {
-        shapesAndAnnotationsByStep[ts] = [];
-      }
+    // Set default yRange if no data was found
+    if (yRange[0] === Infinity || yRange[1] === -Infinity) {
+      yRange = [0, 1];
+    }
 
-      // Add vertical line shape for this step
-      shapesAndAnnotationsByStep[ts].push({
-        shape: {
-          type: 'line',
-          x0: ts,
-          x1: ts,
-          y0: yRange[0],
-          y1: yRange[1],
-          line: {
-            color: 'red',
-            width: 2,
-            dash: 'dot'
-          },
+    // Create all steps and annotations at once only if we have data
+    if (data.length > 0) {
+      timeSteps.forEach((ts) => {
+        if (!shapesAndAnnotationsByStep[ts]) {
+          shapesAndAnnotationsByStep[ts] = [];
         }
-      });
 
-      // Add annotations for unit rewards at this step
-      unitRewards.forEach((episodeUnitRewards, idx) => {
-        if (!episodeUnitRewards) return;
+        // Add vertical line shape for this step
+        shapesAndAnnotationsByStep[ts].push({
+          shapes: {
+            type: 'line',
+            x0: ts,
+            x1: ts,
+            y0: yRange[0],
+            y1: yRange[1],
+            line: {
+              color: 'red',
+              width: 2,
+              dash: 'dot'
+            },
+          }
+        });
 
-        Object.keys(episodeUnitRewards).forEach((unit, unitIdx) => {
-          if (episodeUnitRewards[unit] && episodeUnitRewards[unit][ts] !== undefined) {
+        // Add annotations for unit rewards at this step
+        unitRewards.forEach((episodeUnitRewards, idx) => {
+          if (!episodeUnitRewards) return;
+
+          Object.keys(episodeUnitRewards).forEach((unit, unitIdx) => {
+            if (episodeUnitRewards[unit] && episodeUnitRewards[unit][ts] !== undefined) {
+              shapesAndAnnotationsByStep[ts].push({
+                annotations: {
+                  x: ts,
+                  y: episodeUnitRewards[unit][ts],
+                  text: episodeUnitRewards[unit][ts].toFixed(2),
+                  bgcolor: 'rgba(0, 0, 0, 0.5)',
+                  arrowcolor: $store.categoricalColors[(unitIdx + 1) % $store.categoricalColors.length],
+                  font: {
+                    color: $store.categoricalColors[(unitIdx + 1) % $store.categoricalColors.length],
+                  },
+                }
+              });
+            }
+          });
+        });
+
+        // Add annotations for agent rewards at this step
+        agentRewards.forEach((episodeRewards, idx) => {
+          if (!episodeRewards?.navigation || episodeRewards.navigation.length === 0) return;
+
+          if (episodeRewards.navigation[ts] !== undefined) {
             shapesAndAnnotationsByStep[ts].push({
-              annotation: {
+              annotations: {
                 x: ts,
-                y: episodeUnitRewards[unit][ts],
-                text: episodeUnitRewards[unit][ts].toFixed(2),
+                y: episodeRewards.navigation[ts],
+                text: episodeRewards.navigation[ts].toFixed(2),
+                bgcolor: 'rgba(0, 0, 0, 0.5)',
+                arrowcolor: $store.categoricalColors[idx % $store.categoricalColors.length],
                 font: {
-                  color: $store.categoricalColors[(unitIdx + 1) % $store.categoricalColors.length],
+                  color: $store.categoricalColors[idx % $store.categoricalColors.length],
                 },
               }
             });
           }
         });
       });
-
-      // Add annotations for agent rewards at this step
-      agentRewards.forEach((episodeRewards, idx) => {
-        if (!episodeRewards?.navigation || episodeRewards.navigation.length === 0) return;
-
-        if (episodeRewards.navigation[ts] !== undefined) {
-          shapesAndAnnotationsByStep[ts].push({
-            annotation: {
-              x: ts,
-              y: episodeRewards.navigation[ts],
-              text: episodeRewards.navigation[ts].toFixed(2),
-              font: {
-                color: $store.categoricalColors[idx % $store.categoricalColors.length],
-              },
-            }
-          });
-        }
-      });
-    });
+    }
 
     plot = Plotly.react($refs.navRewardOverTime, data, {
       ...layout,
-      shapes: shapesAndAnnotationsByStep[0].map(({shape}) => shape).filter(Boolean),
-      annotations: shapesAndAnnotationsByStep[0].map(({annotation}) => annotation).filter(Boolean),
+      shapes: shapesAndAnnotationsByStep[0]?.filter(item => item.shapes).map(item => item.shapes) || [],
+      annotations: shapesAndAnnotationsByStep[0]?.filter(item => item.annotations).map(item => item.annotations) || [],
     }, basePlotConfig);
 
     $watch('$store.visOptions', () => {
@@ -143,8 +158,8 @@
     if (plot) {
       // Update the plot with visibility changes
       Plotly.relayout($refs.navRewardOverTime, {
-        shapes: shapesAndAnnotationsByStep[currentStep].map(({shape}) => shape).filter(Boolean),
-        annotations: shapesAndAnnotationsByStep[currentStep].map(({annotation}) => annotation).filter(Boolean),
+        shapes: shapesAndAnnotationsByStep[currentStep]?.filter(item => item.shapes).map(item => item.shapes) || [],
+        annotations: shapesAndAnnotationsByStep[currentStep]?.filter(item => item.annotations).map(item => item.annotations) || [],
         ...basePlotStyling()
       });
 

@@ -250,14 +250,26 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
             step_environment_reward += agent_step.total_reward
 
             # Process agent health
-            if agent_step.health and 'friendly' in agent_step.health:
+            if agent_step.health is not None:
                 if agent_key not in friendly_health_data:
                     friendly_health_data[agent_key] = []
-                friendly_health_data[agent_key].append(agent_step.health['friendly'])
-            if agent_step.health and 'enemy' in agent_step.health:
-                if agent_key not in enemy_health_data:
-                    enemy_health_data[agent_key] = []
-                enemy_health_data[agent_key].append(agent_step.health['enemy'])
+                friendly_health_data[agent_key].append(agent_step.health)
+
+            # Process enemy agent health
+            if agent_step.enemy_agent_health:
+                for i, enemy_health in enumerate(agent_step.enemy_agent_health):
+                    enemy_agent_key = f'{agent_key}_enemy_agent_{i}'
+                    if enemy_agent_key not in enemy_health_data:
+                        enemy_health_data[enemy_agent_key] = []
+                    enemy_health_data[enemy_agent_key].append(enemy_health)
+
+            # Process enemy unit health
+            if agent_step.enemy_unit_health:
+                for i, enemy_health in enumerate(agent_step.enemy_unit_health):
+                    enemy_unit_key = f'{agent_key}_enemy_unit_{i}'
+                    if enemy_unit_key not in enemy_health_data:
+                        enemy_health_data[enemy_unit_key] = []
+                    enemy_health_data[enemy_unit_key].append(enemy_health)
 
             # Process unit steps
             for unit_step in agent_step.unit_steps.all():
@@ -265,20 +277,17 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
 
                 # Track unit actions
                 if unit_key not in step_unit_actions:
+                    action_value = None if unit_step.action == -1 else unit_step.action
                     step_unit_actions[unit_key] = {
-                        'action': unit_step.action,
+                        'action': action_value,
                         'is_alive': unit_step.action != -1,
                     }
 
                 # Track health data
-                if unit_step.health and 'friendly' in unit_step.health:
+                if unit_step.health is not None:
                     if unit_key not in friendly_health_data:
                         friendly_health_data[unit_key] = []
-                    friendly_health_data[unit_key].append(unit_step.health['friendly'])
-                if unit_step.health and 'enemy' in unit_step.health:
-                    if unit_key not in enemy_health_data:
-                        enemy_health_data[unit_key] = []
-                    enemy_health_data[unit_key].append(unit_step.health['enemy'])
+                    friendly_health_data[unit_key].append(unit_step.health)
 
                 # Track unit predicted rewards if available
                 if unit_step.custom_metrics and 'predicted_rewards' in unit_step.custom_metrics:
@@ -320,11 +329,11 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
                 }
             )
 
-    # Calculate unit lifetimes based on first death action (-1)
+    # Calculate unit lifetimes based on first death action (None, which was -1)
     for unit_id, actions in unit_actions_over_time.items():
         death_step = None
         for action in actions:
-            if action['action'] == -1:
+            if action['action'] is None:
                 death_step = action['step']
                 break
         unit_lifetimes[unit_id] = {
@@ -390,12 +399,27 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
 
         # Update unit rewards for this step
         for unit, rewards in step_unit_rewards.items():
-            if 'navigation' in rewards:
+            # Handle both 'navigation'/'nav_reward' naming
+            nav_key = None
+            for key in ['navigation', 'nav_reward']:
+                if key in rewards:
+                    nav_key = key
+                    break
+
+            if nav_key:
                 unit_navigation_rewards.setdefault(unit, [])
-                unit_navigation_rewards[unit].append(rewards['navigation'])
-            if 'combat' in rewards:
+                unit_navigation_rewards[unit].append(rewards[nav_key])
+
+            # Handle both 'combat'/'combat_reward' naming
+            combat_key = None
+            for key in ['combat', 'combat_reward']:
+                if key in rewards:
+                    combat_key = key
+                    break
+
+            if combat_key:
                 unit_combat_rewards.setdefault(unit, [])
-                unit_combat_rewards[unit].append(rewards['combat'])
+                unit_combat_rewards[unit].append(rewards[combat_key])
 
         # Update main rewards
         for reward_name in reward_mapping:

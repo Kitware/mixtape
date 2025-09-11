@@ -15,34 +15,46 @@
     ep: '',
   }"
   x-init="
+    const decomposedRewards = parsedData.decomposed_rewards || [];
+    const unitCombatRewards = parsedData.unit_combat_rewards || [];
+
     if (!decomposedRewards || !unitCombatRewards) return;
 
     const timeSteps = Array.from({length: maxSteps}, (_, i) => i);
     getPrefix = (idx) => {
       if (decomposedRewards.length > 1) {
-        return `episode ${episodeIds[idx]} - agent_${idx}`;
+        return `episode ${episodeIds[idx]} - `;
       }
       return '';
     };
 
     decomposedRewards.forEach((agentRewards, idx) => {
-      if (!agentRewards.length > 0 && !agentRewards?.combat) {
+      if (!agentRewards || !agentRewards.combat || agentRewards.combat.length === 0) {
         return;
       }
       data.push({
-        name: `${getPrefix(idx)}${uniqueAgents[idx]}`,
+        name: `${getPrefix(idx)}agent_0`,
         x: timeSteps,
         y: agentRewards.combat,
         type: 'scatter',
         mode: 'lines',
+        line: { dash: 'solid' }
       });
+
+      // Update yRange for agent rewards
+      const currentRange = [Math.min(...agentRewards.combat), Math.max(...agentRewards.combat)];
+      yRange = [Math.min(yRange[0], currentRange[0]), Math.max(yRange[1], currentRange[1])];
     });
 
     unitCombatRewards.forEach((unitRewards, idx) => {
+      if (!unitRewards) return;
+
+      const ep = unitCombatRewards.length > 1 ? `episode ${episodeIds[idx]} - ` : '';
+
       Object.entries(unitRewards).forEach(([unit, rewards], index) => {
         if (rewards && rewards.length > 0) {
           data.push({
-            name: `${getPrefix(idx)}${unit}`,
+            name: `${ep}${unit}`,
             x: timeSteps.slice(0, rewards.length),
             y: rewards,
             type: 'scatter',
@@ -51,84 +63,96 @@
               dash: 'dashdot',
             }
           });
+
+          const currentRange = [Math.min(...rewards), Math.max(...rewards)];
+          yRange = [Math.min(yRange[0], currentRange[0]), Math.max(yRange[1], currentRange[1])];
         }
-        const currentRange = [Math.min(...rewards), Math.max(...rewards)];
-        yRange = [Math.min(yRange[0], currentRange[0]), Math.max(yRange[1], currentRange[1])];
       });
     });
 
-    // Create all steps and annotations at once
-    const decompLen = decomposedRewards.length + 1;
-    timeSteps.forEach((ts) => {
-      if (!shapesAndAnnotationsByStep[ts]) {
-        shapesAndAnnotationsByStep[ts] = [];
-      }
-      const annotations = decomposedRewards.map((agentRewards, idx) => {
-        const colorIdx = (idx + 1) * (decompLen + decompLen);
-        Object.values(unitCombatRewards[idx]).map((unitRewards, unitIdx) => {
-          const unitColorIdx = (unitIdx + 1) + colorIdx;
-          shapesAndAnnotationsByStep[ts].push({
-            annotations: {
-              x: ts,
-              y: unitRewards[ts],
-              text: unitRewards[ts].toFixed(2),
-              font: {
-                color: $store.categoricalColors[(unitIdx + 1) % $store.categoricalColors.length - 1],
-              },
-            }
-          });
-        });
+    // Set default yRange if no data was found
+    if (yRange[0] === Infinity || yRange[1] === -Infinity) {
+      yRange = [0, 1];
+    }
+
+    // Create all steps and annotations at once only if we have data
+    if (data.length > 0) {
+      timeSteps.forEach((ts) => {
+        if (!shapesAndAnnotationsByStep[ts]) {
+          shapesAndAnnotationsByStep[ts] = [];
+        }
+
+        // Add vertical line shape for this step
         shapesAndAnnotationsByStep[ts].push({
-          annotations: {
-            x: ts,
-            y: agentRewards.combat[ts],
-            text: agentRewards.combat[ts].toFixed(2),
-            font: {
-              color: $store.categoricalColors[(idx + 1) % $store.categoricalColors.length - 1],
+          shapes: {
+            type: 'line',
+            x0: ts,
+            x1: ts,
+            y0: yRange[0],
+            y1: yRange[1],
+            line: {
+              color: 'red',
+              width: 2,
+              dash: 'dot'
             },
           }
         });
+
+        // Add annotations for unit rewards at this step
+        unitCombatRewards.forEach((unitRewards, idx) => {
+          if (!unitRewards) return;
+
+          Object.keys(unitRewards).forEach((unit, unitIdx) => {
+            if (unitRewards[unit] && unitRewards[unit][ts] !== undefined) {
+              shapesAndAnnotationsByStep[ts].push({
+                annotations: {
+                  x: ts,
+                  y: unitRewards[unit][ts],
+                  text: unitRewards[unit][ts].toFixed(2),
+                  bgcolor: 'rgba(0, 0, 0, 0.5)',
+                  arrowcolor: $store.categoricalColors[(unitIdx + 1) % $store.categoricalColors.length],
+                  font: {
+                    color: $store.categoricalColors[(unitIdx + 1) % $store.categoricalColors.length],
+                  },
+                }
+              });
+            }
+          });
+        });
+
+        // Add annotations for agent rewards at this step
+        decomposedRewards.forEach((agentRewards, idx) => {
+          if (!agentRewards || !agentRewards.combat || agentRewards.combat.length === 0) return;
+
+          if (agentRewards.combat[ts] !== undefined) {
+            shapesAndAnnotationsByStep[ts].push({
+              annotations: {
+                x: ts,
+                y: agentRewards.combat[ts],
+                text: agentRewards.combat[ts].toFixed(2),
+                bgcolor: 'rgba(0, 0, 0, 0.5)',
+                arrowcolor: $store.categoricalColors[idx % $store.categoricalColors.length],
+                font: {
+                  color: $store.categoricalColors[idx % $store.categoricalColors.length],
+                },
+              }
+            });
+          }
+        });
       });
-      shapesAndAnnotationsByStep[ts].push({
-        shapes: {
-          type: 'line',
-          x0: ts,
-          x1: ts,
-          y0: yRange[0],
-          y1: yRange[1],
-          line: {
-            color: 'red',
-            width: 2,
-            dash: 'dot'
-          },
-        }
-      });
-    });
+    }
 
     plot = Plotly.react($refs.combatRewardPlot, data, {
       ...layout,
-      shapes: shapesAndAnnotationsByStep[0].map(({shapes}) => shapes),
-      annotations: shapesAndAnnotationsByStep[0].map(({annotations}) => annotations),
+      shapes: shapesAndAnnotationsByStep[0]?.filter(item => item.shapes).map(item => item.shapes) || [],
+      annotations: shapesAndAnnotationsByStep[0]?.filter(item => item.annotations).map(item => item.annotations) || [],
     }, basePlotConfig);
-
-    // Watch for changes in visualization options
-    $watch('$store.visOptions', () => {
-      $nextTick(() => {
-        Plotly.relayout(
-          $refs.combatRewardPlot,
-          {
-            autosize: true,
-            showlegend: $store.visOptions.visible.includes('plotLegends'),
-            legend: legendLayout(),
-          });
-      });
-    });
   "
   x-effect="
     if (plot) {
       Plotly.relayout($refs.combatRewardPlot, {
-        shapes: shapesAndAnnotationsByStep[currentStep].map(({shapes}) => shapes).filter(Boolean),
-        annotations: shapesAndAnnotationsByStep[currentStep].map(({annotations}) => annotations).filter(Boolean),
+        shapes: shapesAndAnnotationsByStep[currentStep]?.filter(item => item.shapes).map(item => item.shapes) || [],
+        annotations: shapesAndAnnotationsByStep[currentStep]?.filter(item => item.annotations).map(item => item.annotations) || [],
         ...basePlotStyling()
       });
 

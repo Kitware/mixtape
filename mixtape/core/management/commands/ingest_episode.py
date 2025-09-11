@@ -133,6 +133,8 @@ def ingest_episode(json_file: TextIO, allow_existing: bool) -> None:
                         health=agent_step_data.health,
                         value_estimate=agent_step_data.value_estimate,
                         predicted_reward=agent_step_data.predicted_reward,
+                        enemy_agent_health=agent_step_data.enemy_agent_health,
+                        enemy_unit_health=agent_step_data.enemy_unit_health,
                         custom_metrics=agent_step_data.custom_metrics,
                     )
                     agent_step.full_clean()

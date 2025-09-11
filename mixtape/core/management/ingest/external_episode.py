@@ -11,7 +11,7 @@ class ExternalUnitStep(BaseModel):
     reward: float | None = None
     rewards: list[float | int] | None = None
     action_distribution: list[float] | None = None
-    health: dict | None = None
+    health: float | int | None = None
     value_estimate: float | None = None
     predicted_reward: float | None = None
     custom_metrics: dict | None = None
@@ -43,9 +43,11 @@ class ExternalAgentStep(BaseModel):
     rewards: list[float | int] | None = None
     observation_space: list[float] | list[list[float]]
     action_distribution: list[float] | None = None
-    health: dict | None = None
+    health: float | int | None = None
     value_estimate: float | None = None
     predicted_reward: float | None = None
+    enemy_agent_health: list[float | int] | None = None
+    enemy_unit_health: list[float | int] | None = None
     custom_metrics: dict | None = None
     unit_steps: list[ExternalUnitStep] | None = None
 

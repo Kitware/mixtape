@@ -65,6 +65,8 @@
               x: ts,
               y: episode[ts],
               text: episode[ts].toFixed(2),
+              bgcolor: 'rgba(0, 0, 0, 0.5)',
+              arrowcolor: $store.categoricalColors[idx % $store.categoricalColors.length],
               font: {
                 color: $store.categoricalColors[idx % $store.categoricalColors.length],
               },
