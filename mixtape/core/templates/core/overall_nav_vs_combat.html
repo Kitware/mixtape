@@ -1,0 +1,331 @@
+<div
+  x-data="{
+    data: [],
+    layout: {
+      ...basePlotLayout,
+      title: { text: 'Overall Navigation vs Overall Combat' },
+      xaxis: { ...basePlotLayout.xaxis, title: { text: 'Time Step' }, domain: [0, 1] },
+      yaxis: { ...basePlotLayout.yaxis, title: { text: 'Cumulative Reward' }, domain: [0, 1] },
+      // Inset plot for terminal reward
+      xaxis2: {
+        ...basePlotLayout.xaxis,
+        domain: [0.1, 0.3],
+        anchor: 'y2',
+        nticks: 3,
+        showgrid: true,
+        linecolor: $store.theme.axis.zerolinecolor,
+        linewidth: 2,
+        mirror: true,
+      },
+      yaxis2: {
+        ...basePlotLayout.yaxis,
+        domain: [0.75, 0.95],
+        anchor: 'x2',
+        nticks: 3,
+        showgrid: true,
+        linecolor: $store.theme.axis.zerolinecolor,
+        linewidth: 2,
+        mirror: true,
+      },
+    },
+    plot: null,
+    yRange: [Infinity, -Infinity],
+    shapesAndAnnotationsByStep: {},
+    previousStep: 0,
+    terminalAnnotation: null,
+    createTerminalAnnotation: (() => {}),
+  }"
+  x-init="
+    const decomposedRewards = parsedData?.decomposed_rewards || [];
+    const unitNavigationRewards = parsedData?.unit_navigation_rewards || [];
+    const unitCombatRewards = parsedData?.unit_combat_rewards || [];
+    const timeSteps = Array.from({length: maxSteps || 0}, (_, i) => i);
+
+    // Process each episode
+    decomposedRewards.forEach((agentRewards, episodeIdx) => {
+      if (!agentRewards) return;
+
+      const ep = decomposedRewards.length > 1 ? `Episode ${episodeIds[episodeIdx]} - ` : '';
+
+      // Initialize arrays to store total rewards for each timestep
+      const totalNavRewards = [];
+      const totalCombatRewards = [];
+      let terminalStep = -1;
+
+      // Sum agent and unit rewards for each timestep
+      timeSteps.forEach((step) => {
+        let navSum = 0;
+        let combatSum = 0;
+
+        // Add agent navigation reward
+        if (agentRewards.navigation && agentRewards.navigation[step] !== undefined) {
+          navSum += agentRewards.navigation[step];
+        }
+
+        // Add agent combat reward
+        if (agentRewards.combat && agentRewards.combat[step] !== undefined) {
+          combatSum += agentRewards.combat[step];
+        }
+
+        // Add unit navigation rewards
+        if (unitNavigationRewards[episodeIdx]) {
+          Object.values(unitNavigationRewards[episodeIdx]).forEach(unitRewards => {
+            if (unitRewards && unitRewards[step] !== undefined) {
+              navSum += unitRewards[step];
+            }
+          });
+        }
+
+        // Add unit combat rewards
+        if (unitCombatRewards[episodeIdx]) {
+          Object.values(unitCombatRewards[episodeIdx]).forEach(unitRewards => {
+            if (unitRewards && unitRewards[step] !== undefined) {
+              combatSum += unitRewards[step];
+            }
+          });
+        }
+
+        // Check for terminal reward - it's in the decomposed rewards as the last value
+        if (agentRewards.terminal && agentRewards.terminal[step] !== undefined && agentRewards.terminal[step] !== 0) {
+          terminalStep = step;
+        }
+
+        totalNavRewards.push(navSum);
+        totalCombatRewards.push(combatSum);
+      });
+
+      // Find terminal reward - it's the last non-zero value in the terminal array
+      let actualTerminalStep = -1;
+      let terminalValue = 0;
+      if (agentRewards.terminal) {
+        // Find the last non-zero terminal reward
+        for (let i = agentRewards.terminal.length - 1; i >= 0; i--) {
+          if (agentRewards.terminal[i] !== undefined && agentRewards.terminal[i] !== 0) {
+            actualTerminalStep = i;
+            terminalValue = agentRewards.terminal[i];
+            break;
+          }
+        }
+      }
+
+      // Update yRange for this episode
+      const navRange = [Math.min(...totalNavRewards), Math.max(...totalNavRewards)];
+      const combatRange = [Math.min(...totalCombatRewards), Math.max(...totalCombatRewards)];
+      const overallMin = Math.min(navRange[0], combatRange[0]);
+      const overallMax = Math.max(navRange[1], combatRange[1]);
+      yRange = [Math.min(yRange[0], overallMin), Math.max(yRange[1], overallMax)];
+
+      // Create navigation trace
+      data.push({
+        name: `${ep}Navigation`,
+        x: timeSteps,
+        y: totalNavRewards,
+        type: 'scatter',
+        mode: 'lines',
+        line: {
+          color: '#1f77b4',
+          width: 3,
+        },
+        visible: true,
+      });
+
+      // Create combat trace
+      data.push({
+        name: `${ep}Combat`,
+        x: timeSteps,
+        y: totalCombatRewards,
+        type: 'scatter',
+        mode: 'lines',
+        line: {
+          color: '#ff7f0e',
+          width: 3,
+        },
+        visible: true,
+      });
+
+      // Add terminal reward in inset plot only
+      if (actualTerminalStep >= 0) {
+        // Inset plot - detailed view of terminal reward
+        data.push({
+          name: `Terminal Reward`,
+          x: [actualTerminalStep],
+          y: [terminalValue],
+          xaxis: 'x2',
+          yaxis: 'y2',
+          type: 'scatter',
+          mode: 'markers',
+          marker: {
+            symbol: 'star',
+            size: 15,
+            color: 'white',
+            line: {
+              width: 2,
+              color: 'black',
+            },
+          },
+          showlegend: true,
+        });
+
+        // Create terminal annotation here where variables are in scope
+        createTerminalAnnotation = () => {
+          return {
+            x: actualTerminalStep,
+            y: terminalValue,
+            xref: 'x2',
+            yref: 'y2',
+            text: `Terminal: ${terminalValue.toFixed(2)}`,
+            showarrow: true,
+            arrowhead: 2,
+            arrowsize: 1,
+            arrowwidth: 2,
+            arrowcolor: $store.theme.axis.zerolinecolor,
+            standoff: 10,
+            ax: -10,
+            ay: -40,
+            bgcolor: 'rgba(0, 0, 0, 0.5)',
+            bordercolor: $store.theme.axis.zerolinecolor,
+            borderwidth: 1,
+            font: {
+              size: 12,
+              color: $store.theme.axis.zerolinecolor
+            }
+          };
+        }
+      }
+    });
+
+    // Set default yRange if no data was found
+    if (yRange[0] === Infinity || yRange[1] === -Infinity) {
+      yRange = [0, 1];
+    }
+
+    // Create all steps and annotations at once only if we have data
+    if (data.length > 0) {
+      timeSteps.forEach((ts) => {
+        if (!shapesAndAnnotationsByStep[ts]) {
+          shapesAndAnnotationsByStep[ts] = [];
+        }
+
+        // Add vertical line shape for this step
+        shapesAndAnnotationsByStep[ts].push({
+          shapes: {
+            type: 'line',
+            x0: ts,
+            x1: ts,
+            y0: yRange[0],
+            y1: yRange[1],
+            line: {
+              color: 'red',
+              width: 2,
+              dash: 'dot'
+            },
+          }
+        });
+
+        // Add annotations for each episode at this step
+        decomposedRewards.forEach((agentRewards, episodeIdx) => {
+          if (!agentRewards) return;
+
+          const ep = decomposedRewards.length > 1 ? `episode ${episodeIds[episodeIdx]} - ` : '';
+
+          // Get the values at this timestep for this episode
+          const navValue = (parsedData?.decomposed_rewards?.[episodeIdx]?.navigation?.[ts] || 0) +
+            (parsedData?.unit_navigation_rewards?.[episodeIdx] ?
+              Object.values(parsedData.unit_navigation_rewards[episodeIdx]).reduce((sum, unitRewards) =>
+                sum + (unitRewards?.[ts] || 0), 0) : 0);
+
+          const combatValue = (parsedData?.decomposed_rewards?.[episodeIdx]?.combat?.[ts] || 0) +
+            (parsedData?.unit_combat_rewards?.[episodeIdx] ?
+              Object.values(parsedData.unit_combat_rewards[episodeIdx]).reduce((sum, unitRewards) =>
+                sum + (unitRewards?.[ts] || 0), 0) : 0);
+
+          // Add navigation annotation
+          if (navValue !== 0 || ts === 0) {
+            shapesAndAnnotationsByStep[ts].push({
+              annotations: {
+                x: ts,
+                y: navValue,
+                text: navValue.toFixed(2),
+                bgcolor: 'rgba(0, 0, 0, 0.5)',
+                arrowcolor: '#1f77b4',
+                font: {
+                  color: '#1f77b4',
+                },
+              }
+            });
+          }
+
+          // Add combat annotation
+          if (combatValue !== 0 || ts === 0) {
+            shapesAndAnnotationsByStep[ts].push({
+              annotations: {
+                x: ts,
+                y: combatValue,
+                text: combatValue.toFixed(2),
+                bgcolor: 'rgba(0, 0, 0, 0.5)',
+                arrowcolor: '#ff7f0e',
+                font: {
+                  color: '#ff7f0e',
+                },
+              }
+            });
+          }
+        });
+      });
+
+      // Add static terminal reward annotation (never changes)
+      decomposedRewards.forEach((agentRewards, episodeIdx) => {
+        if (!agentRewards?.terminal) return;
+
+        // Find terminal reward step and value
+        let terminalStep = -1;
+        let terminalValue = 0;
+        for (let i = agentRewards.terminal.length - 1; i >= 0; i--) {
+          if (agentRewards.terminal[i] !== undefined && agentRewards.terminal[i] !== 0) {
+            terminalStep = i;
+            terminalValue = agentRewards.terminal[i];
+            break;
+          }
+        }
+
+        // Terminal annotation is now handled by the inset plot marker with text
+        // No separate annotation needed since the inset shows the exact value
+      });
+    }
+
+    let movingAnnotations = shapesAndAnnotationsByStep[0]?.filter(item => item.annotations).map(item => item.annotations);
+    plot = Plotly.react($refs.overallNavCombatPlot, data, {
+      ...layout,
+      shapes: shapesAndAnnotationsByStep[0]?.filter(item => item.shapes).map(item => item.shapes) || [],
+      annotations: [...movingAnnotations, createTerminalAnnotation()] || [],
+    }, basePlotConfig);
+    $watch('$store.visOptions', () => {
+      $nextTick(() => {
+        Plotly.relayout(
+          $refs.overallNavCombatPlot,
+          {
+            autosize: true,
+            showlegend: $store.visOptions.visible.includes('plotLegends'),
+            legend: legendLayout(),
+          })
+      });
+    });
+  "
+  x-effect="
+    if (plot) {
+      // Update the plot with current timestep annotations and shapes
+      let movingAnnotations = shapesAndAnnotationsByStep[0]?.filter(item => item.annotations).map(item => item.annotations);
+      Plotly.relayout($refs.overallNavCombatPlot, {
+        shapes: shapesAndAnnotationsByStep[currentStep]?.filter(item => item.shapes).map(item => item.shapes) || [],
+        annotations: [...movingAnnotations, createTerminalAnnotation()] || [],
+        ...basePlotStyling()
+      });
+
+      // Update previous step
+      previousStep = currentStep;
+    }
+  "
+  class="w-full"
+>
+  <div x-ref="overallNavCombatPlot"></div>
+</div>

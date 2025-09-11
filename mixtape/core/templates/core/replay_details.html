@@ -1,12 +1,54 @@
-
-<div id="replayDetailsChild" class="w-full card-alt p-4 ml-3 mr-4 justify-self-center">
+<div
+  x-data="{ stepDetails: null }"
+  x-effect="
+    stepDetails = getStep(step);
+    console.log(stepDetails);
+  "
+  id="replayDetailsChild"
+  class="w-full card-alt p-4 ml-3 mr-4 justify-self-center"
+>
   <div class="flex flex-wrap gap-2 justify-around">
-    <template x-for="agent_step in getStep(step).agent_steps">
+    <template x-for="agent_step in stepDetails.agent_steps">
       <div class="flex-grow-1 min-w-fit p-2 border rounded shadow-sm">
         <div class="flex flex-col space-y-1 text-sm">
-          <div><strong>Agent:</strong> <span x-text="agent_step.agent"></span></div>
-          <div><strong>Action:</strong> <span x-text="agent_step.action"></span></div>
-          <div><strong>Reward:</strong> <span x-text="parseFloat(agent_step.total_reward).toFixed(4)"></span></div>
+          <div class="flex mb-3 text-lg text-color-neutral-content">
+            <div class="mr-2">
+              <strong>Agent:</strong> <span x-text="agent_step.agent"></span>
+            </div>
+            <!-- Show action only if it's valid -->
+            <template x-if="!isNaN(agent_step.action)">
+              <div class="mx-2">
+                <strong>Action:</strong> <span x-text="agent_step.action"></span>
+              </div>
+            </template>
+            <div class="mx-2">
+              <strong>Reward:</strong> <span x-text="parseFloat(agent_step.total_reward).toFixed(4)"></span>
+            </div>
+            <div class="ml-2">
+              <strong>Health:</strong> <span x-text="agent_step.health"></span>
+            </div>
+          </div>
+          <!-- Show unit information if it exists -->
+          <template x-if="agent_step.unit_steps">
+            <div class="flex flex-wrap justify-evenly px-2">
+              <template x-for="unit in agent_step.unit_steps">
+                <div :key="unit.unit" class="flex-grow-1 max-w-fit p-2 border rounded shadow-sm w-fit flex flex-col mx-1">
+                  <span class="mr-1">
+                    <strong>Unit:</strong> <span x-text="unit.unit"></span>
+                  </span>
+                  <span class="mr-1">
+                    <strong>Action:</strong> <span x-text="unit.action_name"></span>
+                  </span>
+                  <span class="mr-1">
+                    <strong>Total Reward:</strong> <span x-text="unit.reward"></span>
+                  </span>
+                  <span class="mr-1">
+                    <strong>Health:</strong> <span x-text="unit.health"></span>
+                  </span>
+                </div>
+              </template>
+            </div>
+          </template>
         </div>
       </div>
     </template>

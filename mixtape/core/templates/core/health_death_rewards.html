@@ -1,0 +1,353 @@
+<div
+  x-data="{
+    data: [],
+    layout: {
+      ...basePlotLayout,
+      title: { text: 'Health/Death Rewards Over Time' },
+      xaxis: {
+        ...basePlotLayout.xaxis,
+        title: { text: 'Step' },
+        zeroline: true,
+        zerolinecolor: 'rgba(128, 128, 128, 0.5)',
+        zerolinewidth: 2
+      },
+      yaxis: {
+        ...basePlotLayout.yaxis,
+        title: { text: 'Reward' },
+        zeroline: true,
+        zerolinecolor: 'rgba(128, 128, 128, 0.5)',
+        zerolinewidth: 2
+      },
+    },
+    plot: null,
+    yRange: [0, 0],
+    healthRewardData: [],
+    shapesAndAnnotationsByStep: {},
+    previousStep: 0,
+  }"
+  x-init="
+    // Get agent steps data
+    agentSteps = [];
+    if (parsedData && parsedData.agent_steps) {
+      agentSteps = parsedData.agent_steps;
+    }
+
+    // Get health data
+    friendlyHealthData = parsedData?.friendly_health_data || [];
+    enemyHealthData = parsedData?.enemy_health_data || [];
+
+    // If no structured health data available, create placeholder from single step
+    if (friendlyHealthData.length === 0 && enemyHealthData.length === 0 && agentSteps.length > 0) {
+      step = agentSteps[0];
+      
+      if (step.health !== undefined) {
+        data.push({
+          name: 'Agent Health: ' + step.health,
+          x: [0],
+          y: [0],
+          type: 'scatter',
+          mode: 'markers+text',
+          text: ['Agent: ' + step.health + ' HP'],
+          textposition: 'top',
+          marker: { size: 12, color: '#1f77b4' },
+        });
+      }
+
+      if (step.unit_steps) {
+        Object.keys(step.unit_steps).forEach((unitId, idx) => {
+          unit = step.unit_steps[unitId];
+          data.push({
+            name: unitId + ' Health: ' + unit.health,
+            x: [idx * 0.2],
+            y: [0],
+            type: 'scatter',
+            mode: 'markers+text',
+            text: [unitId + ': ' + unit.health + ' HP'],
+            textposition: 'bottom',
+            marker: { size: 8, color: '#ff7f0e' },
+          });
+        });
+      }
+
+      plot = Plotly.react($refs.healthDeathRewardsPlot, data, layout, basePlotConfig);
+      return;
+    }
+
+    // Use structured health data if available
+    if (friendlyHealthData.length > 0 || enemyHealthData.length > 0) {
+      // Calculate rewards from health changes
+      friendlyHealthData.forEach((episodeData, idx) => {
+        if (!episodeData) return;
+
+        Object.keys(episodeData).forEach(entity => {
+          healthValues = episodeData[entity];
+          if (!healthValues || healthValues.length < 2) return;
+
+          friendlyPenalties = [];
+          for (let i = 1; i < healthValues.length; i++) {
+            healthLoss = Math.max(0, healthValues[i-1] - healthValues[i]);
+            friendlyPenalties.push(-healthLoss * 0.1);
+          }
+
+          if (friendlyPenalties.length > 0) {
+            data.push({
+              name: 'Friendly ' + entity + ' Health Penalties',
+              x: Array.from({length: friendlyPenalties.length}, (_, i) => i + 1),
+              y: friendlyPenalties,
+              type: 'scatter',
+              mode: 'lines',
+              line: { color: '#ff7f0e', width: 2 },
+              connectgaps: true,
+            });
+          }
+        });
+      });
+
+      enemyHealthData.forEach((episodeData, idx) => {
+        if (!episodeData) return;
+
+        Object.keys(episodeData).forEach(entity => {
+          healthValues = episodeData[entity];
+          if (!healthValues || healthValues.length < 2) return;
+
+          enemyRewards = [];
+          for (let i = 1; i < healthValues.length; i++) {
+            healthLoss = Math.max(0, healthValues[i-1] - healthValues[i]);
+            enemyRewards.push(healthLoss * 0.2);
+          }
+
+          if (enemyRewards.length > 0) {
+            data.push({
+              name: 'Enemy ' + entity + ' Health Rewards',
+              x: Array.from({length: enemyRewards.length}, (_, i) => i + 1),
+              y: enemyRewards,
+              type: 'scatter',
+              mode: 'lines',
+              line: { color: '#1f77b4', width: 2 },
+              connectgaps: true,
+            });
+          }
+        });
+      });
+
+      plot = Plotly.react($refs.healthDeathRewardsPlot, data, layout, basePlotConfig);
+      return;
+    }
+
+    // Handle single step case or no data
+    if (agentSteps.length === 0) {
+      return;
+    }
+
+    if (agentSteps.length === 1) {
+      step = agentSteps[0];
+      
+      if (step.health !== undefined) {
+        data.push({
+          x: [0],
+          y: [0],
+          type: 'scatter',
+          mode: 'markers+text',
+          name: 'Agent Health: ' + step.health,
+          text: ['Current health: ' + step.health],
+          textposition: 'top center',
+          marker: { size: 8, color: '#1f77b4' },
+        });
+      }
+
+      if (step.unit_steps) {
+        Object.keys(step.unit_steps).forEach((unitId, idx) => {
+          unit = step.unit_steps[unitId];
+          data.push({
+            x: [idx * 0.1],
+            y: [0],
+            type: 'scatter',
+            mode: 'markers+text',
+            name: unitId + ' Health: ' + unit.health,
+            text: [unitId + ': ' + unit.health],
+            textposition: 'bottom center',
+            marker: { size: 6, color: '#ff7f0e' },
+          });
+        });
+      }
+
+      plot = Plotly.react($refs.healthDeathRewardsPlot, data, layout, basePlotConfig);
+      return;
+    }
+
+    // Calculate health-based rewards from agent steps
+    timeSteps = Array.from({length: agentSteps.length}, (_, i) => i);
+    let enemyHealthRewards = [];
+    let friendlyHealthPenalties = [];
+    let overallRewards = [];
+    let prevAgentHealth = null;
+    let prevUnitHealths = {};
+
+    agentSteps.forEach((step, stepIdx) => {
+      let stepEnemyReward = 0;
+      let stepFriendlyPenalty = 0;
+
+      // Track agent health changes
+      if (prevAgentHealth !== null && step.health < prevAgentHealth) {
+        healthLoss = prevAgentHealth - step.health;
+        stepFriendlyPenalty -= healthLoss * 0.1;
+      }
+      prevAgentHealth = step.health;
+
+      // Track unit health changes
+      if (step.unit_steps) {
+        Object.keys(step.unit_steps).forEach(unitId => {
+          unit = step.unit_steps[unitId];
+          if (prevUnitHealths[unitId] !== undefined && unit.health < prevUnitHealths[unitId]) {
+            healthLoss = prevUnitHealths[unitId] - unit.health;
+            stepEnemyReward += healthLoss * 0.2;
+          }
+          prevUnitHealths[unitId] = unit.health;
+
+          if (unit.reward) {
+            stepEnemyReward += unit.reward;
+          }
+        });
+      }
+
+      enemyHealthRewards.push(stepEnemyReward);
+      friendlyHealthPenalties.push(stepFriendlyPenalty);
+      overallRewards.push(stepEnemyReward + stepFriendlyPenalty);
+    });
+
+    // Add reward traces to plot
+    if (enemyHealthRewards.length > 0) {
+      data.push({
+        name: 'Enemy HP Loss Rewards',
+        x: timeSteps,
+        y: enemyHealthRewards,
+        type: 'scatter',
+        mode: 'lines',
+        line: { color: '#1f77b4', width: 2 },
+        connectgaps: true,
+      });
+      yRange = [Math.min(yRange[0], Math.min(...enemyHealthRewards)), 
+                Math.max(yRange[1], Math.max(...enemyHealthRewards))];
+    }
+
+    if (friendlyHealthPenalties.length > 0) {
+      data.push({
+        name: 'Friendly HP Loss Penalties',
+        x: timeSteps,
+        y: friendlyHealthPenalties,
+        type: 'scatter',
+        mode: 'lines',
+        line: { color: '#ff7f0e', width: 2 },
+        connectgaps: true,
+      });
+      yRange = [Math.min(yRange[0], Math.min(...friendlyHealthPenalties)), 
+                Math.max(yRange[1], Math.max(...friendlyHealthPenalties))];
+    }
+
+    if (overallRewards.length > 0) {
+      data.push({
+        name: 'Overall Health Rewards',
+        x: timeSteps,
+        y: overallRewards,
+        type: 'scatter',
+        mode: 'lines',
+        line: { color: '#2ca02c', width: 3, dash: 'dash' },
+        connectgaps: true,
+      });
+      yRange = [Math.min(yRange[0], Math.min(...overallRewards)), 
+                Math.max(yRange[1], Math.max(...overallRewards))];
+    }
+
+    // Set symmetric y-axis range centered on zero
+    maxAbsValue = Math.max(Math.abs(yRange[0]), Math.abs(yRange[1]));
+    yRange = [-maxAbsValue * 1.1, maxAbsValue * 1.1];
+    layout.yaxis.range = yRange;
+
+    // Create step annotations
+    timeSteps.forEach((ts) => {
+      shapesAndAnnotationsByStep[ts] = [];
+      
+      shapesAndAnnotationsByStep[ts].push({
+        shapes: {
+          type: 'line',
+          x0: ts, x1: ts,
+          y0: yRange[0], y1: yRange[1],
+          line: { color: 'red', width: 2, dash: 'dot' }
+        }
+      });
+
+      if (ts < enemyHealthRewards.length) {
+        let annotationY = yRange[1] * 0.9;
+
+        if (enemyHealthRewards[ts] !== 0) {
+          shapesAndAnnotationsByStep[ts].push({
+            annotations: {
+              x: ts, y: annotationY,
+              text: 'Enemy: +' + enemyHealthRewards[ts].toFixed(2),
+              bgcolor: 'rgba(31, 119, 180, 0.8)',
+              font: { color: 'white', size: 10 },
+              bordercolor: '#1f77b4', borderwidth: 1
+            }
+          });
+          annotationY -= Math.abs(yRange[1] - yRange[0]) * 0.15;
+        }
+
+        if (friendlyHealthPenalties[ts] !== 0) {
+          shapesAndAnnotationsByStep[ts].push({
+            annotations: {
+              x: ts, y: annotationY,
+              text: 'Friendly: ' + friendlyHealthPenalties[ts].toFixed(2),
+              bgcolor: 'rgba(255, 127, 14, 0.8)',
+              font: { color: 'white', size: 10 },
+              bordercolor: '#ff7f0e', borderwidth: 1
+            }
+          });
+          annotationY -= Math.abs(yRange[1] - yRange[0]) * 0.15;
+        }
+
+        if (overallRewards[ts] !== undefined) {
+          shapesAndAnnotationsByStep[ts].push({
+            annotations: {
+              x: ts, y: annotationY,
+              text: 'Total: ' + overallRewards[ts].toFixed(2),
+              bgcolor: 'rgba(44, 160, 44, 0.8)',
+              font: { color: 'white', size: 10, weight: 'bold' },
+              bordercolor: '#2ca02c', borderwidth: 2
+            }
+          });
+        }
+      }
+    });
+
+    plot = Plotly.react($refs.healthDeathRewardsPlot, data, {
+      ...layout,
+      shapes: shapesAndAnnotationsByStep[0]?.filter(item => item.shapes).map(item => item.shapes) || [],
+      annotations: shapesAndAnnotationsByStep[0]?.filter(item => item.annotations).map(item => item.annotations) || [],
+    }, basePlotConfig);
+
+    $watch('$store.visOptions', () => {
+      $nextTick(() => {
+        Plotly.relayout(
+          $refs.healthDeathRewardsPlot,
+          {
+            autosize: true,
+            showlegend: $store.visOptions.visible.includes('plotLegends'),
+            legend: legendLayout(),
+          })
+      });
+    })
+  "
+  x-effect="
+    if (plot && shapesAndAnnotationsByStep[currentStep]) {
+      Plotly.relayout($refs.healthDeathRewardsPlot, {
+        shapes: shapesAndAnnotationsByStep[currentStep]?.filter(item => item.shapes).map(item => item.shapes) || [],
+        annotations: shapesAndAnnotationsByStep[currentStep]?.filter(item => item.annotations).map(item => item.annotations) || [],
+        ...basePlotStyling()
+      });
+      previousStep = currentStep;
+    }
+  "
+  class="w-full"
+>
+  <div x-ref="healthDeathRewardsPlot"></div>
+</div>

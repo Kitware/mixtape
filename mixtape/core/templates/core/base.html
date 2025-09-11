@@ -80,20 +80,17 @@
         // Visualization options store
         Alpine.store('visOptions', {
           'allOptions': [
-            'actionClustering',
             'combatReward',
-            'decomposedRewards',
             'enemyHealth',
             'episodeDetails',
             'episodeImages',
             'friendlyHealth',
+            'healthDeathRewards',
             'navigation',
-            'obsClustering',
+            'overallNavVsCombat',
             'perUnitActions',
             'playbackControls',
             'plotLegends',
-            'predictedRewards',
-            'rewardsOverTime',
             'timelines',
             'valueEstimate',
             'unitsOverTime',
@@ -158,7 +155,7 @@
       }
     </style>
   </head>
-  <body class="max-h-screen overflow-hidden">
+  <body class="max-h-screen overflow-hidden" x-data>
     <div>
       {% include "core/toolbar.html" %}
     </div>

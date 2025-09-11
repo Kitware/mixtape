@@ -3,38 +3,147 @@
     data: [],
     layout: {
       ...basePlotLayout,
-      title: { text: 'Units Over Time' },
-      xaxis: {
-        ...basePlotLayout.xaxis,
-        title: { text: 'Steps Alive' },
-      },
-      yaxis: {
-        ...basePlotLayout.yaxis,
-        title: { text: 'Units' },
-        type: 'category'
-      },
-      margin: { l: 100, r: 40, t: 40, b: 40 },
-      barmode: 'group',
+      title: { text: 'Actions stacked over time' },
+      xaxis: { ...basePlotLayout.xaxis, title: {text: 'Timestep'} },
+      yaxis: { ...basePlotLayout.yaxis, title: {text: '# Units'} },
+      margin: {l: 100, r: 40, t: 40, b: 40},
+      barmode: 'stack',
+      showlegend: $store.visOptions.visible.includes('plotLegends'),
+      showscale: $store.visOptions.visible.includes('plotLegends'),
     },
     plot: null,
-    unitLifetimesData: [],
   }"
   x-init="
-    unitLifetimesData = parsedData.unit_lifetimes || [];
-    unitLifetimesData.forEach((episodeData, idx) => {
-      if (!episodeData) return;
-      const unitData = Object.entries(episodeData).map(([unitId, unitData]) => ({
-        unit: `${unitId}`,
-        stepsAlive: unitData?.total_steps || 0,
-        deathStep: unitData?.death_step || 0
-      }));
-      data.push({
-        type: 'bar',
-        orientation: 'h',
-        x: unitData.map(d => d.stepsAlive),
-        y: unitData.map(d => d.unit),
-        name: `episode ${episodeIds[idx]}`,
-      });
+    const unitActions = parsedData.unit_actions || [];
+    const episodeIds = parsedData.episode_ids || [];
+    const timeSteps = [];
+
+    // Action counts for each timestep
+    const actionCounts = {
+      dead: [],
+      noop: [],
+      move: [],
+      attack: []
+    };
+
+    // Process first episode (or combine if multiple)
+    if (unitActions.length > 0) {
+      const episodeActions = unitActions[0]; // Focus on first episode for now
+      if (episodeActions) {
+        const episodeUnits = Object.keys(episodeActions);
+
+        // Collect all time steps
+        episodeUnits.forEach(unit => {
+          episodeActions[unit].forEach(stepData => {
+            if (!timeSteps.includes(stepData.step)) {
+              timeSteps.push(stepData.step);
+            }
+          });
+        });
+
+        // Sort time steps
+        timeSteps.sort((a, b) => a - b);
+
+        // Track when each unit dies (first time action becomes -1)
+        const unitDeathSteps = {};
+        episodeUnits.forEach(unit => {
+          const unitActions = episodeActions[unit];
+          for (const stepData of unitActions) {
+            if (stepData.action === -1 || stepData.action === null) {
+              unitDeathSteps[unit] = stepData.step;
+              break; // Found first death, stop looking
+            }
+          }
+        });
+
+        // Count actions for each time step - only count alive units
+        timeSteps.forEach(step => {
+          let noopCount = 0;
+          let moveCount = 0;
+          let attackCount = 0;
+
+          episodeUnits.forEach(unit => {
+            // Check if this unit has died by this timestep
+            const deathStep = unitDeathSteps[unit];
+            if (deathStep === undefined || step < deathStep) {
+              // Unit is still alive, check its current action
+              const stepData = episodeActions[unit].find(d => d.step === step);
+              const action = stepData ? stepData.action : 0; // Default to no-op if no data
+
+              switch(action) {
+                case 0:
+                  noopCount++;
+                  break;
+                case 1:
+                  moveCount++;
+                  break;
+                case 2:
+                  attackCount++;
+                  break;
+                default:
+                  noopCount++; // Treat unknown as no-op for alive units
+              }
+            }
+            // Dead units are completely ignored - not counted at all
+          });
+
+          actionCounts.dead.push(0); // No dead count needed since we don't show them
+          actionCounts.noop.push(noopCount);
+          actionCounts.move.push(moveCount);
+          actionCounts.attack.push(attackCount);
+        });
+      }
+    }
+
+    // Create stacked bar traces (only alive units: No-op, Move, Attack)
+    data.push({
+      x: timeSteps,
+      y: actionCounts.noop,
+      name: 'Noop',
+      type: 'bar',
+      marker: { color: '#1f77b4' }, // Blue for noop
+    });
+
+    data.push({
+      x: timeSteps,
+      y: actionCounts.move,
+      name: 'Move',
+      type: 'bar',
+      marker: { color: '#ff7f0e' }, // Orange for move
+    });
+
+    data.push({
+      x: timeSteps,
+      y: actionCounts.attack,
+      name: 'Attack',
+      type: 'bar',
+      marker: { color: '#2ca02c' }, // Green for attack
+    });
+
+    // Add invisible heatmap trace for the colorbar (same as per_unit_actions_over_time.html)
+    data.push({
+      z: [[-1, 0, 1, 2]], // Dummy data for colorbar
+      x: [0, 1, 2, 3],
+      y: ['dummy'],
+      type: 'heatmap',
+      colorscale: [
+        [0, '#00000000'],
+        [.25, '#00000000'],  // Transparent - Dead
+        [0.25, '#1f77b4'],
+        [0.5, '#1f77b4'],    // Blue - Noop
+        [0.5, '#ff7f0e'],
+        [0.75, '#ff7f0e'],   // Orange - Move
+        [0.75, '#2ca02c'],
+        [1, '#2ca02c'],      // Green - Attack
+      ],
+      colorbar: {
+        title: 'Action',
+        tickmode: 'array',
+        tickvals: [-1, 0, 1, 2],
+        ticktext: ['Dead', 'Noop', 'Move', 'Attack'],
+      },
+      visible: false, // Hide the heatmap, only show colorbar
+      showscale: $store.visOptions.visible.includes('plotLegends'),
     });
 
     plot = Plotly.react($refs.unitsOverTime, data, layout, basePlotConfig);
@@ -46,12 +155,16 @@
             autosize: true,
             showlegend: $store.visOptions.visible.includes('plotLegends'),
             legend: legendLayout(),
-          })
+          });
       });
     });
   "
   x-effect="
-    if (plot) Plotly.relayout($refs.unitsOverTime, { ...basePlotStyling() });
+    if (plot) {
+      Plotly.relayout($refs.unitsOverTime, {
+        ...basePlotStyling(),
+      });
+    }
   "
   class="w-full"
 >

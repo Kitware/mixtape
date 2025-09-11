@@ -3,7 +3,7 @@
     data: [],
     layout: {
       ...basePlotLayout,
-      title: { text: 'Combat Reward Over Time' },
+      title: { text: 'Combat Distance Reward Over Time' },
       xaxis: { ...basePlotLayout.xaxis, title: { text: 'Step' } },
       yaxis: { ...basePlotLayout.yaxis, title: { text: 'Cumulative Reward' } },
     },
@@ -60,7 +60,7 @@
             type: 'scatter',
             mode: 'lines',
             line: {
-              dash: 'dashdot',
+              dash: 'dash',
             }
           });
 
@@ -68,6 +68,49 @@
           yRange = [Math.min(yRange[0], currentRange[0]), Math.max(yRange[1], currentRange[1])];
         }
       });
+
+      // Calculate and add mean trace for all units in this episode
+      const allUnitRewards = Object.values(unitRewards).filter(rewards => rewards && rewards.length > 0);
+      if (allUnitRewards.length > 0) {
+        // Find the maximum length across all unit reward arrays
+        const maxLength = Math.max(...allUnitRewards.map(rewards => rewards.length));
+        const meanRewards = [];
+
+        // Calculate mean for each timestep
+        for (let step = 0; step < maxLength; step++) {
+          const valuesAtStep = allUnitRewards
+            .map(rewards => rewards[step])
+            .filter(value => value !== undefined && value !== null);
+
+          if (valuesAtStep.length > 0) {
+            const mean = valuesAtStep.reduce((sum, val) => sum + val, 0) / valuesAtStep.length;
+            meanRewards.push(mean);
+          } else {
+            meanRewards.push(null); // No data at this step
+          }
+        }
+
+        // Add mean trace
+        data.push({
+          name: 'team (mean)',
+          x: timeSteps.slice(0, meanRewards.length),
+          y: meanRewards,
+          type: 'scatter',
+          mode: 'lines',
+          line: {
+            dash: 'solid',
+            width: 3,
+            color: '#d62728' // Red color to distinguish from individual units
+          }
+        });
+
+        // Update yRange with mean values
+        const validMeanValues = meanRewards.filter(val => val !== null);
+        if (validMeanValues.length > 0) {
+          const meanRange = [Math.min(...validMeanValues), Math.max(...validMeanValues)];
+          yRange = [Math.min(yRange[0], meanRange[0]), Math.max(yRange[1], meanRange[1])];
+        }
+      }
     });
 
     // Set default yRange if no data was found

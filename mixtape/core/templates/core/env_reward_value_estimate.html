@@ -3,7 +3,7 @@
     data: [],
     layout: {
       ...basePlotLayout,
-      title: {text: 'Environment Reward vs Value Estimate Over Time'},
+      title: {text: 'Actual vs Agent Estimate Reward over time'},
       xaxis: { ...basePlotLayout.xaxis, title: {text: 'Time Step'} },
       yaxis: { ...basePlotLayout.yaxis, title: {text: 'Value'} },
     },
@@ -27,7 +27,7 @@
         y: episodeRewards,
         type: 'scatter',
         mode: 'lines',
-        name: `${ep}reward`,
+        name: `${ep}environment reward`,
       });
       const currentRange = [Math.min(...episodeRewards), Math.max(...episodeRewards)];
       yRange = [Math.min(yRange[0], currentRange[0]), Math.max(yRange[1], currentRange[1])];
@@ -43,7 +43,7 @@
           y: values,
           type: 'scatter',
           mode: 'lines+markers',
-          name: `${ep}${agent} (est)`,
+          name: `${ep}${agent} estimate`,
         });
         const currentRange = [Math.min(...values), Math.max(...values)];
         yRange = [Math.min(yRange[0], currentRange[0]), Math.max(yRange[1], currentRange[1])];

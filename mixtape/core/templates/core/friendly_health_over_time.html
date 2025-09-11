@@ -19,7 +19,7 @@
     healthData.forEach((episodeData, idx) => {
       if (!episodeData) return;
       const ep = healthData.length > 1 ? `episode ${episodeIds[idx]} - ` : '';
-      Object.keys(episodeData).forEach(entity => {
+      Object.keys(episodeData).forEach((entity, index) => {
         const healthValues = episodeData[entity];
         if (!healthValues || healthValues.length === 0) return;
         const xValues = Array.from({length: healthValues.length}, (_, i) => i);
@@ -30,7 +30,7 @@
           type: 'scatter',
           mode: 'lines',
           line: {
-            dash: entity.toLowerCase().startsWith('agent') ? 'solid' : 'dashdot',
+            dash: entity.toLowerCase().startsWith('fu') ? 'dash' : 'solid',
           },
           connectgaps: true,
         });
