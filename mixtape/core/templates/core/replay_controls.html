@@ -1,4 +1,4 @@
-<div class="card raised flex justify-around justify-self-center">
+<div x-cloak class="card raised flex justify-around justify-self-center">
   <button
     class="cursor-pointer hover:text-gray-900 rounded-lg p-1 text-center disabled:text-gray-500"
     :disabled="currentStep === 0"
@@ -17,8 +17,8 @@
     class="cursor-pointer hover:text-gray-900 rounded-lg p-1 text-center disabled:text-gray-500"
     @click="playing = !playing; if (playing) stepForward()"
   >
-    <i x-show="!playing" class="ri-play-line"></i>
-    <i x-show="playing" class="ri-pause-line"></i>
+    <i x-cloak x-show="!playing" class="ri-play-line"></i>
+    <i x-cloak x-show="playing" class="ri-pause-line"></i>
   </button>
   <button
     class="cursor-pointer hover:text-gray-900 rounded-lg p-1 text-center disabled:text-gray-500"

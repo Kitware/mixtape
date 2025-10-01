@@ -1,0 +1,27 @@
+<!-- Reusable Filter Dropdown Partial -->
+<ul class="menu menu-horizontal px-1 z-10">
+    <li>
+        <details>
+            <summary class="flex items-center">
+                {{ title }}
+                <span x-cloak
+                      x-show="{{ model }}.length > 0"
+                      class="badge badge-xs badge-primary ml-1"
+                      x-text="{{ model }}.length"></span>
+            </summary>
+            <ul class="bg-base-100 rounded-t-none p-2">
+                {% for option in options %}
+                    <li>
+                        <label class="label">
+                            <input type="checkbox"
+                                   class="checkbox"
+                                   value="{{ option }}"
+                                   x-model="{{ model }}" />
+                            {{ option }}
+                        </label>
+                    </li>
+                {% endfor %}
+            </ul>
+        </details>
+    </li>
+</ul>

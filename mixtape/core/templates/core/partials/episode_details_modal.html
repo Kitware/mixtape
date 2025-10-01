@@ -1,0 +1,76 @@
+{% load resonant_utils %}
+<!-- Episode Details Modal Partial -->
+<div class="flex items-center gap-1"
+     x-data="{ get hasAnyConfigs() { // Check if any configs have actual data const hasTraining = {{ episode.inference.checkpoint.training.config|yesno:'true,false,false' }}; const hasEpisode = {{ episode.inference.config|yesno:'true,false,false' }} && Object.keys({{ episode.inference.config|default_if_none:'{}'|safe }}).length > 0; return hasTraining || hasEpisode; }, get tooltipText() { return this.hasAnyConfigs ? 'View or save configuration details' : 'No config information available'; } }">
+    <!-- Details Button -->
+    <button class="btn btn-primary btn-sm"
+            :class="{ 'btn-disabled': !hasAnyConfigs }"
+            :disabled="!hasAnyConfigs"
+            @click="hasAnyConfigs && episode_details_{{ episode.pk }}.showModal()">
+        <span>Details</span>
+    </button>
+    <!-- Info Icon with Tooltip -->
+    <div class="tooltip" :data-tip="tooltipText">
+        <i class="ri-information-line text-sm opacity-60 hover:opacity-100 cursor-help"></i>
+    </div>
+</div>
+<dialog id="episode_details_{{ episode.pk }}" class="modal">
+    <div class="modal-box overflow-y-auto h-1/2 min-w-fit">
+        <!-- Modal Header with Close Button -->
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-bold">Episode Details</h2>
+            <button class="btn btn-sm btn-circle btn-ghost"
+                    title="Close"
+                    @click="episode_details_{{ episode.pk }}.close()">
+                <i class="ri-close-line"></i>
+            </button>
+        </div>
+        <!-- Training Config Section (only show if training config exists) -->
+        {% if episode.inference.checkpoint.training.config %}
+            <div>
+                <div class="flex gap-2 justify-between">
+                    <h3>Training Config</h3>
+                    <div>
+                        <a href="data:text/json;charset=utf-8,{{ episode.inference.checkpoint.training.config|pretty_json:2|safe|urlencode }}"
+                           download="training_{{ episode.inference.checkpoint.training.pk }}_config.json"
+                           class="btn btn-sm btn-secondary btn-circle"
+                           title="Download training config">
+                            <i class="ri-download-line"></i>
+                        </a>
+                    </div>
+                </div>
+                <pre>{{ episode.inference.checkpoint.training.config|pretty_json:2 }}</pre>
+            </div>
+        {% endif %}
+        <!-- Episode Config Section (only show if episode config has data) -->
+        {% if episode.inference.config %}
+            <div x-show="Object.keys({{ episode.inference.config|default_if_none:'{}'|safe }}).length"
+                 class="mt-2">
+                <div class="flex gap-2 justify-between">
+                    <h3>Episode Config</h3>
+                    <div>
+                        <a href="data:text/json;charset=utf-8,{{ episode.inference.config|pretty_json:2|safe|urlencode }}"
+                           download="episode_{{ episode.pk }}_config.json"
+                           class="btn btn-sm btn-secondary btn-circle"
+                           title="Download episode config">
+                            <i class="ri-download-line"></i>
+                        </a>
+                    </div>
+                </div>
+                <pre>{{ episode.inference.config|pretty_json:2 }}</pre>
+            </div>
+        {% endif %}
+        <!-- No Configs Available Message -->
+        {% if not episode.inference.checkpoint.training.config and not episode.inference.config %}
+            <div class="bg-warning/10 border border-warning/20 p-4 rounded-lg text-center">
+                <div class="flex items-center justify-center gap-2 text-warning">
+                    <i class="ri-information-line"></i>
+                    <span class="text-sm">No configuration data available for this episode.</span>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    <!-- Backdrop - click to close -->
+    <div class="modal-backdrop"
+         @click="episode_details_{{ episode.pk }}.close()"></div>
+</dialog>

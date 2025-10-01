@@ -1,5 +1,5 @@
 
-<div class="flex justify-evenly overflow-y-auto grid grid-cols-12 col-span-3 flex-col card-alt">
+<div x-cloak class="flex justify-evenly overflow-y-auto grid grid-cols-12 col-span-3 flex-col card-alt">
   <template x-for="agent_step in getStep(step).agent_steps">
     <div class="m-1 p-1 col-span-12 h-min">
       <p class="flex justify-evenly">
@@ -9,5 +9,5 @@
       </p>
     </div>
   </template>
-  <p x-show="!getStep(step)?.agent_steps?.length" class="text-center">End of episode</p>
+  <p x-cloak x-show="!getStep(step)?.agent_steps?.length" class="text-center">End of episode</p>
 </div>

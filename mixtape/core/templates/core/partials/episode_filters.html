@@ -1,0 +1,107 @@
+<!-- Filter Controls Partial -->
+<div class="flex flex-grow-2 gap-2 justify-end">
+    <!-- Search -->
+    <label class="input min-w-3/4">
+        <i class="ri-search-line"></i>
+        <input type="search"
+               class="grow"
+               placeholder="Search episodes..."
+               x-model="searchQuery" />
+    </label>
+</div>
+<div class="flex flex-grow-1 gap-2 justify-evenly items-baseline">
+    <!-- Algorithm Filter -->
+    {% include "core/partials/filter_dropdown.html" with title="Algorithm" options=algorithms model="selectedAlgorithms" %}
+    <!-- Environment Filter -->
+    {% include "core/partials/filter_dropdown.html" with title="Environment" options=environments model="selectedEnvironments" %}
+    <!-- Sort Options -->
+    <ul class="menu menu-horizontal px-1 z-10">
+        <li>
+            <details>
+                <summary>
+                    <i class="ri-arrow-up-down-line"></i>
+                </summary>
+                <ul class="bg-base-100 rounded-t-none p-2">
+                    <li>
+                        <label class="label cursor-pointer">
+                            <input type="radio" class="radio" value="env_asc" x-model="sortOrder" />
+                            Environment Name Ascending
+                        </label>
+                    </li>
+                    <li>
+                        <label class="label cursor-pointer">
+                            <input type="radio" class="radio" value="env_desc" x-model="sortOrder" />
+                            Environment Name Descending
+                        </label>
+                    </li>
+                    <li>
+                        <label class="label cursor-pointer">
+                            <input type="radio" class="radio" value="created_desc" x-model="sortOrder" />
+                            Newest First
+                        </label>
+                    </li>
+                    <li>
+                        <label class="label cursor-pointer">
+                            <input type="radio" class="radio" value="created_asc" x-model="sortOrder" />
+                            Oldest First
+                        </label>
+                    </li>
+                    <li>
+                        <label class="label cursor-pointer">
+                            <input type="radio" class="radio" value="algo_asc" x-model="sortOrder" />
+                            Algorithm Name Ascending
+                        </label>
+                    </li>
+                    <li>
+                        <label class="label cursor-pointer">
+                            <input type="radio" class="radio" value="algo_desc" x-model="sortOrder" />
+                            Algorithm Name Descending
+                        </label>
+                    </li>
+                </ul>
+            </details>
+        </li>
+    </ul>
+    <!-- Clear Filters Button -->
+    <button x-cloak
+            class="btn btn-square btn-ghost"
+            @click="clearAllFilters()"
+            :class="{'btn-disabled': !hasActiveFilters}"
+            :disabled="!hasActiveFilters"
+            title="Clear all filters">
+        <i class="ri-filter-off-line"></i>
+    </button>
+    <!-- Bulk Selection Menu -->
+    <div class="dropdown dropdown-end">
+        <button x-cloak
+                tabindex="0"
+                class="btn btn-square btn-ghost"
+                :class="{'btn-disabled': !hasSelectedEpisodes}"
+                :disabled="!hasSelectedEpisodes"
+                title="Bulk selection options">
+            <i class="ri-list-check-3"></i>
+            <span x-cloak
+                  x-show="hasSelectedEpisodes"
+                  class="badge badge-xs badge-primary ml-1"
+                  x-text="selectedEpisodes.length"></span>
+        </button>
+        <ul x-cloak
+            tabindex="0"
+            class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow"
+            x-show="hasSelectedEpisodes">
+            <li>
+                <button @click="selectAllMatchingEnvironment()"
+                        class="flex items-center gap-2">
+                    <i class="ri-checkbox-multiple-line"></i>
+                    <span>Select All (<span x-text="allowedEnvironment || 'Same Environment'"></span>)</span>
+                </button>
+            </li>
+            <li>
+                <button @click="clearAllSelections()" class="flex items-center gap-2">
+                    <i class="ri-close-line"></i>
+                    <span>Clear All Selections</span>
+                </button>
+            </li>
+        </ul>
+    </div>
+</div>

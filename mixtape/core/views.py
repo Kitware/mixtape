@@ -240,7 +240,7 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
             action = action_map.get(f'{int(agent_step.action)}', f'{agent_step.action}')
             key = action if group_by_episode else agent_step.agent
             if group_by_episode:
-                action_v_reward[action] += agent_step.total_reward  # type: ignore
+                action_v_reward[action] += agent_step.total_reward  # type: ignore[assignment,operator]  # noqa: E501
                 action_v_frequency[action] += 1  # type: ignore
             else:
                 action_v_reward[key][action] += agent_step.total_reward  # type: ignore
@@ -398,4 +398,18 @@ def insights(request: HttpRequest) -> HttpResponse:
 
 def home_page(request: HttpRequest) -> HttpResponse:
     episodes = Episode.objects.select_related('inference__checkpoint__training').all()
-    return render(request, 'core/home.html', {'episodes': episodes})
+    algorithms = (
+        episodes.values_list('inference__checkpoint__training__algorithm', flat=True)
+        .distinct()
+        .order_by('inference__checkpoint__training__algorithm')
+    )
+    environments = (
+        episodes.values_list('inference__checkpoint__training__environment', flat=True)
+        .distinct()
+        .order_by('inference__checkpoint__training__environment')
+    )
+    return render(
+        request,
+        'core/home.html',
+        {'episodes': episodes, 'algorithms': algorithms, 'environments': environments},
+    )

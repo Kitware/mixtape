@@ -13,8 +13,7 @@ from pettingzoo import AECEnv
 from pettingzoo.utils import ParallelEnv
 from ray.rllib.algorithms.algorithm import Algorithm
 
-from mixtape.core.models import AgentStep, Episode, Inference
-from mixtape.core.models.step import Step
+from mixtape.core.models import AgentStep, Episode, Inference, Step
 from mixtape.core.ray_utils.environments import register_environment
 
 
