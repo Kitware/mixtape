@@ -1,0 +1,111 @@
+name: mixtape-prod
+services:
+  django:
+    build:
+      context: ..
+      dockerfile: ./production/django.Dockerfile
+    restart: unless-stopped
+    command: [
+      "uv", "run",
+      "gunicorn",
+      "--workers", "4",
+      "--bind", "0.0.0.0:8000",
+      "mixtape.wsgi"
+    ]
+    environment:
+      KWDEMO_KEY: mixtape
+      KWDEMO_READY: "true"
+      KWDEMO_HIDDEN: "false"
+      KWDEMO_NAME: MIXTAPE
+      KWDEMO_DESC: Analyze reinforcement learning experiments with ease.
+      # Set a temporary source URL while the repo is private.
+      # Once source code is public, include actual link.
+      # KWDEMO_SRCURL: https://github.com/Kitware/mixtape
+      KWDEMO_SRCURL: https://www.kitware.com/contact/
+      KWDEMO_IMG: /mixtape/static/mixtape/thumbnail.jpg
+    env_file:
+      - .env.production
+      - .env.production-django.secrets
+    ports:
+      - 8000:8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  celery:
+    build:
+      context: ..
+      dockerfile: ./production/django.Dockerfile
+    restart: unless-stopped
+    command: [
+      "uv", "run",
+      "celery",
+      "--app", "mixtape.celery",
+      "worker",
+      "--concurrency", "2",
+      "--loglevel", "INFO",
+      "--without-heartbeat"
+    ]
+    env_file:
+      - .env.production
+      - .env.production-django.secrets
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:latest
+    restart: unless-stopped
+    shm_size: 128mb
+    environment:
+      POSTGRES_DB: django
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: ["CMD", "pg_isready", "--username", "postgres"]
+      start_period: 30s
+      start_interval: 2s
+    volumes:
+      - postgres:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:management-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      start_period: 30s
+      start_interval: 2s
+    volumes:
+      - rabbitmq:/var/lib/rabbitmq
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: ["server", "/data"]
+    environment:
+      KWDEMO_KEY: mixtape-storage
+      KWDEMO_READY: "true"
+      KWDEMO_HIDDEN: "true"
+    env_file:
+      - .env.production-minio.secrets
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      timeout: 1s
+      start_period: 30s
+      start_interval: 2s
+    ports:
+      - 9000:9000
+    volumes:
+      - minio:/data
+
+volumes:
+  postgres:
+  minio:
+  rabbitmq:
