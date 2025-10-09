@@ -17,15 +17,22 @@ WSGI_APPLICATION = 'mixtape.wsgi.application'
 
 SECRET_KEY: str = env.str('DJANGO_SECRET_KEY')
 
-# This only needs to be defined in production. Testing will add 'testserver'. In development
-# (specifically when DEBUG is True), 'localhost' and '127.0.0.1' will be added.
-ALLOWED_HOSTS: list[str] = env.list('DJANGO_ALLOWED_HOSTS', cast=str)
-FORCE_SCRIPT_NAME = '/mixtape'
-USE_X_FORWARDED_HOST = True
-
 STORAGES['default'] = {
     'BACKEND': 'minio_storage.storage.MinioMediaStorage',
 }
+
+# This only needs to be defined in production. Testing will add 'testserver'. In development
+# (specifically when DEBUG is True), 'localhost' and '127.0.0.1' will be added.
+ALLOWED_HOSTS: list[str] = env.list('DJANGO_ALLOWED_HOSTS', cast=str)
+
+# Assume we are always behind a proxy setting "X-Forwarded-Proto" and "X-Forwarded-Host"
+USE_X_FORWARDED_HOST = True
+
+_proxy_subpath: str | None = env.str('DJANGO_MIXTAPE_PROXY_SUBPATH', default=None)
+if _proxy_subpath:
+    FORCE_SCRIPT_NAME = '/mixtape'
+    # Work around https://code.djangoproject.com/ticket/36653
+    STORAGES['staticfiles'].setdefault('OPTIONS', {})['base_url'] = f'{_proxy_subpath}/{STATIC_URL}'
 
 # sentry_sdk is able to directly use environment variables like 'SENTRY_DSN', but prefix them
 # with 'DJANGO_' to avoid avoiding conflicts with other Sentry-using services.
