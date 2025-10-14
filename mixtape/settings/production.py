@@ -30,7 +30,7 @@ USE_X_FORWARDED_HOST = True
 
 _proxy_subpath: str | None = env.str('DJANGO_MIXTAPE_PROXY_SUBPATH', default=None)
 if _proxy_subpath:
-    FORCE_SCRIPT_NAME = '/mixtape'
+    FORCE_SCRIPT_NAME = _proxy_subpath
     # Work around https://code.djangoproject.com/ticket/36653
     STORAGES['staticfiles'].setdefault('OPTIONS', {})['base_url'] = f'{_proxy_subpath}/{STATIC_URL}'
 
