@@ -15,7 +15,7 @@ def update_default_site(apps: StateApps, schema_editor: BaseDatabaseSchemaEditor
     Site.objects.update_or_create(
         pk=settings.SITE_ID,
         defaults={
-            'domain': 'www.mixtape.test',
+            'domain': 'demo.kitware.com',
             'name': 'MIXTAPE',
         },
     )

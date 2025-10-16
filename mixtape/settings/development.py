@@ -21,7 +21,8 @@ INSTALLED_APPS.insert(staticfiles_index, 'whitenoise.runserver_nostatic')
 MIDDLEWARE.insert(
     MIDDLEWARE.index('django.middleware.gzip.GZipMiddleware') + 1,
     'debug_toolbar.middleware.DebugToolbarMiddleware',
-)  # Should be listed after middleware that encode the response.
+)
+# Should be listed after middleware that encode the response.
 MIDDLEWARE += [
     'django_browser_reload.middleware.BrowserReloadMiddleware',
 ]
