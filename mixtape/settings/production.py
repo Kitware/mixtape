@@ -26,6 +26,7 @@ STORAGES['default'] = {
 ALLOWED_HOSTS: list[str] = env.list('DJANGO_ALLOWED_HOSTS', cast=str)
 
 # Assume we are always behind a proxy setting "X-Forwarded-Proto" and "X-Forwarded-Host"
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
 
 _proxy_subpath: str | None = env.str('DJANGO_MIXTAPE_PROXY_SUBPATH', default=None)
@@ -35,7 +36,7 @@ if _proxy_subpath:
     STORAGES['staticfiles'].setdefault('OPTIONS', {})['base_url'] = f'{_proxy_subpath}/{STATIC_URL}'
 
 # sentry_sdk is able to directly use environment variables like 'SENTRY_DSN', but prefix them
-# with 'DJANGO_' to avoid avoiding conflicts with other Sentry-using services.
+# with 'DJANGO_' to avoid conflicts with other Sentry-using services.
 sentry_sdk.init(
     dsn=env.str('DJANGO_SENTRY_DSN', default=None),
     environment=env.str('DJANGO_SENTRY_ENVIRONMENT', default=None),

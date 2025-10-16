@@ -11,7 +11,6 @@ PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']
 STORAGES['default'] = {
     'BACKEND': 'minio_storage.storage.MinioMediaStorage',
 }
-
 MINIO_STORAGE_MEDIA_BUCKET_NAME = 'test-django-storage'
 
 # Testing will set EMAIL_BACKEND to use the memory backend
