@@ -198,31 +198,36 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
         pk=episode_pk,
     )
 
-    # Prepare step data
-    step_data = {
-        step.number: {
-            'image_url': step.image.url if step.image else None,
-            'agent_steps': [
-                {
-                    'agent': agent_step.agent,
-                    'action': agent_step.action_string,
-                    'total_reward': agent_step.total_reward,
-                }
-                for agent_step in step.agent_steps.all()
-            ],
-        }
-        for step in episode.steps.all()
-    }
-
-    # Prepare plot data
+    # Cache frequently used data to avoid repeated queries
+    all_steps = episode.steps.all()
+    steps_agent_steps = {step: list(step.agent_steps.all()) for step in all_steps}
     env_name = episode.inference.checkpoint.training.environment
     training = episode.inference.checkpoint.training
-
-    reward_histogram = [
-        a.total_reward for step in episode.steps.all() for a in step.agent_steps.all()
-    ]
-
     action_map = get_environment_mapping(env_name)
+
+    # Prepare step data
+    step_data = {}
+    for step in all_steps:
+        agent_steps_data = []
+        for agent_step in steps_agent_steps[step]:
+            action_string = action_map.get(f'{int(agent_step.action)}', f'{agent_step.action}')
+            agent_steps_data.append(
+                {
+                    'agent': agent_step.agent,
+                    'action': action_string,
+                    'total_reward': agent_step.total_reward,
+                }
+            )
+        step_data[step.number] = {
+            'image_url': step.image.url if step.image else None,
+            'agent_steps': agent_steps_data,
+        }
+
+    reward_histogram = []
+    for step in all_steps:
+        for agent_step in steps_agent_steps[step]:
+            reward_histogram.append(agent_step.total_reward)
+
     action_v_reward: defaultdict[str, float] | defaultdict[str, defaultdict[str, float]] = (
         defaultdict(float if group_by_episode else lambda: defaultdict(float))  # type: ignore
     )
@@ -233,9 +238,10 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
     unique_agents = set()
     reward_mapping = training.reward_mapping or []
     decomposed_rewards: dict[str, list[float]] = {v: [] for v in reward_mapping}
-    for step in episode.steps.all():
+
+    for step in all_steps:
         step_decomposed_rewards = {v: 0.0 for v in reward_mapping}
-        for agent_step in step.agent_steps.all():
+        for agent_step in steps_agent_steps[step]:
             unique_agents.add(agent_step.agent)
             action = action_map.get(f'{int(agent_step.action)}', f'{agent_step.action}')
             key = action if group_by_episode else agent_step.agent
@@ -255,8 +261,8 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
     for reward_name, rewards_list in decomposed_rewards.items():
         cumulative_decomposed_rewards[reward_name] = list(accumulate(rewards_list))
 
-    # Used to populate the timeline
-    key_steps = episode.steps.all().order_by('number')
+    # Populate the timeline
+    key_steps = sorted(all_steps, key=lambda s: s.number)
 
     # In Python since total_reward is a property
     key_steps_values = []
@@ -265,7 +271,7 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
             {
                 'number': step.number,
                 'total_rewards': sum(
-                    agent_step.total_reward for agent_step in step.agent_steps.all()
+                    agent_step.total_reward for agent_step in steps_agent_steps[step]
                 ),
             }
         )
