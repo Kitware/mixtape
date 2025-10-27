@@ -1,5 +1,6 @@
 from .agent_step import AgentStep
 from .checkpoint import Checkpoint
+from .clustering_result import ClusteringResult
 from .episode import Episode
 from .inference import Inference
 from .step import Step
@@ -8,6 +9,7 @@ from .training import Training
 __all__ = [
     'AgentStep',
     'Checkpoint',
+    'ClusteringResult',
     'Episode',
     'Inference',
     'Training',

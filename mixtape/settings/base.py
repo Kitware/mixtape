@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from datetime import timedelta
 from pathlib import Path
-from typing import Any
 
 import django_stubs_ext
 from environ import Env
@@ -119,3 +118,5 @@ context_processors = options.setdefault('context_processors', [])  # type: ignor
 value = 'mixtape.core.context_processors.demo_feedback_modal'
 if value not in context_processors:
     context_processors.append(value)
+
+# Celery Beat schedule for clustering temp cleanup is added in a later commit.
