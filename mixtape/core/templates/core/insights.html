@@ -6,7 +6,7 @@
 
 {{ parsed_data|json_script:"parsed_data_json" }}
 
-<div x-data="(() => {
+<div class="insights-container" data-ga-id="insights-page" data-ga-threshold="0.25" data-ga-heartbeat-ms="15000" x-data="(() => {
   const data = JSON.parse(document.getElementById('parsed_data_json').textContent);
   const {
     step_data,
@@ -180,6 +180,8 @@ style="height: calc(100vh - 4rem);"
       >
         <div
           id="health-container-B"
+          data-ga-id="friendly-health-plot"
+          data-ga-threshold="0.5"
           x-show="$store.visOptions.visible.includes('friendlyHealth')"
           class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
         >
@@ -203,6 +205,8 @@ style="height: calc(100vh - 4rem);"
         </div>
         <div
           id="decomp-container-B"
+          data-ga-id="navigation-reward-plot"
+          data-ga-threshold="0.5"
           x-show="$store.visOptions.visible.includes('navigation')"
           class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
         >
@@ -216,8 +220,9 @@ style="height: calc(100vh - 4rem);"
           {% include "core/combat_reward_over_time.html" %}
         </div>
         <div
-          id="reward-container-B"
-          x-show="$store.visOptions.visible.includes('predictedRewards')"
+          id="decomp-container-D"
+          data-ga-id="overall-nav-vs-combat-plot"
+          data-ga-threshold="0.5"
           class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
           x-show="$store.visOptions.visible.includes('overallNavVsCombat')"
         >
@@ -249,6 +254,8 @@ style="height: calc(100vh - 4rem);"
       <!-- When in dense layout, split into columns B and C -->
       <div
         id="plots-dense-layout"
+        data-ga-id="plots-dense-layout"
+        data-ga-threshold="0.3"
         class="flex w-full h-full"
         x-show="$store.theme.denseLayout"
       >

@@ -5,6 +5,9 @@
 
 {% block content %}
 <div
+  data-ga-id="home-page"
+  data-ga-threshold="0.25"
+  data-ga-heartbeat-ms="20000"
   x-data="{
     selectedEpisodes: [],
     allowedEnvironment: null,
@@ -78,7 +81,7 @@
   class="flex flex-col overflow-hidden"
   style="height: calc(100vh - 4rem);"
 >
-  <div class="flex items-center self-center mx-2 my-3 w-full flex-shrink-0">
+  <div class="flex items-center self-center mx-2 my-3 w-full flex-shrink-0" data-ga-id="episode-filters" data-ga-threshold="0.5">
     <div class="flex flex-grow-2 gap-2 justify-end">
       <label class="input min-w-3/4">
         <i class="ri-search-line"></i>
@@ -173,10 +176,10 @@
       </button>
     </div>
   </div>
-  <div class="bg-base-200 m-2 p-2 flex-1 overflow-y-auto min-h-0 rounded-sm">
+  <div class="bg-base-200 m-2 p-2 flex-1 overflow-y-auto min-h-0 rounded-sm" data-ga-id="episode-list" data-ga-threshold="0.3" data-ga-min-visible-ms="1000">
     <ol>
       {% for episode in episodes %}
-      <li class="card bg-base-100 shadow-sm m-2">
+      <li class="card bg-base-100 shadow-sm m-2" data-ga-id="episode-card-{{ episode.pk }}">
         <div class="card-body p-2! m-2!">
           <div class="card-title">
             <label for="{{ episode.pk }}-checkbox">
@@ -209,7 +212,7 @@
               {{ episode.inference.created|time:"H:i" }}
             </div>
             <div>
-              <button class="btn btn-primary btn-sm" @click="episode_details_{{ episode.pk }}.showModal()">
+              <button class="btn btn-primary btn-sm" data-ga-id="episode-details-{{ episode.pk }}" @click="episode_details_{{ episode.pk }}.showModal()">
                 <span>Details</span>
               </button>
               <dialog id="episode_details_{{ episode.pk }}" class="modal self-center justify-self-center">

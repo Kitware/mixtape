@@ -1,6 +1,6 @@
-<div class="navbar bg-base-100 shadow-md">
+<div class="navbar bg-base-100 shadow-md" data-ga-id="main-toolbar">
   <div class="navbar-start">
-    <a href="{% url 'home' %}" class="btn btn-icon btn-ghost">
+    <a href="{% url 'home' %}" class="btn btn-icon btn-ghost" data-ga-id="home-button">
       <span class="text-3xl">MIXTAPE</span>
     </a>
   </div>
@@ -16,8 +16,8 @@
   </div>
   {% endif %}
   <div class="navbar-end">
-    <div class="dropdown dropdown-end">
-      <button class="btn btn-ghost rounded-field">
+    <div class="dropdown dropdown-end" data-ga-id="visualization-options-dropdown">
+      <button class="btn btn-ghost rounded-field" data-ga-id="viz-options-button">
         <i class="ri-bar-chart-box-ai-line font-normal text-xl"></i>
       </button>
       <ul
@@ -195,8 +195,8 @@
         </li>
       </ul>
     </div>
-    <div class="dropdown dropdown-end">
-      <button class="btn btn-ghost rounded-field">
+    <div class="dropdown dropdown-end" data-ga-id="display-settings-dropdown">
+      <button class="btn btn-ghost rounded-field" data-ga-id="display-settings-button">
         <i class="ri-list-settings-line font-normal text-xl"></i>
       </button>
       <ul
@@ -274,12 +274,12 @@
         </li>
       </ul>
     </div>
-    <label class="toggle text-base-content ml-2">
+    <label class="toggle text-base-content ml-2" data-ga-id="theme-toggle">
       <input type="checkbox" checked="checked" x-model="$store.theme.darkMode" @change="document.documentElement.setAttribute('data-theme', $store.theme.darkMode ? 'dark' : 'light')"/>
       <i class="ri-sun-line flex items-center justify-center text-sm" style="contain: size;"></i>
       <i class="ri-moon-line flex items-center justify-center text-sm" style="contain: size;"></i>
     </label>
-    <button class="btn btn-ghost rounded-field text-center" @click="$store.theme.denseLayout = !$store.theme.denseLayout">
+    <button class="btn btn-ghost rounded-field text-center" data-ga-id="layout-toggle" @click="$store.theme.denseLayout = !$store.theme.denseLayout">
       <i x-show="$store.theme.denseLayout" class="ri-layout-grid-fill h-10 w-10 fill-current font-normal text-xl content-center"></i>
       <i x-show="!$store.theme.denseLayout" class="ri-layout-grid-2-fill h-10 w-10 fill-current font-normal text-xl content-center"></i>
     </button>

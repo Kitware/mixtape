@@ -1,18 +1,11 @@
 <!DOCTYPE html>
 <html lang="en" x-data :data-theme="$store.theme.darkMode ? 'dark' : 'light'" class="bg-base-300">
   <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-TKWJX3L24M"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'G-TKWJX3L24M', {
-        debug_mode: true,
-        cookie_domain: 'none',
-      });
-    </script>
+    {% load static ga4_study %}
+    {% ga4_head %}
+    <script defer src="{% static 'django_ga4_study/ga_core.js' %}"></script>
+    <script defer src="{% static 'django_ga4_study/ga_visibility.js' %}"></script>
+    <script defer src="{% static 'django_ga4_study/ga_minimals.js' %}"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
@@ -146,7 +139,36 @@
           '#bcbd22',
           '#17becf'
         ]);
+
+        // Initialize GA tracking after Alpine is ready
+        if (window.GAVisibility) {
+          window.GAVisibility.init();
+        }
+        // Track interactive elements
+        if (window.GAButtons) {
+          GAButtons.trackClick('button[data-ga-id]');                    // Track buttons with GA IDs
+          GAButtons.trackClick('a[data-ga-id]');                        // Track links with GA IDs
+          GAButtons.trackCheckbox('input[type="checkbox"]');            // Track all checkboxes
+          GAButtons.trackCheckbox('input[type="radio"]');               // Track radio buttons
+        }
       });
+
+      // Initialize GA tracking for different loading states
+      if (document.readyState !== 'loading') {
+        window.GAVisibility && window.GAVisibility.init();
+        window.GAButtons && GAButtons.trackClick('button[data-ga-id]');
+        window.GAButtons && GAButtons.trackClick('a[data-ga-id]');
+        window.GAButtons && GAButtons.trackCheckbox('input[type="checkbox"]');
+        window.GAButtons && GAButtons.trackCheckbox('input[type="radio"]');
+      } else {
+        document.addEventListener('DOMContentLoaded', () => {
+          window.GAVisibility && window.GAVisibility.init();
+          window.GAButtons && GAButtons.trackClick('button[data-ga-id]');
+          window.GAButtons && GAButtons.trackClick('a[data-ga-id]');
+          window.GAButtons && GAButtons.trackCheckbox('input[type="checkbox"]');
+          window.GAButtons && GAButtons.trackCheckbox('input[type="radio"]');
+        });
+      }
     </script>
     <title>{% block title %}MIXTAPE{% endblock %}</title>
     <style>

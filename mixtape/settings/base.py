@@ -22,6 +22,7 @@ BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 ROOT_URLCONF = 'mixtape.urls'
 
 INSTALLED_APPS = [
+    "django_ga4_study",
     # Install local apps first, to ensure any overridden resources are found first
     'mixtape.core.apps.CoreConfig',
     # Apps with overrides
@@ -67,6 +68,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
+    'django_ga4_study.middleware.GA4StudyUserIdMiddleware',
 ]
 
 # Internal datetimes are timezone-aware, so this only affects rendering and form input
@@ -108,3 +110,8 @@ CORS_ALLOWED_ORIGIN_REGEXES: list[str] = env.list(
 
 # This makes Ray happy for now, since it wants to redirect stdout
 CELERY_WORKER_REDIRECT_STDOUTS = False
+
+GA_MEASUREMENT_ID = 'G-TKWJX3L24M'
+GA_INSTANCE_ID = 'study-instance'
+GA_DEBUG = True
+GA_SAMPLE = 1.0

@@ -1,0 +1,43 @@
+{% if GA_MEASUREMENT_ID %}
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id={{ GA_MEASUREMENT_ID }}"></script>
+<script>
+  // --- GA bootstrap ---
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){ dataLayer.push(arguments); }
+  gtag('js', new Date());
+
+  // Always set cookie_domain='none' so localhost works cleanly
+  gtag('config', '{{ GA_MEASUREMENT_ID }}', {
+    user_id: '{{ STUDY_USER_ID|escapejs }}',
+    instance_id: '{{ GA_INSTANCE_ID|escapejs }}',
+    debug_mode: '{{ GA_DEBUG|yesno:"true,false" }}',
+    cookie_domain: 'none'
+  });
+
+  // --- Core helper with timestamps + sampling + beacon transport ---
+  (function(){
+    const GA_SAMPLE = '{{ GA_SAMPLE|default:1.0 }}';
+    const navStart = (performance && performance.timeOrigin) ? performance.timeOrigin : Date.now();
+    function epochMs(){ return Date.now(); }
+    function sincePageMs(){
+      try { return Math.round(performance.now()); } catch(e){ return epochMs() - navStart; }
+    }
+
+    window.GA = {
+      id: '{{ GA_MEASUREMENT_ID|escapejs }}',
+      sample: GA_SAMPLE,
+      event: function(name, params){
+        if (Math.random() > GA_SAMPLE) return;
+        const base = {
+          page_path: location.pathname,
+          ts_ms: epochMs(),          // absolute timestamp
+          t_nav_ms: sincePageMs(),   // since navigation start
+          transport_type: 'beacon'
+        };
+        try { gtag('event', name, Object.assign(base, params || {})); } catch(e){}
+      }
+    };
+  })();
+</script>
+{% endif %}
