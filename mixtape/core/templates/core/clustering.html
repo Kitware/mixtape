@@ -53,7 +53,9 @@
       },
       name: 'All Episodes'
     })
-    plot = Plotly.newPlot($refs.allManifolds, data, layout, {displayModeBar: false});
+    this.plot = Plotly.newPlot($refs.allManifolds, data, layout, {displayModeBar: false, responsive: true});
+    $nextTick(() => { Plotly.Plots.resize($refs.allManifolds); });
+    window.addEventListener('resize', () => { Plotly.Plots.resize($refs.allManifolds); });
     $watch('visOptions', () => {
       $nextTick(() => {
         Plotly.relayout(
@@ -65,7 +67,7 @@
       });
     });"
   x-effect="
-    if (plot) {
+    if (this.plot) {
       const numAgents = uniqueAgents.length;
       const numEpisodes = episodeIds.length;
       const startIdx = currentStep * numAgents;
@@ -125,5 +127,5 @@
       }
     }"
 >
-  <div x-ref="allManifolds"></div>
+  <div x-ref="allManifolds" class="w-full"></div>
 </div>

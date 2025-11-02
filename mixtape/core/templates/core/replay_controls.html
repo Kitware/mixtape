@@ -1,37 +1,50 @@
-<div class="card raised flex justify-around justify-self-center">
+<div class="flex items-center justify-center w-full gap-2 px-2 py-1 rounded-md u-bg-muted border u-border-surface">
   <button
-    class="cursor-pointer hover:text-gray-900 rounded-lg p-1 text-center disabled:text-gray-500"
+    class="cursor-pointer hover:u-text-accent rounded-md p-1 text-center disabled:text-gray-500"
     :disabled="currentStep === 0"
     @click="currentStep = 0"
   >
     <i class="ri-rewind-start-line"></i>
   </button>
   <button
-    class="cursor-pointer hover:text-gray-900 rounded-lg p-1 text-center disabled:text-gray-500"
+    class="cursor-pointer hover:u-text-accent rounded-md p-1 text-center disabled:text-gray-500"
     :disabled="currentStep === 0"
     @click="currentStep--"
   >
     <i class="ri-rewind-line"></i>
   </button>
   <button
-    class="cursor-pointer hover:text-gray-900 rounded-lg p-1 text-center disabled:text-gray-500"
+    class="cursor-pointer hover:u-text-accent rounded-md p-1 text-center disabled:text-gray-500"
     @click="playing = !playing; if (playing) stepForward()"
   >
-    <i x-show="!playing" class="ri-play-line"></i>
-    <i x-show="playing" class="ri-pause-line"></i>
+    <i x-show="!playing" x-cloak class="ri-play-line"></i>
+    <i x-show="playing" x-cloak class="ri-pause-line"></i>
   </button>
   <button
-    class="cursor-pointer hover:text-gray-900 rounded-lg p-1 text-center disabled:text-gray-500"
+    class="cursor-pointer hover:u-text-accent rounded-md p-1 text-center disabled:text-gray-500"
     :disabled="currentStep === maxSteps"
     @click="currentStep++"
   >
     <i class="ri-speed-line"></i>
   </button>
   <button
-    class="cursor-pointer hover:text-gray-900 rounded-lg p-1 text-center disabled:text-gray-500"
+    class="cursor-pointer hover:u-text-accent rounded-md p-1 text-center disabled:text-gray-500"
     :disabled="currentStep === maxSteps"
     @click="currentStep = maxSteps"
   >
     <i class="ri-forward-end-line"></i>
   </button>
+  <div class="flex items-center gap-1 pl-2">
+    <input
+      x-cloak
+      type="number"
+      class="w-16 rounded-md border u-border-surface u-bg-surface px-2 py-1 text-sm text-center"
+      min="0"
+      :max="maxStepsGlobal"
+      x-model.number="currentStep"
+      @change="currentStep = Math.min(Math.max(0, Number(currentStep) || 0), maxStepsGlobal)"
+      @keyup.enter="currentStep = Math.min(Math.max(0, Number(currentStep) || 0), maxStepsGlobal)"
+    />
+    <span class="text-sm u-text-muted">/ <span x-text="maxStepsGlobal"></span></span>
+  </div>
 </div>

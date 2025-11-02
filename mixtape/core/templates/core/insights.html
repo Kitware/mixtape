@@ -1,152 +1,15 @@
 {% extends "core/base.html" %}
 
-{% block title %}Inference Results{% endblock %}
+{% block title %}Insights - FIGMA Preview{% endblock %}
 
 {% block content %}
-
 {{ parsed_data|json_script:"parsed_data_json" }}
 {{ clustering|json_script:"clustering_json" }}
-
-<div x-data="(() => {
-  const data = JSON.parse(document.getElementById('parsed_data_json').textContent);
-  const clustering = JSON.parse(document.getElementById('clustering_json').textContent);
-  const {
-    step_data,
-    action_v_reward,
-    reward_histogram,
-    action_v_frequency,
-    rewards_over_time,
-    decomposed_rewards,
-    unique_agents,
-    episode_ids,
-    max_steps,
-    timeline_key_steps,
-  } = data;
-
-  return {
-    parsedData: data,
-    clustering: clustering,
-    actionVReward: action_v_reward,
-    rewardHistogram: reward_histogram,
-    actionVFrequency: action_v_frequency,
-    rewardsOverTime: rewards_over_time,
-    decomposedRewards: decomposed_rewards,
-    uniqueAgents: unique_agents,
-    episodeIds: episode_ids,
-    stepData: step_data,
-    timelineKeySteps: timeline_key_steps,
-    currentStep: 0,
-    playing: false,
-    maxSteps: max_steps - 1,
-    showVisMenu: false,
-    visOptions: [
-      'actionRewardFrequency',
-      'rewardFrequency',
-      'actionFrequency',
-      'rewardsOverTime',
-      'episodeDetails',
-      'obsClustering',
-      'actionClustering',
-      'plotLegends'
-    ],
-    getStep(step) {
-      if (this.currentStep < Object.keys(step).length) {
-        return step[Math.max(0, this.currentStep - 1)];
-      }
-      return step[Object.keys(step).length - 1];
-    },
-    stepForward() {
-      if (!this.playing) return;
-      if (this.currentStep < this.maxSteps) {
-        setTimeout(() => {
-          this.currentStep++;
-          this.stepForward()
-        }, 100);
-      } else {
-        this.playing = false;
-        this.currentStep = 0;
-      }
-    }
-  };
-})()"
-class="flex flex-col"
->
-  {% include "core/nav_bar.html" %}
-  <div class="flex h-fit">
-    <div
-      class="flex-1 min-w-[100%] md:min-w-[50%] xl:min-w-[25%] h-fit"
-      x-show="visOptions.includes('actionRewardFrequency')"
-    >
-      {% include "core/action_v_reward_frequency.html" %}
-    </div>
-    <div
-      class="flex-1 min-w-[100%] md:min-w-[50%] xl:min-w-[25%] h-fit"
-      x-show="visOptions.includes('rewardFrequency')"
-    >
-      {% include "core/reward_v_frequency.html" %}
-    </div>
-    <div
-      class="flex-1 min-w-[100%] md:min-w-[50%] xl:min-w-[25%] h-fit"
-      x-show="visOptions.includes('actionFrequency')"
-    >
-      {% include "core/action_v_frequency.html" %}
-    </div>
-    <div
-      class="flex-1 min-w-[100%] md:min-w-[50%] xl:min-w-[25%] h-fit"
-      x-show="{{ has_reward_mapping|yesno:'false,true' }} && visOptions.includes('rewardsOverTime')"
-    >
-      {% include "core/rewards_over_time.html" %}
-    </div>
-  </div>
-  <div x-show="{{ has_reward_mapping|yesno:'true,false' }}" class="flex overflow-hidden">
-    <div x-show="visOptions.includes('rewardsOverTime')" class="flex-1 min-w-[100%] xl:min-w-[50%] m-1 content-center h-fit">
-      {% include "core/rewards_over_time.html" %}
-    </div>
-    <div x-show="visOptions.includes('rewardsOverTime')" class="flex-1 min-w-[100%] xl:min-w-[50%] m-1 content-center h-fit">
-      {% include "core/rewards_over_time_decomp.html" %}
-    </div>
-  </div>
-  <div class="flex overflow-hidden">
-    <div x-show="visOptions.includes('obsClustering')" class="flex-1 min-w-[100%] xl:min-w-[50%] m-1 content-center h-fit">
-      <div class="col-span-12 content-center">
-        {% include "core/clustering.html" with key="'obs'" title="Observations" %}
-      </div>
-      <div class="col-span-12 content-center mr-4">
-        {% include "core/clustering_timeline.html" with key="'obs'" title="Observations" %}
-      </div>
-    </div>
-    <div x-show="visOptions.includes('actionClustering')" class="flex-1 min-w-[100%] xl:min-w-[50%] m-1 content-center h-fit">
-      <div class="col-span-12 content-center">
-        {% include "core/clustering.html" with key="'agent_outs'" title="Actions" %}
-      </div>
-      <div class="col-span-12 content-center mr-4">
-        {% include "core/clustering_timeline.html" with key="'agent_outs'" title="Actions" %}
-      </div>
-    </div>
-  </div>
-  <div>
-    <div x-show="visOptions.includes('episodeDetails')" class="flex-1 min-w-[100%] xl:min-w-[50%] flex flex-col">
-      {% include "core/replay_controls.html" %}
-      <div class="card raised flex flex-col h-full overflow-hidden">
-        <h1 class="text-xl font-bold text-center flex-none">Step <span x-text="currentStep"></span> of <span x-text="maxSteps"></span></h1>
-        <div class="grid gap-4 grid-cols-1 md:grid-cols-2">
-          <template x-for="(step, index) in stepData">
-            <div class="min-h-0 overflow-auto" :class="stepData.length % 2 === 1 && index === stepData.length - 1 ? 'md:col-span-2' : ''">
-              <div class="flex p-2 min-h-0 col-span-12">
-                <div class="flex-1 min-h-0 flex items-center justify-center relative">
-                  <img x-show="getStep(step).image_url" class="m-auto h-full" :src="getStep(step).image_url" alt="Step Image">
-                  <div class="absolute bottom-0 left-0 right-0 text-center">
-                    Episode <span x-text="episodeIds[index]"></span>: Step <span x-text="currentStep < Object.keys(step).length ? currentStep : Object.keys(step).length - 1"></span>
-                  </div>
-                </div>
-                {% include "core/replay_details.html" %}
-              </div>
-              {% include "core/timeline.html" %}
-            </div>
-          </template>
-        </div>
-      </div>
-    </div>
+<div class="u-bg-surface min-h-screen p-4">
+  <div x-data="{}" class="grid grid-cols-1 gap-4"
+       :class="($store.insights && $store.insights.sidePanelCollapsed) ? 'lg:grid-cols-[48px_1fr]' : 'lg:grid-cols-[285px_1fr]'">
+    {% include "core/figma/_side_panel_overview.html" %}
+    {% include "core/figma/_tabs_overview.html" %}
   </div>
 </div>
 {% endblock %}

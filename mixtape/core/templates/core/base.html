@@ -38,7 +38,8 @@
     <style type="text/tailwindcss">
       @layer base {
         body {
-          @apply bg-[#F1F2F6] text-gray-900 dark:bg-gray-900 dark:text-gray-300;
+          background-color: var(--color-surface);
+          color: var(--color-surface-foreground);
         }
         h1 {
           @apply text-2xl font-bold;
@@ -76,6 +77,50 @@
           @apply w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm;
         }
       }
+    </style>
+
+    <style>
+      :root {
+        /* Mapped from figma_changes_data/colors.js (light) */
+        --color-surface: #FFFFFF; /* background */
+        --color-surface-foreground: #141516; /* text-primary */
+        --color-border: #C9CBCE; /* border */
+        --color-muted: rgba(0, 0, 0, 0.03); /* surface */
+        --color-muted-foreground: rgba(20, 21, 22, 0.6); /* text-secondary */
+        --color-accent: #0000FF; /* primary */
+        --color-accent-foreground: #FFFFFF; /* text-button */
+      }
+      .dark {
+        /* Mapped from figma_changes_data/colors.js (dark) */
+        --color-surface: #111827; /* background */
+        --color-surface-foreground: #FFFFFF; /* text-primary */
+        --color-border: #4C4C4C; /* border-light */
+        --color-muted: rgba(255, 255, 255, 0.05); /* surface */
+        --color-muted-foreground: rgba(255, 255, 255, 0.7); /* text-secondary */
+        --color-accent: #ACD5FF; /* primary */
+        --color-accent-foreground: #141516; /* text-button */
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          /* Mirror .dark variables when user prefers dark mode */
+          --color-surface: #111827; /* background */
+          --color-surface-foreground: #FFFFFF; /* text-primary */
+          --color-border: #4C4C4C; /* border-light */
+          --color-muted: rgba(255, 255, 255, 0.05); /* surface */
+          --color-muted-foreground: rgba(255, 255, 255, 0.7); /* text-secondary */
+          --color-accent: #ACD5FF; /* primary */
+          --color-accent-foreground: #141516; /* text-button */
+        }
+      }
+      .u-bg-surface { background-color: var(--color-surface); }
+      .u-text-surface { color: var(--color-surface-foreground); }
+      .u-border-surface { border-color: var(--color-border); }
+      .u-bg-muted { background-color: var(--color-muted); }
+      .u-text-muted { color: var(--color-muted-foreground); }
+      .u-bg-accent { background-color: var(--color-accent); }
+      .u-text-accent { color: var(--color-accent); }
+      .u-text-on-accent { color: var(--color-accent-foreground); }
+      .u-border-accent { border-color: var(--color-accent); }
     </style>
 
     <title>{% block title %}MIXTAPE{% endblock %}</title>

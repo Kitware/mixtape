@@ -1,21 +1,31 @@
-<div class="flex my-2 mx-5 py-1 card-alt">
+<div x-cloak class="flex">
   <ol class="items-center flex p-1 w-full">
-    <div class="flex w-5 bg-blue-600 dark:bg-blue-200 h-6 ml-2"></div>
-    <template x-for="ts in timelineKeySteps[index]">
-    <li class="relative w-full flex even:flex-col odd:flex-col-reverse even:mb-5 odd:mt-5">
-      <p class="text-sm text-center" x-text="ts.total_rewards.toFixed(2)"></p>
-      <div class="flex items-center">
-          <div class="flex w-full bg-blue-600 dark:bg-blue-200 h-0.5"></div>
-          <button
-            class="cursor-pointer z-10 flex items-center justify-center w-2 h-2 rounded-full ring-4 shrink-0"
-            :class="currentStep === ts.number ? 'ring-blue-300 bg-blue-600 dark:ring-white dark:bg-blue-200' : 'ring-blue-600 dark:ring-blue-200'"
-            @click="currentStep = ts.number"
-          >
-          </button>
-          <div class="flex w-full bg-blue-600 dark:bg-blue-200 h-0.5"></div>
-      </div>
-    </li>
+    <li class="relative flex items-center"><div class="flex w-1 bg-blue-600 dark:bg-blue-200 h-6 ml-2"></div></li>
+    <template x-for="ts in (((useGlobalTimeline === true) && Array.isArray(timelineKeyStepsGlobal) && timelineKeyStepsGlobal.length)
+                              ? timelineKeyStepsGlobal
+                              : ((timelineKeySteps && timelineKeySteps[timelineEpisodeIdx])
+                                  ? timelineKeySteps[timelineEpisodeIdx]
+                                  : ((timelineKeySteps && timelineKeySteps[0]) ? timelineKeySteps[0] : [])))">
+      <li class="relative w-full flex even:flex-col odd:flex-col-reverse even:mb-5 odd:mt-5" :key="ts.number">
+        <p class="text-sm text-center" x-text="Number((ts.peak_total_rewards ?? ts.total_rewards) ?? 0).toFixed(2)"></p>
+        <div class="flex items-center">
+            <div class="flex w-full bg-blue-600 dark:bg-blue-200 h-0.5"></div>
+            <button
+              class="cursor-pointer z-10 flex items-center justify-center w-2 h-2 rounded-full ring-4 shrink-0"
+              :class="currentStep === ts.number ? 'ring-blue-300 bg-blue-600 dark:ring-white dark:bg-blue-200' : 'ring-blue-600 dark:ring-blue-200'"
+              @click="currentStep = ts.number"
+              :title="ts.episodes
+                        ? ('Step ' + ts.number + '\n' + ts.episodes.map(e => 'Episode ' + e.episode_id + ': ' + Number(e.total_rewards ?? 0).toFixed(2)).join('\n'))
+                        : ('Step ' + ts.number + ' — Reward: ' + Number(ts.total_rewards ?? 0).toFixed(2))"
+              :aria-label="ts.episodes
+                        ? ('Step ' + ts.number + ' ' + ts.episodes.map(e => 'Episode ' + e.episode_id + ': ' + Number(e.total_rewards ?? 0).toFixed(2)).join(', '))
+                        : ('Step ' + ts.number + ' Reward ' + Number(ts.total_rewards ?? 0).toFixed(2))"
+            >
+            </button>
+            <div class="flex w-full bg-blue-600 dark:bg-blue-200 h-0.5"></div>
+        </div>
+      </li>
     </template>
-    <div class="flex w-5 bg-blue-600 dark:bg-blue-200 h-6 mr-2"></div>
+    <li class="relative flex items-center"><div class="flex w-1 bg-blue-600 dark:bg-blue-200 h-6 mr-2"></div></li>
   </ol>
 </div>

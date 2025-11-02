@@ -1,0 +1,41 @@
+<div class="space-y-2">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr>
+          <th class="text-left py-2 px-2 align-bottom" rowspan="2">Agents</th>
+          <template x-for="(ep, epIdx) in episodeSummaries" :key="epIdx">
+            <th scope="colgroup" class="text-center py-2 px-2 align-bottom font-medium" :colspan="2" x-text="`Episode ${ep.id}`"></th>
+          </template>
+        </tr>
+        <tr>
+          <template x-for="pair in episodePairs" :key="`h2-${pair.epIdx}-${pair.kind}`">
+            <th class="py-1 px-2 u-text-muted min-w-[6rem]"
+                :class="[
+                  pair.kind==='action' ? 'text-right' : 'text-left',
+                  (pair.kind==='action' && pair.epIdx>0) ? 'border-l u-border-surface' : ''
+                ].join(' ')"
+                x-text="pair.kind==='action' ? 'Action' : 'Reward'">
+            </th>
+          </template>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="agent in uniqueAgents" :key="agent">
+          <tr class="border-t u-border-surface">
+            <td class="py-2 px-2 font-medium" x-text="agent"></td>
+            <template x-for="pair in episodePairs" :key="`r-${agent}-${pair.epIdx}-${pair.kind}`">
+              <td class="py-2 px-2 whitespace-nowrap min-w-[6rem] tabular-nums"
+                  :class="[
+                    pair.kind==='action' ? 'text-right' : 'text-left',
+                    (pair.kind==='action' && pair.epIdx>0) ? 'border-l u-border-surface' : ''
+                  ].join(' ')"
+                  x-text="pair.kind==='action' ? $data.getAgentAction(pair.epIdx, agent) : $data.getAgentRewardStr(pair.epIdx, agent)">
+              </td>
+            </template>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </div>
+</div>

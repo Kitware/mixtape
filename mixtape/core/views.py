@@ -272,6 +272,7 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
 
     # list of cumulative rewards over time
     rewards_over_time = list(accumulate(ks['total_rewards'] for ks in key_steps_values))
+    episode_total_rewards = sum(ks['total_rewards'] for ks in key_steps_values)
     # TODO: Revist this. This exists more as a placeholder, timeline
     #       should represent points of interest with more meaning.
     # Get top 40 steps by total rewards, ordered by step number
@@ -300,6 +301,7 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
         'reward_mapping': reward_mapping,
         'step_data': step_data,
         'unique_agents': list(unique_agents),
+        'episode_total_rewards': episode_total_rewards,
     }
 
 
@@ -326,6 +328,7 @@ def insights(request: HttpRequest) -> HttpResponse:
     all_step_data: list[dict] = []
     all_timeline_steps: list[dict] = []
     all_decomposed_rewards: list[dict] = []
+    all_episode_total_rewards: dict[int, int | float] = {}
 
     group_by_episode = len(episode_pks) > 1
     for episode_pk in episode_pks:
@@ -338,6 +341,7 @@ def insights(request: HttpRequest) -> HttpResponse:
         all_decomposed_rewards.append(insight_results['decomposed_rewards'])
         all_step_data.append(insight_results['step_data'])
         all_timeline_steps.append(insight_results['timeline_key_steps'])
+        all_episode_total_rewards[episode_pk] = insight_results['episode_total_rewards']
 
     # Get unique agents across all episodes
     unique_agents = insight_results['unique_agents']
@@ -354,6 +358,47 @@ def insights(request: HttpRequest) -> HttpResponse:
         seed=42,
     )
 
+    # Get episode total rewards and average rewards (ordered by episode_pks)
+    episode_total_rewards = [
+        all_episode_total_rewards[pk] for pk in episode_pks if pk in all_episode_total_rewards
+    ]
+    avg_per_episode = (
+        sum(episode_total_rewards) / len(episode_total_rewards) if episode_total_rewards else 0
+    )
+
+    rewards_totals = {
+        'total_per_episode': episode_total_rewards,
+        'average_per_episode': avg_per_episode,
+    }
+
+    # Build a global set of top key steps across episodes (top 40 by peak reward per step)
+    step_to_entries: dict[int, list[dict]] = defaultdict(list)
+    for ep_idx, steps in enumerate(all_timeline_steps):
+        for s in steps:
+            step_to_entries[int(s['number'])].append(
+                {
+                    'episode_idx': ep_idx,
+                    'episode_id': episode_pks[ep_idx],
+                    'total_rewards': float(s['total_rewards']),
+                }
+            )
+    timeline_global: list[dict] = []
+    for num, entries in step_to_entries.items():
+        peak = max(e['total_rewards'] for e in entries)
+        timeline_global.append(
+            {
+                'number': int(num),
+                'peak_total_rewards': float(peak),
+                'episodes': entries,
+            }
+        )
+    timeline_global = sorted(
+        timeline_global,
+        key=lambda x: x['peak_total_rewards'],
+        reverse=True,
+    )[:40]
+    timeline_global = sorted(timeline_global, key=lambda x: x['number'])
+
     data = {
         'all_episode_details': all_episode_details,
         'parsed_data': {
@@ -367,6 +412,9 @@ def insights(request: HttpRequest) -> HttpResponse:
             'max_steps': max(len(step_data) for step_data in all_step_data),
             'step_data': all_step_data,
             'timeline_key_steps': all_timeline_steps,
+            'timeline_key_steps_global': timeline_global,
+            'episode_total_rewards': episode_total_rewards,
+            'rewards_totals': rewards_totals,
         },
         'clustering': {
             'obs': {

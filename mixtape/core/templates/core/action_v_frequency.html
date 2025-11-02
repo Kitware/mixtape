@@ -38,7 +38,9 @@
         }
       });
     });
-    plot = Plotly.react($refs.actionsFrequency, data, layout, config);
+    this.plot = Plotly.react($refs.actionsFrequency, data, layout, config);
+    $nextTick(() => { Plotly.Plots.resize($refs.actionsFrequency); });
+    window.addEventListener('resize', () => { Plotly.Plots.resize($refs.actionsFrequency); });
     $watch('visOptions', () => {
       $nextTick(() => {
         Plotly.relayout(
@@ -50,5 +52,5 @@
       });
     });"
 >
-  <div x-ref="actionsFrequency"></div>
+  <div x-ref="actionsFrequency" class="w-full"></div>
 </div>

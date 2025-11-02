@@ -1,0 +1,395 @@
+<div x-data="(() => {
+  const pd = (() => { try { return JSON.parse(document.getElementById('parsed_data_json')?.textContent || 'null'); } catch(e){ return null; } })();
+  const clustering = (() => { try { return JSON.parse(document.getElementById('clustering_json')?.textContent || 'null'); } catch(e){ return null; } })();
+  const episodesCount = (pd && Array.isArray(pd.episode_ids)) ? pd.episode_ids.length : null;
+  const agentsCount = (pd && Array.isArray(pd.unique_agents)) ? pd.unique_agents.length : null;
+  const maxStepsCount = (pd && (pd.max_steps ?? pd.maxSteps)) ?? null;
+  const avgReward = (() => {
+    if (!pd) return null;
+    // Preferred: backend-provided aggregate
+    if (pd.rewards_totals && typeof pd.rewards_totals.average_per_episode === 'number') {
+      return pd.rewards_totals.average_per_episode;
+    }
+    // 1) Direct array of totals per episode
+    if (Array.isArray(pd.episode_total_rewards)) {
+      const arr = pd.episode_total_rewards.filter(v => typeof v === 'number');
+      return arr.length ? arr.reduce((a,b)=>a+b,0) / arr.length : null;
+    }
+    if (Array.isArray(pd.episode_rewards)) {
+      const arr = pd.episode_rewards.filter(v => typeof v === 'number');
+      return arr.length ? arr.reduce((a,b)=>a+b,0) / arr.length : null;
+    }
+    // 2) Plotly-style traces per episode for rewards over time
+    if (Array.isArray(pd.rewards_over_time)) {
+      const perEpTotals = pd.rewards_over_time.map(trace => {
+        if (!trace) return null;
+        // If cumulative, use last y; else sum y
+        const y = Array.isArray(trace.y) ? trace.y : [];
+        if (!y.length) return null;
+        const last = y[y.length-1];
+        if (typeof last === 'number' && y.some(v => v < last)) {
+          return last;
+        }
+        const sum = y.reduce((a,b)=> typeof b === 'number' ? a + b : a, 0);
+        return sum;
+      }).filter(v => typeof v === 'number');
+      return perEpTotals.length ? perEpTotals.reduce((a,b)=>a+b,0) / perEpTotals.length : null;
+    }
+    return null;
+  })();
+  const avgRewardDisplay = (avgReward ?? null) !== null ? Number(avgReward).toFixed(2) : null;
+  const actionVReward = pd?.action_v_reward ?? {};
+  const rewardHistogram = pd?.reward_histogram ?? [];
+  const actionVFrequency = pd?.action_v_frequency ?? {};
+  const rewardsOverTime = pd?.rewards_over_time ?? [];
+  const decomposedRewards = pd?.decomposed_rewards ?? [];
+  const uniqueAgents = pd?.unique_agents ?? [];
+  const episodeIds = pd?.episode_ids ?? [];
+  const stepData = pd?.step_data ?? [];
+  const timelineKeySteps = pd?.timeline_key_steps ?? [];
+  const timelineKeyStepsGlobal = pd?.timeline_key_steps_global ?? [];
+  const currentStep = 0;
+  const maxStepIndex = (pd?.max_steps ?? 1) - 1;
+  const episodeSummaries = (Array.isArray(episodeIds) ? episodeIds : []).map((id, idx) => {
+    const yFull = Array.isArray(rewardsOverTime[idx]) ? rewardsOverTime[idx] : [];
+    const steps = yFull.length || null;
+    const perStep = yFull.filter(v => typeof v === 'number');
+    let totalReward = null;
+    if (Array.isArray(pd?.episode_total_rewards)) {
+      totalReward = typeof pd.episode_total_rewards[idx] === 'number' ? pd.episode_total_rewards[idx] : null;
+    }
+    if (totalReward === null && yFull.length) {
+      const last = yFull[yFull.length-1];
+      totalReward = (typeof last === 'number' && yFull.some(v => v < last))
+        ? last
+        : perStep.reduce((a,b)=> a + b, 0);
+    }
+    const minPerStep = perStep.length ? Math.min(...perStep) : null;
+    const maxPerStep = perStep.length ? Math.max(...perStep) : null;
+    const avgPerStep = perStep.length ? (perStep.reduce((a,b)=> a + b, 0) / perStep.length) : null;
+    return { id: id ?? idx, steps, totalReward, minPerStep, maxPerStep, avgPerStep };
+  });
+  const selectedEpisodeIdx = 0;
+  const limitToEpisode = false;
+  const visOptions = [
+    'actionRewardFrequency',
+    'rewardFrequency',
+    'actionFrequency',
+    'rewardsOverTime',
+    'obsClustering',
+    'actionClustering',
+    'plotLegends',
+    // global component visibility
+    'showPlayback',
+    'showEpisodeInfo',
+    'showMediaViewer',
+    'showTimeline',
+  ];
+  return {
+    active: 'Overview',
+    pd,
+    clustering,
+    episodesCount,
+    agentsCount,
+    maxStepsCount,
+    avgRewardDisplay,
+    actionVReward,
+    rewardHistogram,
+    actionVFrequency,
+    rewardsOverTime,
+    decomposedRewards,
+    uniqueAgents,
+    episodeIds,
+    stepData,
+    timelineKeySteps,
+    timelineKeyStepsGlobal,
+    currentStep,
+    maxSteps: maxStepIndex,
+    maxStepsGlobal: maxStepIndex,
+    episodeSummaries,
+    selectedEpisodeIdx,
+    timelineEpisodeIdx: 0,
+    mediaEpisodeIdx: 0,
+    linkMediaToEpisode: true,
+    mediaFitMode: 'contain',
+    limitToEpisode,
+    debug: false,
+    episodePairs: [],
+    playing: false,
+    useGlobalTimeline: true,
+    playbackSpeed: 1,
+    stepForward() {
+      if (!this.playing) return;
+      if (this.currentStep < this.maxSteps) {
+        const delay = Math.max(10, Math.round(100 / (this.playbackSpeed || 1)));
+        setTimeout(() => {
+          this.currentStep++;
+          this.stepForward();
+        }, delay);
+      } else {
+        this.playing = false;
+        this.currentStep = 0;
+      }
+    },
+    updateMaxSteps() {
+      if (this.limitToEpisode) {
+        const steps = this.episodeSummaries[this.selectedEpisodeIdx]?.steps ?? null;
+        this.maxSteps = (typeof steps === 'number' && steps > 0) ? steps - 1 : this.maxStepsGlobal;
+      } else {
+        this.maxSteps = this.maxStepsGlobal;
+      }
+    },
+    init() {
+      this.updateMaxSteps();
+      this.$watch('limitToEpisode', () => this.updateMaxSteps());
+      this.$watch('selectedEpisodeIdx', () => {
+        this.updateMaxSteps();
+        if (this.linkMediaToEpisode) {
+          this.mediaEpisodeIdx = this.selectedEpisodeIdx;
+        }
+      });
+      this.episodePairs = this.buildEpisodePairs();
+      this.$watch('episodeSummaries', () => { this.episodePairs = this.buildEpisodePairs(); });
+      this.$watch('episodeSummaries', () => {
+        if (!Array.isArray(this.episodeSummaries) || this.episodeSummaries.length === 0) {
+          this.mediaEpisodeIdx = 0;
+        } else if (this.mediaEpisodeIdx >= this.episodeSummaries.length) {
+          this.mediaEpisodeIdx = 0;
+        }
+      });
+      this.$watch('linkMediaToEpisode', (v) => { if (v) { this.mediaEpisodeIdx = this.selectedEpisodeIdx; } });
+      Alpine.store('insights', {
+        // reactive mirror of key state for cross-root bindings
+        useGlobalTimeline: this.useGlobalTimeline,
+        timelineEpisodeIdx: this.timelineEpisodeIdx,
+        episodeSummaries: this.episodeSummaries,
+        playbackSpeed: this.playbackSpeed,
+        visOptions: this.visOptions,
+        maxStepsGlobal: this.maxStepsGlobal,
+        currentStep: this.currentStep,
+        sidePanelCollapsed: false,
+        // compatibility helpers for templates using get/set
+        get(k) { try { return this[k]; } catch(_) { return undefined; }},
+        set(k, v) { try { this[k] = v; } catch(_) {} },
+        toggleVis: (key) => {
+          const list = Array.isArray(Alpine.store('insights').visOptions) ? Alpine.store('insights').visOptions : [];
+          Alpine.store('insights').visOptions = list.includes(key)
+            ? list.filter((v) => v !== key)
+            : [...list, key];
+        },
+      });
+      // push changes from main -> store
+      this.$watch('useGlobalTimeline', v => { Alpine.store('insights').useGlobalTimeline = v; });
+      this.$watch('timelineEpisodeIdx', v => { Alpine.store('insights').timelineEpisodeIdx = v; });
+      this.$watch('episodeSummaries', v => { Alpine.store('insights').episodeSummaries = v; });
+      this.$watch('playbackSpeed', v => { Alpine.store('insights').playbackSpeed = v; });
+      this.$watch('visOptions', v => { Alpine.store('insights').visOptions = v; });
+      this.$watch('maxStepsGlobal', v => { Alpine.store('insights').maxStepsGlobal = v; });
+      this.$watch('currentStep', v => { Alpine.store('insights').currentStep = v; });
+      // pull changes from store -> main
+      this.$watch('$store.insights.useGlobalTimeline', v => { this.useGlobalTimeline = v; });
+      this.$watch('$store.insights.timelineEpisodeIdx', v => { this.timelineEpisodeIdx = v; });
+      this.$watch('$store.insights.playbackSpeed', v => { this.playbackSpeed = v; });
+      this.$watch('$store.insights.visOptions', v => { this.visOptions = Array.isArray(v) ? v : this.visOptions; });
+    },
+    toggleVis(key) {
+      const i = this.visOptions.indexOf(key);
+      if (i === -1) this.visOptions = [...this.visOptions, key];
+      else this.visOptions = this.visOptions.filter(v => v !== key);
+    },
+    debugLog() {
+      try {
+        console.groupCollapsed('EpisodeInfo Debug');
+        console.log({ currentStep: this.currentStep, maxSteps: this.maxSteps, episodes: this.episodeSummaries?.length || 0, agents: this.uniqueAgents?.length || 0 });
+        this.episodeSummaries.forEach((_, epIdx) => {
+          const steps = this.stepData?.[epIdx] || {};
+          const keys = Object.keys(steps);
+          const last = keys.length ? Math.max(...keys.map(k => +k)) : null;
+          const idx = this.getEpisodeStepIndex(epIdx);
+          console.log(`ep ${epIdx}`, { stepKeys: keys.length, last, idx });
+        });
+        const agent = (this.uniqueAgents && this.uniqueAgents[0]) || null;
+        if (agent) {
+          this.episodeSummaries.forEach((_, epIdx) => {
+            console.log(`ep ${epIdx} agent ${agent}`, { action: this.getAgentAction(epIdx, agent), reward: this.getAgentRewardStr(epIdx, agent) });
+          });
+        }
+        console.groupEnd();
+      } catch (e) {
+        console.warn('debugLog error', e);
+      }
+    },
+    getEpisodeStepIndex(epIdx) {
+      const steps = this.stepData?.[epIdx] || {};
+      const keys = Object.keys(steps);
+      if (!keys.length) return null;
+      const nums = keys.map(k => +k).sort((a,b) => a - b);
+      let chosen = nums[0];
+      for (let i = 0; i < nums.length; i++) {
+        if (nums[i] <= this.currentStep) chosen = nums[i]; else break;
+      }
+      return chosen;
+    },
+    getEpisodeStepData(epIdx) {
+      const idx = this.getEpisodeStepIndex(epIdx);
+      if (idx === null) return null;
+      const steps = this.stepData?.[epIdx] || {};
+      return steps[idx] ?? steps[String(idx)] ?? null;
+    },
+    getAgentStep(epIdx, agent) {
+      const s = this.getEpisodeStepData(epIdx);
+      const arr = s && Array.isArray(s.agent_steps) ? s.agent_steps : [];
+      return arr.find(as => as.agent === agent) || null;
+    },
+    getAgentAction(epIdx, agent) {
+      const as = this.getAgentStep(epIdx, agent);
+      return (as && (as.action ?? as.action_string ?? as.action_name ?? as.action_id)) ?? '—';
+    },
+    getAgentRewardStr(epIdx, agent) {
+      const as = this.getAgentStep(epIdx, agent);
+      const val = as ? (as.total_reward ?? as.reward ?? null) : null;
+      return (typeof val === 'number') ? val.toFixed(3) : (val ?? '—');
+    },
+    getEpisodeImageUrl(epIdx) {
+      const s = this.getEpisodeStepData(epIdx);
+      return s && s.image_url ? s.image_url : null;
+    },
+    buildEpisodePairs() {
+      const out = [];
+      const n = Array.isArray(this.episodeSummaries) ? this.episodeSummaries.length : 0;
+      for (let i = 0; i < n; i++) {
+        out.push({ epIdx: i, kind: 'action' });
+        out.push({ epIdx: i, kind: 'reward' });
+      }
+      return out;
+    },
+    visOptions,
+  };
+})()" x-init="init()" x-cloak class="u-bg-surface u-text-surface rounded-lg border u-border-surface raised">
+  <div class="flex items-center justify-between border-b u-border-surface px-2 pt-2 gap-2">
+    <div role="tablist" aria-label="Insights Tabs" class="flex gap-2">
+      <button id="tab-overview" role="tab" :aria-selected="active==='Overview'" aria-controls="panel-overview"
+              @click="active='Overview'"
+              :class="active==='Overview' ? 'u-text-accent border-b-2 u-border-accent u-bg-muted rounded-t-md' : 'text-gray-600 dark:text-gray-300 border-b-2 border-transparent hover:u-bg-muted rounded-t-md'"
+              class="px-3 py-2">Overview</button>
+      <button id="tab-actions" role="tab" :aria-selected="active==='Actions'" aria-controls="panel-actions"
+              @click="active='Actions'"
+              :class="active==='Actions' ? 'u-text-accent border-b-2 u-border-accent u-bg-muted rounded-t-md' : 'text-gray-600 dark:text-gray-300 border-b-2 border-transparent hover:u-bg-muted rounded-t-md'"
+              class="px-3 py-2">Actions</button>
+      <button id="tab-rewards" role="tab" :aria-selected="active==='Rewards'" aria-controls="panel-rewards"
+              @click="active='Rewards'"
+              :class="active==='Rewards' ? 'u-text-accent border-b-2 u-border-accent u-bg-muted rounded-t-md' : 'text-gray-600 dark:text-gray-300 border-b-2 border-transparent hover:u-bg-muted rounded-t-md'"
+              class="px-3 py-2">Rewards</button>
+      <button id="tab-agents" role="tab" :aria-selected="active==='Agents'" aria-controls="panel-agents"
+              @click="active='Agents'"
+              :class="active==='Agents' ? 'u-text-accent border-b-2 u-border-accent u-bg-muted rounded-t-md' : 'text-gray-600 dark:text-gray-300 border-b-2 border-transparent hover:u-bg-muted rounded-t-md'"
+              class="px-3 py-2">Agents</button>
+    </div>
+    <div class="flex items-center gap-2 flex-wrap">
+      <span class="inline-flex items-center gap-1 rounded-full border border-transparent bg-[color-mix(in_oklab,var(--color-accent)_15%,transparent)] u-text-accent px-2 py-1 text-xs" :title="`${episodesCount ?? '—'} Episodes`">
+        <i class="ri-checkbox-multiple-blank-line text-[var(--color-accent)]"></i>
+        <span class="font-semibold" x-text="episodesCount ?? '—'"></span>
+      </span>
+      <span class="inline-flex items-center gap-1 rounded-full border border-transparent bg-[color-mix(in_oklab,var(--color-accent)_15%,transparent)] u-text-accent px-2 py-1 text-xs" :title="`${agentsCount ?? '—'} Agents`">
+        <i class="ri-robot-2-line text-[var(--color-accent)]"></i>
+        <span class="font-semibold" x-text="agentsCount ?? '—'"></span>
+      </span>
+      <span class="inline-flex items-center gap-1 rounded-full border border-transparent bg-[color-mix(in_oklab,var(--color-accent)_15%,transparent)] u-text-accent px-2 py-1 text-xs" :title="`Avg Reward: ${avgRewardDisplay ?? '—'}`">
+        <i class="ri-trophy-line text-[var(--color-accent)]"></i>
+        <span class="font-semibold" x-text="avgRewardDisplay ?? '—'"></span>
+      </span>
+      <span class="inline-flex items-center gap-1 rounded-full border border-transparent bg-[color-mix(in_oklab,var(--color-accent)_15%,transparent)] u-text-accent px-2 py-1 text-xs"
+            :title="(() => {
+              const n = Array.isArray(episodeSummaries) ? episodeSummaries.length : 0;
+              if (n <= 1) {
+                const steps = episodeSummaries?.[0]?.steps ?? null;
+                return `Total Steps: ${steps ?? '—'}`;
+              }
+              const lines = [`Max Steps: ${maxStepsCount ?? '—'}`];
+              for (let i = 0; i < n; i++) {
+                const steps = episodeSummaries?.[i]?.steps ?? '—';
+                lines.push(`Ep ${i+1}: ${steps}`);
+              }
+              return lines.join('\n');
+            })()">
+        <i class="ri-timer-line text-[var(--color-accent)]"></i>
+        <span class="font-semibold" x-text="maxStepsCount ?? '—'"></span>
+      </span>
+    </div>
+  </div>
+  <div class="p-4">
+    <div x-show="active==='Overview'" x-cloak id="panel-overview" role="tabpanel" aria-labelledby="tab-overview" class="space-y-4">
+      <div class="grid grid-cols-1 gap-2 grid-flow-row-dense"
+           x-show="(() => { const o = ($store.insights && Array.isArray($store.insights.visOptions)) ? $store.insights.visOptions : []; const c=(o.includes('rewardFrequency')?1:0)+(o.includes('actionFrequency')?1:0)+(o.includes('actionRewardFrequency')?1:0); return c>0; })()"
+           :class="(() => { const o = ($store.insights && Array.isArray($store.insights.visOptions)) ? $store.insights.visOptions : []; const c=(o.includes('rewardFrequency')?1:0)+(o.includes('actionFrequency')?1:0)+(o.includes('actionRewardFrequency')?1:0); return c>=3 ? 'lg:grid-cols-3' : (c===2 ? 'lg:grid-cols-2' : 'lg:grid-cols-1'); })()">
+        <section class="card p-3" x-show="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('rewardFrequency')"><div class="min-h-[18rem]">{% include "core/reward_v_frequency.html" %}</div></section>
+        <section class="card p-3" x-show="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('actionFrequency')"><div class="min-h-[18rem]">{% include "core/action_v_frequency.html" %}</div></section>
+        <section class="card p-3 lg:col-span-1" x-show="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('actionRewardFrequency')"><div class="min-h-[18rem]">{% include "core/action_v_reward_frequency.html" %}</div></section>
+      </div>
+    </div>
+    <div x-show="active==='Actions'" x-cloak id="panel-actions" role="tabpanel" aria-labelledby="tab-actions" class="space-y-4">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-2">
+        <section class="card p-3"
+                 x-show="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('actionFrequency')"
+                 :class="$store.insights && Array.isArray($store.insights.visOptions) && !$store.insights.visOptions.includes('actionRewardFrequency') ? 'lg:col-span-2' : ''">
+          <div class="min-h-[18rem]">{% include "core/action_v_frequency.html" %}</div>
+        </section>
+        <section class="card p-3"
+                 x-show="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('actionRewardFrequency')"
+                 :class="$store.insights && Array.isArray($store.insights.visOptions) && !$store.insights.visOptions.includes('actionFrequency') ? 'lg:col-span-2' : ''">
+          <div class="min-h-[18rem]">{% include "core/action_v_reward_frequency.html" %}</div>
+        </section>
+      </div>
+    </div>
+
+    <div x-show="active==='Rewards'" x-cloak id="panel-rewards" role="tabpanel" aria-labelledby="tab-rewards" class="space-y-4">
+      <div class="grid grid-cols-1 {% if has_reward_mapping %}lg:grid-cols-2{% endif %} gap-2">
+        <section class="card p-3" x-show="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('rewardsOverTime')"><div class="min-h-[18rem]">{% include "core/rewards_over_time.html" %}</div></section>
+        {% if has_reward_mapping %}
+        <section class="card p-3" x-show="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('rewardsOverTime')"><div class="min-h-[18rem]">{% include "core/rewards_over_time_decomp.html" %}</div></section>
+        {% endif %}
+      </div>
+    </div>
+
+    <div x-show="active==='Agents'" id="panel-agents" role="tabpanel" aria-labelledby="tab-agents" class="space-y-4">
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-2">
+        <section class="card p-3" x-show="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('obsClustering')"
+                 :class="$store.insights && Array.isArray($store.insights.visOptions) && !$store.insights.visOptions.includes('actionClustering') ? 'xl:col-span-2' : ''">
+          <h3 class="text-sm font-medium mb-2">Observations</h3>
+          <div class="space-y-3">
+            {% include "core/clustering.html" with key="'obs'" title="Observations" %}
+            {% include "core/clustering_timeline.html" with key="'obs'" title="Observations" %}
+          </div>
+        </section>
+        <section class="card p-3" x-show="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('actionClustering')"
+                 :class="$store.insights && Array.isArray($store.insights.visOptions) && !$store.insights.visOptions.includes('obsClustering') ? 'xl:col-span-2' : ''">
+          <h3 class="text-sm font-medium mb-2">Actions</h3>
+          <div class="space-y-3">
+            {% include "core/clustering.html" with key="'agent_outs'" title="Actions" %}
+            {% include "core/clustering_timeline.html" with key="'agent_outs'" title="Actions" %}
+          </div>
+        </section>
+      </div>
+    </div>
+    <div class="mt-1 mx-1" x-show="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('showPlayback')" x-cloak>
+      {% include "core/replay_controls.html" %}
+    </div>
+    <div class="mt-2" x-show="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('showTimeline')" x-cloak>
+      <section class="card">
+        {% include "core/timeline.html" %}
+      </section>
+    </div>
+    <div class="mt-2">
+      <div class="flex gap-2 items-stretch">
+        <section class="card p-3 flex-1 min-w-0 h-auto" x-show="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('showEpisodeInfo')" x-cloak>
+          {% include "core/episode_info.html" %}
+        </section>
+        <section class="card p-3 h-full"
+                 x-show="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('showMediaViewer')" x-cloak
+                 :class="($store.insights && (!Array.isArray($store.insights.visOptions) || !$store.insights.visOptions.includes('showEpisodeInfo'))) ? 'basis-full max-w-full flex-1' : 'basis-1/2 max-w-[50%] shrink grow-0'">
+          <div class="h-full">{% include "core/media_viewer.html" %}</div>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
