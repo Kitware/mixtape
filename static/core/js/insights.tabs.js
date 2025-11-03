@@ -1,0 +1,291 @@
+(() => {
+  const factory = () => ({
+    // initial state
+    active: 'Overview',
+    pd: null,
+    clustering: null,
+    episodesCount: null,
+    agentsCount: null,
+    maxStepsCount: null,
+    avgRewardDisplay: null,
+    actionVReward: {},
+    rewardHistogram: [],
+    actionVFrequency: {},
+    rewardsOverTime: [],
+    decomposedRewards: [],
+    uniqueAgents: [],
+    episodeIds: [],
+    stepData: [],
+    timelineKeySteps: [],
+    timelineKeyStepsGlobal: [],
+    currentStep: 0,
+    maxSteps: 0,
+    maxStepsGlobal: 0,
+    episodeSummaries: [],
+    selectedEpisodeIdx: 0,
+    timelineEpisodeIdx: 0,
+    mediaEpisodeIdx: 0,
+    linkMediaToEpisode: true,
+    mediaFitMode: 'contain',
+    limitToEpisode: false,
+    debug: false,
+    episodePairs: [],
+    playing: false,
+    useGlobalTimeline: true,
+    playbackSpeed: 1,
+    visOptions: [
+      'actionRewardFrequency',
+      'rewardFrequency',
+      'actionFrequency',
+      'rewardsOverTime',
+      'obsClustering',
+      'actionClustering',
+      'plotLegends',
+      'showPlayback',
+      'showEpisodeInfo',
+      'showMediaViewer',
+      'showTimeline',
+    ],
+
+    init() {
+      // Parse JSON blobs from DOM
+      try {
+        this.pd = JSON.parse(document.getElementById('parsed_data_json')?.textContent || 'null');
+      } catch (_) { this.pd = null; }
+      try {
+        this.clustering = JSON.parse(document.getElementById('clustering_json')?.textContent || 'null');
+      } catch (_) { this.clustering = null; }
+
+      // Derive counts
+      this.episodeIds = this.pd?.episode_ids ?? [];
+      this.uniqueAgents = this.pd?.unique_agents ?? [];
+      this.rewardsOverTime = this.pd?.rewards_over_time ?? [];
+      this.decomposedRewards = this.pd?.decomposed_rewards ?? [];
+      this.actionVReward = this.pd?.action_v_reward ?? {};
+      this.rewardHistogram = this.pd?.reward_histogram ?? [];
+      this.actionVFrequency = this.pd?.action_v_frequency ?? {};
+      this.stepData = this.pd?.step_data ?? [];
+      this.timelineKeySteps = this.pd?.timeline_key_steps ?? [];
+      this.timelineKeyStepsGlobal = this.pd?.timeline_key_steps_global ?? [];
+
+      this.episodesCount = Array.isArray(this.episodeIds) ? this.episodeIds.length : null;
+      this.agentsCount = Array.isArray(this.uniqueAgents) ? this.uniqueAgents.length : null;
+      this.maxStepsGlobal = (this.pd?.max_steps ?? 1) - 1;
+      this.maxSteps = this.maxStepsGlobal;
+
+      // Average reward display
+      const avgReward = (() => {
+        const pd = this.pd;
+        if (!pd) return null;
+        if (pd.rewards_totals && typeof pd.rewards_totals.average_per_episode === 'number') {
+          return pd.rewards_totals.average_per_episode;
+        }
+        if (Array.isArray(pd.episode_total_rewards)) {
+          const arr = pd.episode_total_rewards.filter(v => typeof v === 'number');
+          return arr.length ? arr.reduce((a,b)=>a+b,0) / arr.length : null;
+        }
+        if (Array.isArray(pd.episode_rewards)) {
+          const arr = pd.episode_rewards.filter(v => typeof v === 'number');
+          return arr.length ? arr.reduce((a,b)=>a+b,0) / arr.length : null;
+        }
+        if (Array.isArray(pd.rewards_over_time)) {
+          const perEpTotals = pd.rewards_over_time.map(trace => {
+            if (!trace) return null;
+            const y = Array.isArray(trace.y) ? trace.y : [];
+            if (!y.length) return null;
+            const last = y[y.length-1];
+            if (typeof last === 'number' && y.some(v => v < last)) return last;
+            return y.reduce((a,b)=> typeof b === 'number' ? a + b : a, 0);
+          }).filter(v => typeof v === 'number');
+          return perEpTotals.length ? perEpTotals.reduce((a,b)=>a+b,0) / perEpTotals.length : null;
+        }
+        return null;
+      })();
+      this.avgRewardDisplay = (avgReward ?? null) !== null ? Number(avgReward).toFixed(2) : null;
+
+      // Episode summaries
+      this.episodeSummaries = (Array.isArray(this.episodeIds) ? this.episodeIds : []).map((id, idx) => {
+        const yFull = Array.isArray(this.rewardsOverTime[idx]) ? this.rewardsOverTime[idx] : [];
+        const steps = yFull.length || null;
+        const perStep = yFull.filter(v => typeof v === 'number');
+        let totalReward = null;
+        if (Array.isArray(this.pd?.episode_total_rewards)) {
+          totalReward = typeof this.pd.episode_total_rewards[idx] === 'number' ? this.pd.episode_total_rewards[idx] : null;
+        }
+        if (totalReward === null && yFull.length) {
+          const last = yFull[yFull.length-1];
+          totalReward = (typeof last === 'number' && yFull.some(v => v < last)) ? last : perStep.reduce((a,b)=> a + b, 0);
+        }
+        const minPerStep = perStep.length ? Math.min(...perStep) : null;
+        const maxPerStep = perStep.length ? Math.max(...perStep) : null;
+        const avgPerStep = perStep.length ? (perStep.reduce((a,b)=> a + b, 0) / perStep.length) : null;
+        return { id: id ?? idx, steps, totalReward, minPerStep, maxPerStep, avgPerStep };
+      });
+
+      // Build pairs and watchers
+      this.updateMaxSteps();
+      this.$watch('limitToEpisode', () => this.updateMaxSteps());
+      this.$watch('selectedEpisodeIdx', () => {
+        this.updateMaxSteps();
+        if (this.linkMediaToEpisode) this.mediaEpisodeIdx = this.selectedEpisodeIdx;
+      });
+      this.episodePairs = this.buildEpisodePairs();
+      this.$watch('episodeSummaries', () => { this.episodePairs = this.buildEpisodePairs(); });
+      this.$watch('episodeSummaries', () => {
+        if (!Array.isArray(this.episodeSummaries) || this.episodeSummaries.length === 0) {
+          this.mediaEpisodeIdx = 0;
+        } else if (this.mediaEpisodeIdx >= this.episodeSummaries.length) {
+          this.mediaEpisodeIdx = 0;
+        }
+      });
+      this.$watch('linkMediaToEpisode', (v) => { if (v) { this.mediaEpisodeIdx = this.selectedEpisodeIdx; } });
+
+      // Shared store
+      Alpine.store('insights', {
+        useGlobalTimeline: this.useGlobalTimeline,
+        timelineEpisodeIdx: this.timelineEpisodeIdx,
+        episodeSummaries: this.episodeSummaries,
+        playbackSpeed: this.playbackSpeed,
+        visOptions: this.visOptions,
+        maxStepsGlobal: this.maxStepsGlobal,
+        currentStep: this.currentStep,
+        sidePanelCollapsed: false,
+        get(k) { try { return this[k]; } catch(_) { return undefined; }},
+        set(k, v) { try { this[k] = v; } catch(_) {} },
+        toggleVis: (key) => {
+          const list = Array.isArray(Alpine.store('insights').visOptions) ? Alpine.store('insights').visOptions : [];
+          Alpine.store('insights').visOptions = list.includes(key)
+            ? list.filter((v) => v !== key)
+            : [...list, key];
+        },
+      });
+      // push changes main -> store
+      this.$watch('useGlobalTimeline', v => { Alpine.store('insights').useGlobalTimeline = v; });
+      this.$watch('timelineEpisodeIdx', v => { Alpine.store('insights').timelineEpisodeIdx = v; });
+      this.$watch('episodeSummaries', v => { Alpine.store('insights').episodeSummaries = v; });
+      this.$watch('playbackSpeed', v => { Alpine.store('insights').playbackSpeed = v; });
+      this.$watch('visOptions', v => { Alpine.store('insights').visOptions = v; });
+      this.$watch('maxStepsGlobal', v => { Alpine.store('insights').maxStepsGlobal = v; });
+      this.$watch('currentStep', v => { Alpine.store('insights').currentStep = v; });
+      // pull changes store -> main
+      this.$watch('$store.insights.useGlobalTimeline', v => { this.useGlobalTimeline = v; });
+      this.$watch('$store.insights.timelineEpisodeIdx', v => { this.timelineEpisodeIdx = v; });
+      this.$watch('$store.insights.playbackSpeed', v => { this.playbackSpeed = v; });
+      this.$watch('$store.insights.visOptions', v => { this.visOptions = Array.isArray(v) ? v : this.visOptions; });
+    },
+
+    stepForward() {
+      if (!this.playing) return;
+      if (this.currentStep < this.maxSteps) {
+        const delay = Math.max(10, Math.round(100 / (this.playbackSpeed || 1)));
+        setTimeout(() => { this.currentStep++; this.stepForward(); }, delay);
+      } else { this.playing = false; this.currentStep = 0; }
+    },
+    updateMaxSteps() {
+      if (this.limitToEpisode) {
+        const steps = this.episodeSummaries[this.selectedEpisodeIdx]?.steps ?? null;
+        this.maxSteps = (typeof steps === 'number' && steps > 0) ? steps - 1 : this.maxStepsGlobal;
+      } else { this.maxSteps = this.maxStepsGlobal; }
+    },
+
+    toggleVis(key) {
+      const i = this.visOptions.indexOf(key);
+      if (i === -1) this.visOptions = [...this.visOptions, key];
+      else this.visOptions = this.visOptions.filter(v => v !== key);
+    },
+    tabClass(tab) {
+      return this.active === tab
+        ? 'u-text-accent border-b-2 u-border-accent u-bg-muted rounded-t-md'
+        : 'text-gray-600 dark:text-gray-300 border-b-2 border-transparent hover:u-bg-muted rounded-t-md';
+    },
+    selectTab(tab) { this.active = tab; },
+    overviewVisible() {
+      const o = Array.isArray(this.visOptions) ? this.visOptions : [];
+      const c = (o.includes('rewardFrequency') ? 1 : 0)
+        + (o.includes('actionFrequency') ? 1 : 0)
+        + (o.includes('actionRewardFrequency') ? 1 : 0);
+      return c > 0;
+    },
+    overviewGridColsClass() {
+      const o = Array.isArray(this.visOptions) ? this.visOptions : [];
+      const c = (o.includes('rewardFrequency') ? 1 : 0)
+        + (o.includes('actionFrequency') ? 1 : 0)
+        + (o.includes('actionRewardFrequency') ? 1 : 0);
+      return c >= 3 ? 'lg:grid-cols-3' : (c === 2 ? 'lg:grid-cols-2' : 'lg:grid-cols-1');
+    },
+    maxStepsTooltip() {
+      const n = Array.isArray(this.episodeSummaries) ? this.episodeSummaries.length : 0;
+      if (n <= 1) {
+        const steps = this.episodeSummaries?.[0]?.steps ?? null;
+        return `Total Steps: ${steps ?? '—'}`;
+      }
+      const lines = [`Max Steps: ${this.maxStepsCount ?? '—'}`];
+      for (let i = 0; i < n; i++) {
+        const steps = this.episodeSummaries?.[i]?.steps ?? '—';
+        lines.push(`Ep ${i + 1}: ${steps}`);
+      }
+      return lines.join('\n');
+    },
+    timelineTitle(ts) {
+      if (Array.isArray(ts?.episodes)) {
+        const parts = ts.episodes.map(e => `Episode ${e.episode_id}: ${Number(e.total_rewards ?? 0).toFixed(2)}`);
+        return `Step ${ts.number}\n${parts.join('\n')}`;
+      }
+      return `Step ${ts?.number} — Reward: ${Number((ts && ts.total_rewards) ?? 0).toFixed(2)}`;
+    },
+    timelineAria(ts) {
+      if (Array.isArray(ts?.episodes)) {
+        const parts = ts.episodes.map(e => `Episode ${e.episode_id}: ${Number(e.total_rewards ?? 0).toFixed(2)}`);
+        return `Step ${ts.number} ${parts.join(', ')}`;
+      }
+      return `Step ${ts?.number} Reward ${Number((ts && ts.total_rewards) ?? 0).toFixed(2)}`;
+    },
+
+    // helpers used by templates
+    getEpisodeStepIndex(epIdx) {
+      const steps = this.stepData?.[epIdx] || {};
+      const keys = Object.keys(steps);
+      if (!keys.length) return null;
+      const nums = keys.map(k => +k).sort((a,b) => a - b);
+      let chosen = nums[0];
+      for (let i = 0; i < nums.length; i++) { if (nums[i] <= this.currentStep) chosen = nums[i]; else break; }
+      return chosen;
+    },
+    getEpisodeStepData(epIdx) {
+      const idx = this.getEpisodeStepIndex(epIdx);
+      if (idx === null) return null;
+      const steps = this.stepData?.[epIdx] || {};
+      return steps[idx] ?? steps[String(idx)] ?? null;
+    },
+    getAgentStep(epIdx, agent) {
+      const s = this.getEpisodeStepData(epIdx);
+      const arr = s && Array.isArray(s.agent_steps) ? s.agent_steps : [];
+      return arr.find(as => as.agent === agent) || null;
+    },
+    getAgentAction(epIdx, agent) {
+      const as = this.getAgentStep(epIdx, agent);
+      return (as && (as.action ?? as.action_string ?? as.action_name ?? as.action_id)) ?? '—';
+    },
+    getAgentRewardStr(epIdx, agent) {
+      const as = this.getAgentStep(epIdx, agent);
+      const val = as ? (as.total_reward ?? as.reward ?? null) : null;
+      return (typeof val === 'number') ? val.toFixed(3) : (val ?? '—');
+    },
+    getEpisodeImageUrl(epIdx) {
+      const s = this.getEpisodeStepData(epIdx);
+      return s && s.image_url ? s.image_url : null;
+    },
+    buildEpisodePairs() {
+      const out = [];
+      const n = Array.isArray(this.episodeSummaries) ? this.episodeSummaries.length : 0;
+      for (let i = 0; i < n; i++) { out.push({ epIdx: i, kind: 'action' }); out.push({ epIdx: i, kind: 'reward' }); }
+      return out;
+    },
+  });
+  const register = () => {
+    Alpine.data('insightsTabs', factory);
+    try { window.insightsTabs = factory; } catch (_) {}
+  };
+  if (window.Alpine) register();
+  else window.addEventListener('alpine:init', register);
+})();

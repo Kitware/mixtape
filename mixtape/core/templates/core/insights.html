@@ -5,6 +5,9 @@
 {% block content %}
 {{ parsed_data|json_script:"parsed_data_json" }}
 {{ clustering|json_script:"clustering_json" }}
+{% include "core/_alpine_insights_store.html" %}
+{% include "core/_alpine_sidepanel.html" %}
+{% include "core/_alpine_tabs.html" %}
 <div class="u-bg-surface min-h-screen p-4">
   <div x-data="{}" class="grid grid-cols-1 gap-4"
        :class="($store.insights && $store.insights.sidePanelCollapsed) ? 'lg:grid-cols-[48px_1fr]' : 'lg:grid-cols-[285px_1fr]'">

@@ -14,12 +14,8 @@
               class="cursor-pointer z-10 flex items-center justify-center w-2 h-2 rounded-full ring-4 shrink-0"
               :class="currentStep === ts.number ? 'ring-blue-300 bg-blue-600 dark:ring-white dark:bg-blue-200' : 'ring-blue-600 dark:ring-blue-200'"
               @click="currentStep = ts.number"
-              :title="ts.episodes
-                        ? ('Step ' + ts.number + '\n' + ts.episodes.map(e => 'Episode ' + e.episode_id + ': ' + Number(e.total_rewards ?? 0).toFixed(2)).join('\n'))
-                        : ('Step ' + ts.number + ' — Reward: ' + Number(ts.total_rewards ?? 0).toFixed(2))"
-              :aria-label="ts.episodes
-                        ? ('Step ' + ts.number + ' ' + ts.episodes.map(e => 'Episode ' + e.episode_id + ': ' + Number(e.total_rewards ?? 0).toFixed(2)).join(', '))
-                        : ('Step ' + ts.number + ' Reward ' + Number(ts.total_rewards ?? 0).toFixed(2))"
+              :title="timelineTitle(ts)"
+              :aria-label="timelineAria(ts)"
             >
             </button>
             <div class="flex w-full bg-blue-600 dark:bg-blue-200 h-0.5"></div>
