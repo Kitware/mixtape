@@ -8,7 +8,7 @@
 {% include "core/_alpine_insights_store.html" %}
 {% include "core/_alpine_sidepanel.html" %}
 {% include "core/_alpine_tabs.html" %}
-<div class="u-bg-surface min-h-screen p-4">
+<div class="bg-[var(--color-surface)] min-h-screen p-4">
   <div x-data="{}" class="grid grid-cols-1 gap-4"
        :class="($store.insights && $store.insights.sidePanelCollapsed) ? 'lg:grid-cols-[48px_1fr]' : 'lg:grid-cols-[285px_1fr]'">
     {% include "core/figma/_side_panel_overview.html" %}

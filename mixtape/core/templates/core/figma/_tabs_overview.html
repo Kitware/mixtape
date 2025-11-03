@@ -1,5 +1,5 @@
-<div x-data="insightsTabs()" x-init="init()" x-cloak class="u-bg-surface u-text-surface rounded-lg border u-border-surface raised">
-  <div class="flex items-center justify-between border-b u-border-surface px-2 pt-2 gap-2">
+<div x-data="insightsTabs()" x-init="init()" x-cloak class="bg-[var(--color-surface)] text-[var(--color-surface-foreground)] rounded-lg border border-[var(--color-border)] raised">
+  <div class="flex items-center justify-between border-b border-[var(--color-border)] px-2 pt-2 gap-2">
     <div role="tablist" aria-label="Insights Tabs" class="flex gap-2">
       <button id="tab-overview" role="tab" :aria-selected="active==='Overview'" aria-controls="panel-overview"
               @click="selectTab('Overview')"
@@ -19,19 +19,19 @@
               class="px-3 py-2">Agents</button>
     </div>
     <div class="flex items-center gap-2 flex-wrap">
-      <span class="inline-flex items-center gap-1 rounded-full border border-transparent bg-[color-mix(in_oklab,var(--color-accent)_15%,transparent)] u-text-accent px-2 py-1 text-xs" :title="`${episodesCount ?? '—'} Episodes`">
+      <span class="chip" :title="`${episodesCount ?? '—'} Episodes`">
         <i class="ri-checkbox-multiple-blank-line text-[var(--color-accent)]"></i>
         <span class="font-semibold" x-text="episodesCount ?? '—'"></span>
       </span>
-      <span class="inline-flex items-center gap-1 rounded-full border border-transparent bg-[color-mix(in_oklab,var(--color-accent)_15%,transparent)] u-text-accent px-2 py-1 text-xs" :title="`${agentsCount ?? '—'} Agents`">
+      <span class="chip" :title="`${agentsCount ?? '—'} Agents`">
         <i class="ri-robot-2-line text-[var(--color-accent)]"></i>
         <span class="font-semibold" x-text="agentsCount ?? '—'"></span>
       </span>
-      <span class="inline-flex items-center gap-1 rounded-full border border-transparent bg-[color-mix(in_oklab,var(--color-accent)_15%,transparent)] u-text-accent px-2 py-1 text-xs" :title="`Avg Reward: ${avgRewardDisplay ?? '—'}`">
+      <span class="chip" :title="`Avg Reward: ${avgRewardDisplay ?? '—'}`">
         <i class="ri-trophy-line text-[var(--color-accent)]"></i>
         <span class="font-semibold" x-text="avgRewardDisplay ?? '—'"></span>
       </span>
-      <span class="inline-flex items-center gap-1 rounded-full border border-transparent bg-[color-mix(in_oklab,var(--color-accent)_15%,transparent)] u-text-accent px-2 py-1 text-xs"
+      <span class="chip"
             :title="maxStepsTooltip()">
         <i class="ri-timer-line text-[var(--color-accent)]"></i>
         <span class="font-semibold" x-text="maxStepsCount ?? '—'"></span>

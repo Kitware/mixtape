@@ -227,8 +227,8 @@
       },
       tabClass(tab) {
         return this.active === tab
-          ? 'u-text-accent border-b-2 u-border-accent u-bg-muted rounded-t-md'
-          : 'text-gray-600 dark:text-gray-300 border-b-2 border-transparent hover:u-bg-muted rounded-t-md';
+          ? 'text-[var(--color-accent)] border-b-2 border-[var(--color-accent)] bg-[var(--color-muted)] rounded-t-md'
+          : 'text-[var(--color-muted-foreground)] border-b-2 border-transparent hover:bg-[var(--color-muted)] rounded-t-md';
       },
       selectTab(tab) { this.active = tab; },
       overviewVisible() {
