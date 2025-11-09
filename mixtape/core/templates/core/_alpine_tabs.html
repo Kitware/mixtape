@@ -47,6 +47,7 @@
         'showMediaViewer',
         'showTimeline',
       ],
+      _resizeQueued: false,
 
       init() {
         // Parse JSON data
@@ -102,10 +103,10 @@
         // Ensure timeline mode changes recompute limits
         this.$watch('useGlobalTimeline', () => { this.updateMaxSteps(); });
 
-        // Shared store (assumes store is initialized by _alpine_insights_store.html)
+        // Store
         const store = (window.Alpine && Alpine.store('insights')) || null;
         if (store) {
-          // Pull user-facing settings
+          // Pull settings
           if (typeof store.playbackSpeed === 'number') this.playbackSpeed = store.playbackSpeed;
           if (typeof store.useGlobalTimeline === 'boolean') this.useGlobalTimeline = store.useGlobalTimeline;
           if (typeof store.timelineEpisodeIdx === 'number') this.timelineEpisodeIdx = store.timelineEpisodeIdx;
@@ -115,7 +116,7 @@
           store.currentStep = this.currentStep;
           store.episodeSummaries = this.episodeSummaries;
         }
-        // push changes main -> store
+        // push changes
         this.$watch('useGlobalTimeline', v => { Alpine.store('insights').useGlobalTimeline = v; });
         this.$watch('timelineEpisodeIdx', v => { Alpine.store('insights').timelineEpisodeIdx = v; });
         this.$watch('episodeSummaries', v => { Alpine.store('insights').episodeSummaries = v; });
@@ -123,11 +124,18 @@
         this.$watch('visOptions', v => { Alpine.store('insights').visOptions = v; });
         this.$watch('maxStepsGlobal', v => { Alpine.store('insights').maxStepsGlobal = v; });
         this.$watch('currentStep', v => { Alpine.store('insights').currentStep = v; });
-        // pull changes store -> main
+        // pull changes
         this.$watch('$store.insights.useGlobalTimeline', v => { this.useGlobalTimeline = v; this.updateMaxSteps(); });
         this.$watch('$store.insights.timelineEpisodeIdx', v => { this.timelineEpisodeIdx = v; });
         this.$watch('$store.insights.playbackSpeed', v => { this.playbackSpeed = v; });
-        this.$watch('$store.insights.visOptions', v => { this.visOptions = Array.isArray(v) ? v : this.visOptions; });
+        this.$watch('$store.insights.visOptions', v => {
+          this.visOptions = Array.isArray(v) ? v : this.visOptions;
+          this.queuePlotResize();
+        });
+        // side panel collapse/expand can change available width
+        this.$watch('$store.insights.sidePanelCollapsed', () => { this.queuePlotResize(); });
+        // Observe once on init for plots that become visible later
+        this.$nextTick(() => { this.observeResizeOnVisible(); });
       },
 
       stepForward() {
@@ -147,7 +155,10 @@
       tabClass(tab) {
         return this.active === tab ? 'tab-active' : 'tab-inactive';
       },
-      selectTab(tab) { this.active = tab; },
+      selectTab(tab) {
+        this.active = tab;
+        this.queuePlotResize();
+      },
       overviewVisible() {
         const o = Array.isArray(this.visOptions) ? this.visOptions : [];
         const c = (o.includes('rewardFrequency') ? 1 : 0)
@@ -235,6 +246,50 @@
           out.push({ epIdx: i, kind: 'action' }); out.push({ epIdx: i, kind: 'reward' });
         }
         return out;
+      },
+      resizePlots(panelId) {
+        if (!window.Plotly) return;
+        const root = this.$el;
+        const scope = panelId ? root.querySelector(`#${panelId}`) : root;
+        if (!scope) return;
+        const nodes = scope.querySelectorAll('.js-plotly-plot, [data-plotly]');
+        nodes.forEach((el) => {
+          try {
+            Plotly.Plots.resize(el);
+            Plotly.relayout(el, { autosize: true });
+          } catch (_) {}
+        });
+      },
+      queuePlotResize() {
+        // Debounce resize to prevent Plotly "jumpiness"
+        if (this._resizeQueued) return;
+        this._resizeQueued = true;
+        this.$nextTick(() => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              this.resizePlots();
+              this.observeResizeOnVisible();
+              this._resizeQueued = false;
+            });
+          });
+        });
+      },
+      observeResizeOnVisible(panelId) {
+        // Make sure resize runs when plots become visible
+        if (!window.Plotly || !window.IntersectionObserver) return;
+        const root = this.$el;
+        const scope = panelId ? root.querySelector(`#${panelId}`) : root;
+        if (!scope) return;
+        const nodes = scope.querySelectorAll('.js-plotly-plot, [data-plotly]');
+        const io = new IntersectionObserver((entries) => {
+          entries.forEach((e) => {
+            if (e.isIntersecting) {
+              Plotly.Plots.resize(e.target);
+              io.unobserve(e.target);
+            }
+          });
+        }, { root: null, threshold: 0 });
+        nodes.forEach((el) => { io.observe(el); });
       },
       totalFromSeries(y) {
         const arr = Array.isArray(y) ? y.filter(v => typeof v === 'number') : [];
