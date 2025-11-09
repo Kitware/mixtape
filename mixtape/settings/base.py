@@ -96,13 +96,7 @@ STATIC_ROOT.mkdir(exist_ok=True)
 
 # Django's docs suggest that STATIC_URL should be a relative path,
 # for convenience serving a site on a subpath.
-STATIC_URL = '/static/'
-
-# Ensure Django serves project-level static files (e.g., static/core/js/*) in development
-# and via WhiteNoise in production containers.
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-]
+STATIC_URL = 'static/'
 
 # Make Django and Allauth redirects consistent, but both may be changed.
 LOGIN_REDIRECT_URL = '/'

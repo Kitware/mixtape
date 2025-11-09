@@ -112,6 +112,16 @@
           color: var(--color-accent);
           background: color-mix(in oklab, var(--color-accent) 15%, transparent);
         }
+        .tab-active {
+          @apply border-b-2 rounded-t-md;
+          color: var(--color-accent);
+          border-color: var(--color-accent);
+          background: var(--color-muted);
+        }
+        .tab-inactive {
+          @apply border-b-2 border-transparent rounded-t-md hover:bg-[var(--color-muted)];
+          color: var(--color-muted-foreground);
+        }
       }
     </style>
 

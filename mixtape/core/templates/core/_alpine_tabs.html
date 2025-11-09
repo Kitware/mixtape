@@ -1,5 +1,5 @@
 <script>
-  // Inline Alpine factory for the Insights tabs
+  // Factory for the Insights tabs
   window.insightsTabs = function insightsTabs() {
     return {
       // initial state
@@ -31,7 +31,6 @@
       mediaFitMode: 'contain',
       limitToEpisode: false,
       debug: false,
-      episodePairs: [],
       playing: false,
       useGlobalTimeline: true,
       playbackSpeed: 1,
@@ -50,15 +49,9 @@
       ],
 
       init() {
-        // Parse JSON blobs from DOM
-        try {
-          this.pd = JSON.parse(document.getElementById('parsed_data_json')?.textContent || 'null');
-        } catch (_) { this.pd = null; }
-        try {
-          this.clustering = JSON.parse(document.getElementById('clustering_json')?.textContent || 'null');
-        } catch (_) { this.clustering = null; }
-
-        // Derive counts
+        // Parse JSON data
+        this.pd = JSON.parse(document.getElementById('parsed_data_json')?.textContent || 'null');
+        this.clustering = JSON.parse(document.getElementById('clustering_json')?.textContent || 'null');
         this.episodeIds = this.pd?.episode_ids ?? [];
         this.uniqueAgents = this.pd?.unique_agents ?? [];
         this.rewardsOverTime = this.pd?.rewards_over_time ?? [];
@@ -69,61 +62,20 @@
         this.stepData = this.pd?.step_data ?? [];
         this.timelineKeySteps = this.pd?.timeline_key_steps ?? [];
         this.timelineKeyStepsGlobal = this.pd?.timeline_key_steps_global ?? [];
-
         this.episodesCount = Array.isArray(this.episodeIds) ? this.episodeIds.length : null;
         this.agentsCount = Array.isArray(this.uniqueAgents) ? this.uniqueAgents.length : null;
         this.maxStepsGlobal = (this.pd?.max_steps ?? 1) - 1;
         this.maxSteps = this.maxStepsGlobal;
 
-        // Average reward display
-        const avgReward = (() => {
-          const pd = this.pd;
-          if (!pd) return null;
-          if (pd.rewards_totals && typeof pd.rewards_totals.average_per_episode === 'number') {
-            return pd.rewards_totals.average_per_episode;
-          }
-          if (Array.isArray(pd.episode_total_rewards)) {
-            const arr = pd.episode_total_rewards.filter(v => typeof v === 'number');
-            return arr.length ? arr.reduce((a,b)=>a+b,0) / arr.length : null;
-          }
-          if (Array.isArray(pd.episode_rewards)) {
-            const arr = pd.episode_rewards.filter(v => typeof v === 'number');
-            return arr.length ? arr.reduce((a,b)=>a+b,0) / arr.length : null;
-          }
-          if (Array.isArray(pd.rewards_over_time)) {
-            const perEpTotals = pd.rewards_over_time.map(trace => {
-              if (!trace) return null;
-              const y = Array.isArray(trace.y) ? trace.y : [];
-              if (!y.length) return null;
-              const last = y[y.length-1];
-              if (typeof last === 'number' && y.some(v => v < last)) return last;
-              return y.reduce((a,b)=> typeof b === 'number' ? a + b : a, 0);
-            }).filter(v => typeof v === 'number');
-            return perEpTotals.length ? perEpTotals.reduce((a,b)=>a+b,0) / perEpTotals.length : null;
-          }
-          return null;
-        })();
+        // Average reward
+        const avgReward = this.computeAverageReward(this.pd);
         this.avgRewardDisplay = (avgReward ?? null) !== null ? Number(avgReward).toFixed(2) : null;
 
-        // Episode summaries
-        this.episodeSummaries = (Array.isArray(this.episodeIds) ? this.episodeIds : []).map((id, idx) => {
-          const yFull = Array.isArray(this.rewardsOverTime[idx]) ? this.rewardsOverTime[idx] : [];
-          const steps = yFull.length || null;
-          const perStep = yFull.filter(v => typeof v === 'number');
-          let totalReward = null;
-          if (Array.isArray(this.pd?.episode_total_rewards)) {
-            totalReward = typeof this.pd.episode_total_rewards[idx] === 'number' ? this.pd.episode_total_rewards[idx] : null;
-          }
-          if (totalReward === null && yFull.length) {
-            const last = yFull[yFull.length-1];
-            totalReward = (typeof last === 'number' && yFull.some(v => v < last)) ? last : perStep.reduce((a,b)=> a + b, 0);
-          }
-          const minPerStep = perStep.length ? Math.min(...perStep) : null;
-          const maxPerStep = perStep.length ? Math.max(...perStep) : null;
-          const avgPerStep = perStep.length ? (perStep.reduce((a,b)=> a + b, 0) / perStep.length) : null;
-          return { id: id ?? idx, steps, totalReward, minPerStep, maxPerStep, avgPerStep };
-        });
-        // Compute max steps count for summary chip display
+        // Episode summary
+        this.episodeSummaries = (Array.isArray(this.episodeIds) ? this.episodeIds : [])
+          .map((id, idx) => this.summarizeEpisode(idx, id));
+
+        // Max steps count (for multi-episode mode)
         this.maxStepsCount = (() => {
           const nums = Array.isArray(this.episodeSummaries)
             ? this.episodeSummaries.map(e => (typeof e?.steps === 'number' ? e.steps : 0))
@@ -139,8 +91,6 @@
           this.updateMaxSteps();
           if (this.linkMediaToEpisode) this.mediaEpisodeIdx = this.selectedEpisodeIdx;
         });
-        this.episodePairs = this.buildEpisodePairs();
-        this.$watch('episodeSummaries', () => { this.episodePairs = this.buildEpisodePairs(); });
         this.$watch('episodeSummaries', () => {
           if (!Array.isArray(this.episodeSummaries) || this.episodeSummaries.length === 0) {
             this.mediaEpisodeIdx = 0;
@@ -152,44 +102,18 @@
         // Ensure timeline mode changes recompute limits
         this.$watch('useGlobalTimeline', () => { this.updateMaxSteps(); });
 
-        // Shared store
-        const existingStore = (() => { try { return Alpine.store('insights'); } catch (_) { return null; } })();
-        if (existingStore) {
-          // Pull in previously set values (e.g., from side panel interactions)
-          if (typeof existingStore.playbackSpeed === 'number') this.playbackSpeed = existingStore.playbackSpeed;
-          if (typeof existingStore.useGlobalTimeline === 'boolean') this.useGlobalTimeline = existingStore.useGlobalTimeline;
-          if (typeof existingStore.timelineEpisodeIdx === 'number') this.timelineEpisodeIdx = existingStore.timelineEpisodeIdx;
-          if (Array.isArray(existingStore.visOptions)) this.visOptions = existingStore.visOptions;
-          // Update store with data derived here without clobbering user-facing settings
-          existingStore.maxStepsGlobal = this.maxStepsGlobal;
-          existingStore.currentStep = this.currentStep;
-          existingStore.episodeSummaries = this.episodeSummaries;
-          existingStore.sidePanelCollapsed = existingStore.sidePanelCollapsed || false;
-          if (!existingStore.get) existingStore.get = function(k){ try { return this[k]; } catch(_) { return undefined; } };
-          if (!existingStore.set) existingStore.set = function(k,v){ try { this[k] = v; } catch(_) {} };
-          if (!existingStore.toggleVis) existingStore.toggleVis = (key) => {
-            const list = Array.isArray(existingStore.visOptions) ? existingStore.visOptions : [];
-            existingStore.visOptions = list.includes(key) ? list.filter((v) => v !== key) : [...list, key];
-          };
-        } else {
-          Alpine.store('insights', {
-            useGlobalTimeline: this.useGlobalTimeline,
-            timelineEpisodeIdx: this.timelineEpisodeIdx,
-            episodeSummaries: this.episodeSummaries,
-            playbackSpeed: this.playbackSpeed,
-            visOptions: this.visOptions,
-            maxStepsGlobal: this.maxStepsGlobal,
-            currentStep: this.currentStep,
-            sidePanelCollapsed: false,
-            get(k) { try { return this[k]; } catch(_) { return undefined; }},
-            set(k, v) { try { this[k] = v; } catch(_) {} },
-            toggleVis: (key) => {
-              const list = Array.isArray(Alpine.store('insights').visOptions) ? Alpine.store('insights').visOptions : [];
-              Alpine.store('insights').visOptions = list.includes(key)
-                ? list.filter((v) => v !== key)
-                : [...list, key];
-            },
-          });
+        // Shared store (assumes store is initialized by _alpine_insights_store.html)
+        const store = (window.Alpine && Alpine.store('insights')) || null;
+        if (store) {
+          // Pull user-facing settings
+          if (typeof store.playbackSpeed === 'number') this.playbackSpeed = store.playbackSpeed;
+          if (typeof store.useGlobalTimeline === 'boolean') this.useGlobalTimeline = store.useGlobalTimeline;
+          if (typeof store.timelineEpisodeIdx === 'number') this.timelineEpisodeIdx = store.timelineEpisodeIdx;
+          if (Array.isArray(store.visOptions)) this.visOptions = store.visOptions;
+          // Push derived values
+          store.maxStepsGlobal = this.maxStepsGlobal;
+          store.currentStep = this.currentStep;
+          store.episodeSummaries = this.episodeSummaries;
         }
         // push changes main -> store
         this.$watch('useGlobalTimeline', v => { Alpine.store('insights').useGlobalTimeline = v; });
@@ -209,7 +133,7 @@
       stepForward() {
         if (!this.playing) return;
         if (this.currentStep < this.maxSteps) {
-          const delay = Math.max(10, Math.round(100 / (this.playbackSpeed || 1)));
+          const delay = Math.max(50, Math.round(500 / (this.playbackSpeed || 1)));
           setTimeout(() => { this.currentStep++; this.stepForward(); }, delay);
         } else { this.playing = false; this.currentStep = 0; }
       },
@@ -220,15 +144,8 @@
         } else { this.maxSteps = this.maxStepsGlobal; }
       },
 
-      toggleVis(key) {
-        const i = this.visOptions.indexOf(key);
-        if (i === -1) this.visOptions = [...this.visOptions, key];
-        else this.visOptions = this.visOptions.filter(v => v !== key);
-      },
       tabClass(tab) {
-        return this.active === tab
-          ? 'text-[var(--color-accent)] border-b-2 border-[var(--color-accent)] bg-[var(--color-muted)] rounded-t-md'
-          : 'text-[var(--color-muted-foreground)] border-b-2 border-transparent hover:bg-[var(--color-muted)] rounded-t-md';
+        return this.active === tab ? 'tab-active' : 'tab-inactive';
       },
       selectTab(tab) { this.active = tab; },
       overviewVisible() {
@@ -273,7 +190,7 @@
         return `Step ${ts?.number} Reward ${Number((ts && ts.total_rewards) ?? 0).toFixed(2)}`;
       },
 
-      // helpers used by templates
+      // helpers for templates
       getEpisodeStepIndex(epIdx) {
         const steps = this.stepData?.[epIdx] || {};
         const keys = Object.keys(steps);
@@ -311,11 +228,60 @@
         const s = this.getEpisodeStepData(epIdx);
         return s && s.image_url ? s.image_url : null;
       },
-      buildEpisodePairs() {
+      get episodePairs() {
         const out = [];
         const n = Array.isArray(this.episodeSummaries) ? this.episodeSummaries.length : 0;
-        for (let i = 0; i < n; i++) { out.push({ epIdx: i, kind: 'action' }); out.push({ epIdx: i, kind: 'reward' }); }
+        for (let i = 0; i < n; i++) {
+          out.push({ epIdx: i, kind: 'action' }); out.push({ epIdx: i, kind: 'reward' });
+        }
         return out;
+      },
+      totalFromSeries(y) {
+        const arr = Array.isArray(y) ? y.filter(v => typeof v === 'number') : [];
+        if (!arr.length) return null;
+        const last = arr[arr.length - 1];
+        return (typeof last === 'number' && arr.some(v => v < last))
+          ? last
+          : arr.reduce((a, b) => a + b, 0);
+      },
+      computeAverageReward(pd) {
+        if (!pd) return null;
+        if (pd.rewards_totals && typeof pd.rewards_totals.average_per_episode === 'number') {
+          return pd.rewards_totals.average_per_episode;
+        }
+        if (Array.isArray(pd.episode_total_rewards)) {
+          const arr = pd.episode_total_rewards.filter(v => typeof v === 'number');
+          return arr.length ? arr.reduce((a,b)=>a+b,0) / arr.length : null;
+        }
+        if (Array.isArray(pd.episode_rewards)) {
+          const arr = pd.episode_rewards.filter(v => typeof v === 'number');
+          return arr.length ? arr.reduce((a,b)=>a+b,0) / arr.length : null;
+        }
+        if (Array.isArray(pd.rewards_over_time)) {
+          const perEpTotals = pd.rewards_over_time.map(trace => {
+            if (!trace) return null;
+            const y = Array.isArray(trace.y) ? trace.y : [];
+            return this.totalFromSeries(y);
+          }).filter(v => typeof v === 'number');
+          return perEpTotals.length ? perEpTotals.reduce((a,b)=>a+b,0) / perEpTotals.length : null;
+        }
+        return null;
+      },
+      summarizeEpisode(idx, id) {
+        const yFull = Array.isArray(this.rewardsOverTime[idx]) ? this.rewardsOverTime[idx] : [];
+        const steps = yFull.length || null;
+        const perStep = yFull.filter(v => typeof v === 'number');
+        let totalReward = null;
+        if (Array.isArray(this.pd?.episode_total_rewards)) {
+          totalReward = typeof this.pd.episode_total_rewards[idx] === 'number' ? this.pd.episode_total_rewards[idx] : null;
+        }
+        if (totalReward === null && yFull.length) {
+          totalReward = this.totalFromSeries(yFull);
+        }
+        const minPerStep = perStep.length ? Math.min(...perStep) : null;
+        const maxPerStep = perStep.length ? Math.max(...perStep) : null;
+        const avgPerStep = perStep.length ? (perStep.reduce((a,b)=> a + b, 0) / perStep.length) : null;
+        return { id: id ?? idx, steps, totalReward, minPerStep, maxPerStep, avgPerStep };
       },
     };
   };

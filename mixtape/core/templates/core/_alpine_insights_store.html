@@ -1,53 +1,39 @@
 <script>
-  // Initializes the shared Alpine store for Insights, if not already present.
-  // Uses alpine:init to ensure Alpine is available before accessing stores.
   document.addEventListener('alpine:init', () => {
-    try {
-      const existing = (() => { try { return Alpine.store('insights'); } catch (_) { return null; } })();
-      if (!existing) {
-        Alpine.store('insights', {
-          // User-configurable flags
-          useGlobalTimeline: true,
-          timelineEpisodeIdx: 0,
-          episodeSummaries: [],
-          playbackSpeed: 1,
-          visOptions: [
-            'actionRewardFrequency',
-            'rewardFrequency',
-            'actionFrequency',
-            'rewardsOverTime',
-            'obsClustering',
-            'actionClustering',
-            'plotLegends',
-            'showPlayback',
-            'showEpisodeInfo',
-            'showMediaViewer',
-            'showTimeline',
-          ],
-          // Derived/runtime values
-          maxStepsGlobal: 0,
-          currentStep: 0,
-          sidePanelCollapsed: false,
-          // Helpers (guarded to avoid redefinition elsewhere)
-          get(k) { try { return this[k]; } catch (_) { return undefined; } },
-          set(k, v) { try { this[k] = v; } catch (_) {} },
-          toggleVis(key) {
-            const list = Array.isArray(this.visOptions) ? this.visOptions : [];
-            this.visOptions = list.includes(key)
-              ? list.filter((v) => v !== key)
-              : [...list, key];
-          },
-        });
-      } else {
-        if (!existing.get) existing.get = function(k){ try { return this[k]; } catch(_) { return undefined; } };
-        if (!existing.set) existing.set = function(k,v){ try { this[k] = v; } catch(_) {} };
-        if (!existing.toggleVis) existing.toggleVis = function(key){
+    Alpine.store('insights',
+      {
+        // User-configurable flags
+        useGlobalTimeline: true,
+        timelineEpisodeIdx: 0,
+        episodeSummaries: [],
+        playbackSpeed: 1,
+        visOptions: [
+          'actionRewardFrequency',
+          'rewardFrequency',
+          'actionFrequency',
+          'rewardsOverTime',
+          'obsClustering',
+          'actionClustering',
+          'plotLegends',
+          'showPlayback',
+          'showEpisodeInfo',
+          'showMediaViewer',
+          'showTimeline',
+        ],
+        // Runtime values
+        maxStepsGlobal: 0,
+        currentStep: 0,
+        sidePanelCollapsed: false,
+        // Helpers
+        get(k) { return this[k]; },
+        set(k, v) { this[k] = v; },
+        toggleVis(key) {
           const list = Array.isArray(this.visOptions) ? this.visOptions : [];
           this.visOptions = list.includes(key)
             ? list.filter((v) => v !== key)
             : [...list, key];
-        };
+        },
       }
-    } catch (_) { /* no-op */ }
+    );
   });
 </script>
