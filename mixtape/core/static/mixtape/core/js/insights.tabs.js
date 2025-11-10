@@ -150,8 +150,6 @@
         maxStepsGlobal: this.maxStepsGlobal,
         currentStep: this.currentStep,
         sidePanelCollapsed: false,
-        get(k) { try { return this[k]; } catch(_) { return undefined; }},
-        set(k, v) { try { this[k] = v; } catch(_) {} },
         toggleVis: (key) => {
           const list = Array.isArray(Alpine.store('insights').visOptions) ? Alpine.store('insights').visOptions : [];
           Alpine.store('insights').visOptions = list.includes(key)
