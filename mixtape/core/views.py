@@ -439,11 +439,11 @@ def insights(request: HttpRequest) -> HttpResponse:
 
     return render(
         request,
-        'core/insights.html',
+        'core/insights/insights.html',
         data,
     )
 
 
 def home_page(request: HttpRequest) -> HttpResponse:
     episodes = Episode.objects.select_related('inference__checkpoint__training').all()
-    return render(request, 'core/home.html', {'episodes': episodes})
+    return render(request, 'core/home/home.html', {'episodes': episodes})
