@@ -3,9 +3,6 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    {% load static %}
-
     <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
     <script src="//unpkg.com/alpinejs" defer></script>
     <script src="//unpkg.com/plotly.js@3.0.1/dist/plotly.min.js" charset="utf-8"></script>
@@ -124,7 +121,7 @@
         }
       }
     </style>
-
+    <!-- Custom CSS Variables -->
     <style>
       :root {
         /* Mapped from figma_changes_data/colors.js (light) */
@@ -160,7 +157,67 @@
       }
       /* Deprecated helper classes removed (migrated to Tailwind utilities). */
     </style>
+    <!-- Feedback Modal Script -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        const dialog = document.getElementById('feedbackModal');
+        const feedbackCancelBtn = document.getElementById('feedbackCancelBtn');
+        const doneKey = 'mixtape_feedback_done';
 
+        function preventScrollBehindModal(lock) {
+          if (!document || !document.body || !document.body.style) {
+            return;
+          }
+          document.body.style.overflow = lock ? 'hidden' : '';
+        }
+
+        if (dialog && dialog.showModal && localStorage.getItem(doneKey) !== '1') {
+          dialog.showModal();
+          preventScrollBehindModal(true);
+          dialog.addEventListener('close', function() {
+            preventScrollBehindModal(false);
+          }, { once: true });
+        }
+
+        if (feedbackCancelBtn && dialog) {
+          const iframe = dialog.querySelector('iframe');
+          // Detect form submission by counting iframe load events.
+          // - First: initial render; Second: Redirect to “Thanks for submitting” page
+          // FIXME: This is a bit of a hack and could break if Google changes its redirect
+          // behavior or even with some browsers/ad-blockers. We should create our own form and
+          // use Google Form hooks if we want to keep the feedback dialog.
+          let loadCount = 0;
+          let submitted = false;
+
+          function updateButton() {
+            if (!feedbackCancelBtn) {
+              return;
+            }
+            // Differentiate between completion and rejection
+            feedbackCancelBtn.textContent = submitted ? 'Done' : 'Cancel';
+          }
+          updateButton();
+
+          if (iframe) {
+            iframe.addEventListener('load', function () {
+              loadCount += 1;
+              if (loadCount >= 2) {
+                submitted = true;
+                updateButton();
+              }
+            });
+          }
+
+          feedbackCancelBtn.addEventListener('click', function () {
+            if (submitted) {
+              localStorage.setItem(doneKey, '1');
+            }
+            dialog.close();
+          });
+        }
+      });
+    </script>
+    <!-- Page Title -->
     <title>{% block title %}MIXTAPE{% endblock %}</title>
     <style>
       [x-cloak] {
@@ -172,5 +229,8 @@
     <div id="content">
       {% block content %}{% endblock %}
     </div>
+    {% if demo_feedback_modal_enabled %}
+      {% include "core/custom/user_feedback.html" %}
+    {% endif %}
   </body>
 </html>

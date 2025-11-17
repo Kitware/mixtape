@@ -109,3 +109,13 @@ CORS_ALLOWED_ORIGIN_REGEXES: list[str] = env.list(
 
 # This makes Ray happy for now, since it wants to redirect stdout
 CELERY_WORKER_REDIRECT_STDOUTS = False
+
+# Demo feedback modal
+DEMO_FEEDBACK_MODAL_ENABLED: bool = env.bool('DJANGO_DEMO_FEEDBACK_MODAL_ENABLED', default=True)
+
+template = TEMPLATES[0]
+options = template.setdefault('OPTIONS', {})
+context_processors = options.setdefault('context_processors', [])  # type: ignore[attr-defined]
+value = 'mixtape.core.context_processors.demo_feedback_modal'
+if value not in context_processors:
+    context_processors.append(value)
