@@ -1,4 +1,4 @@
-<div
+<div x-cloak
   x-data="{
     data: [],
     layout: {
@@ -41,7 +41,7 @@
   x-init="
     rewardsOverTime.forEach((episode, idx) => {
       data.push({
-        x: episode.length,
+        x: Array.from({length: episode.length}, (_, i) => i),
         y: episode,
         type: 'scatter',
         name: `Episode ${episodeIds[idx]}`,
@@ -53,7 +53,7 @@
       });
     });
     data.push({
-      x: [{{ currentStep }}, {{ currentStep }}],
+      x: [currentStep, currentStep],
       y: [0, Math.max(...rewardsOverTime.flat())],
       type: 'scatter',
       mode: 'lines',
@@ -64,7 +64,10 @@
       },
       name: 'Current Step'
     });
-    plot = Plotly.newPlot($refs.rewardsOverTime, data, layout, {displayModeBar: false});
+    this.plot = Plotly.newPlot($refs.rewardsOverTime, data, layout, config);
+    // Ensure plot stretches to container width
+    $nextTick(() => { Plotly.Plots.resize($refs.rewardsOverTime); });
+    window.addEventListener('resize', () => { Plotly.Plots.resize($refs.rewardsOverTime); });
     $watch('visOptions', () => {
       $nextTick(() => {
         Plotly.relayout(
@@ -74,9 +77,16 @@
             showlegend: visOptions.includes('plotLegends')
           })
       });
-    });"
+    });
+    // When the Rewards tab becomes visible, ensure we resize once it's painted
+    $watch('active', (val) => {
+      if (val === 'Rewards') {
+        $nextTick(() => { Plotly.Plots.resize($refs.rewardsOverTime); });
+      }
+    });
+    "
   x-effect="
-    if (plot) {
+    if (this.plot) {
       Plotly.update($refs.rewardsOverTime, {
         x: [[currentStep, currentStep]],
         y: [[Math.min(...rewardsOverTime.flat()), Math.max(...rewardsOverTime.flat())]]
@@ -91,5 +101,5 @@
       }, [rewardsOverTime.length]);
     }"
 >
-  <div x-ref="rewardsOverTime"></div>
+  <div x-ref="rewardsOverTime" class="w-full"></div>
 </div>

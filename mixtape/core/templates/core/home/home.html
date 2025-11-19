@@ -1,7 +1,7 @@
-{% extends "core/base.html" %}
+{% extends "core/shared/base.html" %}
 {% load resonant_utils %}
 
-{% block title %}MIXTAPE Home{% endblock %}
+{% block title %}MIXTAPE Home - FIGMA{% endblock %}
 
 {% block content %}
 <h1 class="text-center">Explore Results</h1>
@@ -23,7 +23,7 @@
 >
   <div class="w-full flex justify-end">
     <button
-      class="bg-blue-500 hover:bg-blue-800 rounded-lg px-5 py-2.5 me-2 mb-2 disabled:bg-gray-300 disabled:text-gray-400"
+      class="btn btn-primary rounded-lg px-5 py-2.5 me-2 mb-2 disabled:opacity-50"
       :disabled="selectedEpisodes.length === 0"
       @click="viewSelectedEpisodes"
     >
@@ -44,7 +44,7 @@
             value="{{ episode.pk }}"
             x-model="selectedEpisodes"
             @change="updateAllowedEnvironment('{{ episode.inference.checkpoint.training.environment }}')"
-            class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm mr-1"
+            class="checkbox mr-1"
           >
           <a href="{% url 'insights' %}?episode_id={{ episode.pk }}" class="rounded-lg">
             <span>
@@ -56,8 +56,8 @@
             </span>
           </a>
         </div>
-        <a href="{% url 'insights' %}?episode_id={{ episode.pk }}" target="_blank" class="rounded-lg">
-          <i class="ri-external-link-line p-1"></i>
+        <a href="{% url 'insights' %}?episode_id={{ episode.pk }}" target="_blank" class="btn btn-icon btn-accent rounded-lg">
+          <i class="ri-external-link-line"></i>
         </a>
       </div>
       <div class="ml-4">
@@ -78,7 +78,7 @@
             <a
               href="data:text/json;charset=utf-8,{{ episode.inference.checkpoint.training.config|pretty_json:2|safe|urlencode }}"
               download="training_{{ episode.inference.checkpoint.training.pk }}_config.json"
-              class="py-1 px-2 rounded-lg"
+              class="btn btn-accent px-2 py-1 rounded-lg"
             >
               <i class="ri-download-line"></i>
             </a>
@@ -97,7 +97,7 @@
             <a
               href="data:text/json;charset=utf-8,{{ episode.inference.config|pretty_json:2|safe|urlencode }}"
               download="episode_{{ episode.pk }}_config.json"
-              class="py-1 px-2 rounded-lg"
+              class="btn btn-accent px-2 py-1 rounded-lg"
             >
               <i class="ri-download-line"></i>
             </a>

@@ -1,0 +1,343 @@
+<script>
+  // Factory for the Insights tabs
+  window.insightsTabs = function insightsTabs() {
+    return {
+      // initial state
+      active: 'Overview',
+      pd: null,
+      clustering: null,
+      episodesCount: null,
+      agentsCount: null,
+      maxStepsCount: null,
+      avgRewardDisplay: null,
+      actionVReward: {},
+      rewardHistogram: [],
+      actionVFrequency: {},
+      rewardsOverTime: [],
+      decomposedRewards: [],
+      uniqueAgents: [],
+      episodeIds: [],
+      stepData: [],
+      timelineKeySteps: [],
+      timelineKeyStepsGlobal: [],
+      currentStep: 0,
+      maxSteps: 0,
+      maxStepsGlobal: 0,
+      episodeSummaries: [],
+      selectedEpisodeIdx: 0,
+      timelineEpisodeIdx: 0,
+      mediaEpisodeIdx: 0,
+      linkMediaToEpisode: true,
+      mediaFitMode: 'contain',
+      limitToEpisode: false,
+      debug: false,
+      playing: false,
+      useGlobalTimeline: true,
+      playbackSpeed: 1,
+      visOptions: [
+        'actionRewardFrequency',
+        'rewardFrequency',
+        'actionFrequency',
+        'rewardsOverTime',
+        'obsClustering',
+        'actionClustering',
+        'plotLegends',
+        'showPlayback',
+        'showEpisodeInfo',
+        'showMediaViewer',
+        'showTimeline',
+      ],
+      _resizeQueued: false,
+
+      init() {
+        // Parse JSON data
+        this.pd = JSON.parse(document.getElementById('parsed_data_json')?.textContent || 'null');
+        this.clustering = JSON.parse(document.getElementById('clustering_json')?.textContent || 'null');
+        this.episodeIds = this.pd?.episode_ids ?? [];
+        this.uniqueAgents = this.pd?.unique_agents ?? [];
+        this.rewardsOverTime = this.pd?.rewards_over_time ?? [];
+        this.decomposedRewards = this.pd?.decomposed_rewards ?? [];
+        this.actionVReward = this.pd?.action_v_reward ?? {};
+        this.rewardHistogram = this.pd?.reward_histogram ?? [];
+        this.actionVFrequency = this.pd?.action_v_frequency ?? {};
+        this.stepData = this.pd?.step_data ?? [];
+        this.timelineKeySteps = this.pd?.timeline_key_steps ?? [];
+        this.timelineKeyStepsGlobal = this.pd?.timeline_key_steps_global ?? [];
+        this.episodesCount = Array.isArray(this.episodeIds) ? this.episodeIds.length : null;
+        this.agentsCount = Array.isArray(this.uniqueAgents) ? this.uniqueAgents.length : null;
+        this.maxStepsGlobal = (this.pd?.max_steps ?? 1) - 1;
+        this.maxSteps = this.maxStepsGlobal;
+
+        // Average reward
+        const avgReward = this.computeAverageReward(this.pd);
+        this.avgRewardDisplay = (avgReward ?? null) !== null ? Number(avgReward).toFixed(2) : null;
+
+        // Episode summary
+        this.episodeSummaries = (Array.isArray(this.episodeIds) ? this.episodeIds : [])
+          .map((id, idx) => this.summarizeEpisode(idx, id));
+
+        // Max steps count (for multi-episode mode)
+        this.maxStepsCount = (() => {
+          const nums = Array.isArray(this.episodeSummaries)
+            ? this.episodeSummaries.map(e => (typeof e?.steps === 'number' ? e.steps : 0))
+            : [];
+          const m = nums.length ? Math.max(...nums) : 0;
+          return m || null;
+        })();
+
+        // Build pairs and watchers
+        this.updateMaxSteps();
+        this.$watch('limitToEpisode', () => this.updateMaxSteps());
+        this.$watch('selectedEpisodeIdx', () => {
+          this.updateMaxSteps();
+          if (this.linkMediaToEpisode) this.mediaEpisodeIdx = this.selectedEpisodeIdx;
+        });
+        this.$watch('episodeSummaries', () => {
+          if (!Array.isArray(this.episodeSummaries) || this.episodeSummaries.length === 0) {
+            this.mediaEpisodeIdx = 0;
+          } else if (this.mediaEpisodeIdx >= this.episodeSummaries.length) {
+            this.mediaEpisodeIdx = 0;
+          }
+        });
+        this.$watch('linkMediaToEpisode', (v) => { if (v) { this.mediaEpisodeIdx = this.selectedEpisodeIdx; } });
+        // Ensure timeline mode changes recompute limits
+        this.$watch('useGlobalTimeline', () => { this.updateMaxSteps(); });
+
+        // Store
+        const store = (window.Alpine && Alpine.store('insights')) || null;
+        if (store) {
+          // Pull settings
+          if (typeof store.playbackSpeed === 'number') this.playbackSpeed = store.playbackSpeed;
+          if (typeof store.useGlobalTimeline === 'boolean') this.useGlobalTimeline = store.useGlobalTimeline;
+          if (typeof store.timelineEpisodeIdx === 'number') this.timelineEpisodeIdx = store.timelineEpisodeIdx;
+          if (Array.isArray(store.visOptions)) this.visOptions = store.visOptions;
+          // Push derived values
+          store.maxStepsGlobal = this.maxStepsGlobal;
+          store.currentStep = this.currentStep;
+          store.episodeSummaries = this.episodeSummaries;
+        }
+        // push changes
+        this.$watch('useGlobalTimeline', v => { Alpine.store('insights').useGlobalTimeline = v; });
+        this.$watch('timelineEpisodeIdx', v => { Alpine.store('insights').timelineEpisodeIdx = v; });
+        this.$watch('episodeSummaries', v => { Alpine.store('insights').episodeSummaries = v; });
+        this.$watch('playbackSpeed', v => { Alpine.store('insights').playbackSpeed = v; });
+        this.$watch('visOptions', v => { Alpine.store('insights').visOptions = v; });
+        this.$watch('maxStepsGlobal', v => { Alpine.store('insights').maxStepsGlobal = v; });
+        this.$watch('currentStep', v => { Alpine.store('insights').currentStep = v; });
+        // pull changes
+        this.$watch('$store.insights.useGlobalTimeline', v => { this.useGlobalTimeline = v; this.updateMaxSteps(); });
+        this.$watch('$store.insights.timelineEpisodeIdx', v => { this.timelineEpisodeIdx = v; });
+        this.$watch('$store.insights.playbackSpeed', v => { this.playbackSpeed = v; });
+        this.$watch('$store.insights.visOptions', v => {
+          this.visOptions = Array.isArray(v) ? v : this.visOptions;
+          this.queuePlotResize();
+        });
+        // side panel collapse/expand can change available width
+        this.$watch('$store.insights.sidePanelCollapsed', () => { this.queuePlotResize(); });
+        // Observe once on init for plots that become visible later
+        this.$nextTick(() => { this.observeResizeOnVisible(); });
+      },
+
+      stepForward() {
+        if (!this.playing) return;
+        if (this.currentStep < this.maxSteps) {
+          const delay = Math.max(50, Math.round(500 / (this.playbackSpeed || 1)));
+          setTimeout(() => { this.currentStep++; this.stepForward(); }, delay);
+        } else { this.playing = false; this.currentStep = 0; }
+      },
+      updateMaxSteps() {
+        if (this.limitToEpisode) {
+          const steps = this.episodeSummaries[this.selectedEpisodeIdx]?.steps ?? null;
+          this.maxSteps = (typeof steps === 'number' && steps > 0) ? steps - 1 : this.maxStepsGlobal;
+        } else { this.maxSteps = this.maxStepsGlobal; }
+      },
+
+      tabClass(tab) {
+        return this.active === tab ? 'tab-active' : 'tab-inactive';
+      },
+      selectTab(tab) {
+        this.active = tab;
+        this.queuePlotResize();
+      },
+      overviewVisible() {
+        const o = Array.isArray(this.visOptions) ? this.visOptions : [];
+        const c = (o.includes('rewardFrequency') ? 1 : 0)
+          + (o.includes('actionFrequency') ? 1 : 0)
+          + (o.includes('actionRewardFrequency') ? 1 : 0);
+        return c > 0;
+      },
+      overviewGridColsClass() {
+        const o = Array.isArray(this.visOptions) ? this.visOptions : [];
+        const c = (o.includes('rewardFrequency') ? 1 : 0)
+          + (o.includes('actionFrequency') ? 1 : 0)
+          + (o.includes('actionRewardFrequency') ? 1 : 0);
+        return c >= 3 ? 'lg:grid-cols-3' : (c === 2 ? 'lg:grid-cols-2' : 'lg:grid-cols-1');
+      },
+      maxStepsTooltip() {
+        const n = Array.isArray(this.episodeSummaries) ? this.episodeSummaries.length : 0;
+        if (n <= 1) {
+          const steps = this.episodeSummaries?.[0]?.steps ?? null;
+          return `Total Steps: ${steps ?? '—'}`;
+        }
+        const lines = [`Max Steps: ${this.maxStepsCount ?? '—'}`];
+        for (let i = 0; i < n; i++) {
+          const steps = this.episodeSummaries?.[i]?.steps ?? '—';
+          lines.push(`Ep ${i + 1}: ${steps}`);
+        }
+        return lines.join('\n');
+      },
+      timelineTitle(ts) {
+        if (Array.isArray(ts?.episodes)) {
+          const parts = ts.episodes.map(e => `Episode ${e.episode_id}: ${Number(e.total_rewards ?? 0).toFixed(2)}`);
+          return `Step ${ts.number}\n${parts.join('\n')}`;
+        }
+        return `Step ${ts?.number} — Reward: ${Number((ts && ts.total_rewards) ?? 0).toFixed(2)}`;
+      },
+      timelineAria(ts) {
+        if (Array.isArray(ts?.episodes)) {
+          const parts = ts.episodes.map(e => `Episode ${e.episode_id}: ${Number(e.total_rewards ?? 0).toFixed(2)}`);
+          return `Step ${ts.number} ${parts.join(', ')}`;
+        }
+        return `Step ${ts?.number} Reward ${Number((ts && ts.total_rewards) ?? 0).toFixed(2)}`;
+      },
+
+      // helpers for templates
+      getEpisodeStepIndex(epIdx) {
+        const steps = this.stepData?.[epIdx] || {};
+        const keys = Object.keys(steps);
+        if (!keys.length) return null;
+        const nums = keys.map(k => +k).sort((a,b) => a - b);
+        let chosen = nums[0];
+        for (let i = 0; i < nums.length; i++) { if (nums[i] <= this.currentStep) chosen = nums[i]; else break; }
+        return chosen;
+      },
+      getEpisodeStepData(epIdx) {
+        const idx = this.getEpisodeStepIndex(epIdx);
+        if (idx === null) return null;
+        const steps = this.stepData?.[epIdx] || {};
+        return steps[idx] ?? steps[String(idx)] ?? null;
+      },
+      // Compatibility alias used by some templates
+      getStep(step) {
+        return this.getEpisodeStepData(this.selectedEpisodeIdx);
+      },
+      getAgentStep(epIdx, agent) {
+        const s = this.getEpisodeStepData(epIdx);
+        const arr = s && Array.isArray(s.agent_steps) ? s.agent_steps : [];
+        return arr.find(as => as.agent === agent) || null;
+      },
+      getAgentAction(epIdx, agent) {
+        const as = this.getAgentStep(epIdx, agent);
+        return (as && (as.action ?? as.action_string ?? as.action_name ?? as.action_id)) ?? '—';
+      },
+      getAgentRewardStr(epIdx, agent) {
+        const as = this.getAgentStep(epIdx, agent);
+        const val = as ? (as.total_reward ?? as.reward ?? null) : null;
+        return (typeof val === 'number') ? val.toFixed(3) : (val ?? '—');
+      },
+      getEpisodeImageUrl(epIdx) {
+        const s = this.getEpisodeStepData(epIdx);
+        return s && s.image_url ? s.image_url : null;
+      },
+      get episodePairs() {
+        const out = [];
+        const n = Array.isArray(this.episodeSummaries) ? this.episodeSummaries.length : 0;
+        for (let i = 0; i < n; i++) {
+          out.push({ epIdx: i, kind: 'action' }); out.push({ epIdx: i, kind: 'reward' });
+        }
+        return out;
+      },
+      resizePlots(panelId) {
+        if (!window.Plotly) return;
+        const root = this.$el;
+        const scope = panelId ? root.querySelector(`#${panelId}`) : root;
+        if (!scope) return;
+        const nodes = scope.querySelectorAll('.js-plotly-plot, [data-plotly]');
+        nodes.forEach((el) => {
+          try {
+            Plotly.Plots.resize(el);
+            Plotly.relayout(el, { autosize: true });
+          } catch (_) {}
+        });
+      },
+      queuePlotResize() {
+        // Debounce resize to prevent Plotly "jumpiness"
+        if (this._resizeQueued) return;
+        this._resizeQueued = true;
+        this.$nextTick(() => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              this.resizePlots();
+              this.observeResizeOnVisible();
+              this._resizeQueued = false;
+            });
+          });
+        });
+      },
+      observeResizeOnVisible(panelId) {
+        // Make sure resize runs when plots become visible
+        if (!window.Plotly || !window.IntersectionObserver) return;
+        const root = this.$el;
+        const scope = panelId ? root.querySelector(`#${panelId}`) : root;
+        if (!scope) return;
+        const nodes = scope.querySelectorAll('.js-plotly-plot, [data-plotly]');
+        const io = new IntersectionObserver((entries) => {
+          entries.forEach((e) => {
+            if (e.isIntersecting) {
+              Plotly.Plots.resize(e.target);
+              io.unobserve(e.target);
+            }
+          });
+        }, { root: null, threshold: 0 });
+        nodes.forEach((el) => { io.observe(el); });
+      },
+      totalFromSeries(y) {
+        const arr = Array.isArray(y) ? y.filter(v => typeof v === 'number') : [];
+        if (!arr.length) return null;
+        const last = arr[arr.length - 1];
+        return (typeof last === 'number' && arr.some(v => v < last))
+          ? last
+          : arr.reduce((a, b) => a + b, 0);
+      },
+      computeAverageReward(pd) {
+        if (!pd) return null;
+        if (pd.rewards_totals && typeof pd.rewards_totals.average_per_episode === 'number') {
+          return pd.rewards_totals.average_per_episode;
+        }
+        if (Array.isArray(pd.episode_total_rewards)) {
+          const arr = pd.episode_total_rewards.filter(v => typeof v === 'number');
+          return arr.length ? arr.reduce((a,b)=>a+b,0) / arr.length : null;
+        }
+        if (Array.isArray(pd.episode_rewards)) {
+          const arr = pd.episode_rewards.filter(v => typeof v === 'number');
+          return arr.length ? arr.reduce((a,b)=>a+b,0) / arr.length : null;
+        }
+        if (Array.isArray(pd.rewards_over_time)) {
+          const perEpTotals = pd.rewards_over_time.map(trace => {
+            if (!trace) return null;
+            const y = Array.isArray(trace.y) ? trace.y : [];
+            return this.totalFromSeries(y);
+          }).filter(v => typeof v === 'number');
+          return perEpTotals.length ? perEpTotals.reduce((a,b)=>a+b,0) / perEpTotals.length : null;
+        }
+        return null;
+      },
+      summarizeEpisode(idx, id) {
+        const yFull = Array.isArray(this.rewardsOverTime[idx]) ? this.rewardsOverTime[idx] : [];
+        const steps = yFull.length || null;
+        const perStep = yFull.filter(v => typeof v === 'number');
+        let totalReward = null;
+        if (Array.isArray(this.pd?.episode_total_rewards)) {
+          totalReward = typeof this.pd.episode_total_rewards[idx] === 'number' ? this.pd.episode_total_rewards[idx] : null;
+        }
+        if (totalReward === null && yFull.length) {
+          totalReward = this.totalFromSeries(yFull);
+        }
+        const minPerStep = perStep.length ? Math.min(...perStep) : null;
+        const maxPerStep = perStep.length ? Math.max(...perStep) : null;
+        const avgPerStep = perStep.length ? (perStep.reduce((a,b)=> a + b, 0) / perStep.length) : null;
+        return { id: id ?? idx, steps, totalReward, minPerStep, maxPerStep, avgPerStep };
+      },
+    };
+  };
+</script>

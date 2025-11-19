@@ -3,8 +3,7 @@
     data: [],
     layout: {
       title: {text: 'Agent {{title}} Timeline'},
-      height: 150,
-      margin: {r: 0, t: 25},
+      height: 300,
       paper_bgcolor: $store.theme.paper_bgcolor,
       plot_bgcolor: $store.theme.plot_bgcolor,
       font: $store.theme.font,
@@ -32,7 +31,9 @@
         },
       }
     ];
-    plot = Plotly.newPlot($refs.allManifolds, data, layout, {displayModeBar: false});
+    this.plot = Plotly.newPlot($refs.allManifolds, data, layout, {displayModeBar: false, responsive: true});
+    $nextTick(() => { Plotly.Plots.resize($refs.allManifolds); });
+    window.addEventListener('resize', () => { Plotly.Plots.resize($refs.allManifolds); });
     $watch('visOptions', () => {
       $nextTick(() => {
         Plotly.relayout(
@@ -43,7 +44,7 @@
       });
     });"
   x-effect="
-    if (plot) {
+    if (this.plot) {
       // Use the heatmap data dimensions directly
       const yMin = 0;
       const yMax = clustering[{{key}}].episode_clusters.length - 1;
@@ -53,5 +54,5 @@
       }, {}, [1]);
     }"
 >
-  <div x-ref="allManifolds"></div>
+  <div x-ref="allManifolds" class="w-full"></div>
 </div>

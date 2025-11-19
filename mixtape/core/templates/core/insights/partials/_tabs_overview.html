@@ -1,0 +1,116 @@
+<div x-data="insightsTabs()" x-init="init()" x-cloak class="bg-[var(--color-surface)] text-[var(--color-surface-foreground)] rounded-lg border border-[var(--color-border)] raised">
+  <div class="flex items-center justify-between border-b border-[var(--color-border)] px-2 pt-2 gap-2">
+    <div role="tablist" aria-label="Insights Tabs" class="flex gap-2">
+      <button id="tab-overview" role="tab" :aria-selected="active==='Overview'" aria-controls="panel-overview"
+              @click="selectTab('Overview')"
+              :class="tabClass('Overview')"
+              class="px-3 py-2">Overview</button>
+      <button id="tab-actions" role="tab" :aria-selected="active==='Actions'" aria-controls="panel-actions"
+              @click="selectTab('Actions')"
+              :class="tabClass('Actions')"
+              class="px-3 py-2">Actions</button>
+      <button id="tab-rewards" role="tab" :aria-selected="active==='Rewards'" aria-controls="panel-rewards"
+              @click="selectTab('Rewards')"
+              :class="tabClass('Rewards')"
+              class="px-3 py-2">Rewards</button>
+      <button id="tab-agents" role="tab" :aria-selected="active==='Agents'" aria-controls="panel-agents"
+              @click="selectTab('Agents')"
+              :class="tabClass('Agents')"
+              class="px-3 py-2">Agents</button>
+    </div>
+    <div class="flex items-center gap-2 flex-wrap">
+      <span class="chip" :title="`${episodesCount ?? '—'} Episodes`">
+        <i class="ri-checkbox-multiple-blank-line text-[var(--color-accent)]"></i>
+        <span class="font-semibold" x-text="episodesCount ?? '—'"></span>
+      </span>
+      <span class="chip" :title="`${agentsCount ?? '—'} Agents`">
+        <i class="ri-robot-2-line text-[var(--color-accent)]"></i>
+        <span class="font-semibold" x-text="agentsCount ?? '—'"></span>
+      </span>
+      <span class="chip" :title="`Avg Reward: ${avgRewardDisplay ?? '—'}`">
+        <i class="ri-trophy-line text-[var(--color-accent)]"></i>
+        <span class="font-semibold" x-text="avgRewardDisplay ?? '—'"></span>
+      </span>
+      <span class="chip"
+            :title="maxStepsTooltip()">
+        <i class="ri-timer-line text-[var(--color-accent)]"></i>
+        <span class="font-semibold" x-text="maxStepsCount ?? '—'"></span>
+      </span>
+    </div>
+  </div>
+  <div class="p-4">
+    <div x-show="active==='Overview'" x-cloak id="panel-overview" role="tabpanel" aria-labelledby="tab-overview" class="space-y-4">
+      <div class="grid grid-cols-1 gap-2 grid-flow-row-dense"
+           x-show="overviewVisible()"
+           :class="overviewGridColsClass()">
+        <section class="card p-3" x-show="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('rewardFrequency')"><div class="min-h-[18rem]">{% include "core/insights/reward_v_frequency.html" %}</div></section>
+        <section class="card p-3" x-show="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('actionFrequency')"><div class="min-h-[18rem]">{% include "core/insights/action_v_frequency.html" %}</div></section>
+        <section class="card p-3 lg:col-span-1" x-show="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('actionRewardFrequency')"><div class="min-h-[18rem]">{% include "core/insights/action_v_reward_frequency.html" %}</div></section>
+      </div>
+    </div>
+    <div x-show="active==='Actions'" x-cloak id="panel-actions" role="tabpanel" aria-labelledby="tab-actions" class="space-y-4">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-2">
+        <section class="card p-3"
+                 x-show="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('actionFrequency')"
+                 :class="$store.insights && Array.isArray($store.insights.visOptions) && !$store.insights.visOptions.includes('actionRewardFrequency') ? 'lg:col-span-2' : ''">
+          <div class="min-h-[18rem]">{% include "core/insights/action_v_frequency.html" %}</div>
+        </section>
+        <section class="card p-3"
+                 x-show="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('actionRewardFrequency')"
+                 :class="$store.insights && Array.isArray($store.insights.visOptions) && !$store.insights.visOptions.includes('actionFrequency') ? 'lg:col-span-2' : ''">
+          <div class="min-h-[18rem]">{% include "core/insights/action_v_reward_frequency.html" %}</div>
+        </section>
+      </div>
+    </div>
+
+    <div x-show="active==='Rewards'" x-cloak id="panel-rewards" role="tabpanel" aria-labelledby="tab-rewards" class="space-y-4">
+      <div class="grid grid-cols-1 {% if has_reward_mapping %}lg:grid-cols-2{% endif %} gap-2">
+        <section class="card p-3" x-show="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('rewardsOverTime')"><div class="min-h-[18rem]">{% include "core/insights/rewards_over_time.html" %}</div></section>
+        {% if has_reward_mapping %}
+        <section class="card p-3" x-show="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('rewardsOverTime')"><div class="min-h-[18rem]">{% include "core/insights/rewards_over_time_decomp.html" %}</div></section>
+        {% endif %}
+      </div>
+    </div>
+
+    <div x-show="active==='Agents'" id="panel-agents" role="tabpanel" aria-labelledby="tab-agents" class="space-y-4">
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-2">
+        <section class="card p-3" x-show="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('obsClustering')"
+                 :class="$store.insights && Array.isArray($store.insights.visOptions) && !$store.insights.visOptions.includes('actionClustering') ? 'xl:col-span-2' : ''">
+          <h3 class="text-sm font-medium mb-2">Observations</h3>
+          <div class="space-y-3">
+            {% include "core/insights/clustering.html" with key="'obs'" title="Observations" %}
+            {% include "core/insights/clustering_timeline.html" with key="'obs'" title="Observations" %}
+          </div>
+        </section>
+        <section class="card p-3" x-show="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('actionClustering')"
+                 :class="$store.insights && Array.isArray($store.insights.visOptions) && !$store.insights.visOptions.includes('obsClustering') ? 'xl:col-span-2' : ''">
+          <h3 class="text-sm font-medium mb-2">Actions</h3>
+          <div class="space-y-3">
+            {% include "core/insights/clustering.html" with key="'agent_outs'" title="Actions" %}
+            {% include "core/insights/clustering_timeline.html" with key="'agent_outs'" title="Actions" %}
+          </div>
+        </section>
+      </div>
+    </div>
+    <div class="mt-1 mx-1" x-show="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('showPlayback')" x-cloak>
+      {% include "core/insights/replay_controls.html" %}
+    </div>
+    <div class="mt-2" x-show="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('showTimeline')" x-cloak>
+      <section class="card">
+        {% include "core/insights/timeline.html" %}
+      </section>
+    </div>
+    <div class="mt-2">
+      <div class="flex gap-2 items-stretch">
+        <section class="card p-3 flex-1 min-w-0 h-auto" x-show="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('showEpisodeInfo')" x-cloak>
+          {% include "core/insights/episode_info.html" %}
+        </section>
+        <section class="card p-3 h-full"
+                 x-show="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('showMediaViewer')" x-cloak
+                 :class="($store.insights && (!Array.isArray($store.insights.visOptions) || !$store.insights.visOptions.includes('showEpisodeInfo'))) ? 'basis-full max-w-full flex-1' : 'basis-1/2 max-w-[50%] shrink grow-0'">
+          <div class="h-full">{% include "core/insights/media_viewer.html" %}</div>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>

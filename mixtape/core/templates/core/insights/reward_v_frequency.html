@@ -38,7 +38,9 @@ rewardHistogram.forEach((episode, idx) => {
       }
     });
   });
-  plot = Plotly.newPlot($refs.rewardsFrequency, data, layout, {displayModeBar: false});
+  this.plot = Plotly.newPlot($refs.rewardsFrequency, data, layout, config);
+  $nextTick(() => { Plotly.Plots.resize($refs.rewardsFrequency); });
+  window.addEventListener('resize', () => { Plotly.Plots.resize($refs.rewardsFrequency); });
   $watch('visOptions', () => {
     $nextTick(() => {
       Plotly.relayout(
@@ -50,5 +52,6 @@ rewardHistogram.forEach((episode, idx) => {
     });
   });"
 >
-  <div x-ref="rewardsFrequency"></div>
+  <div x-ref="rewardsFrequency" class="w-full"></div>
 </div>
+

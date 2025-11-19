@@ -38,7 +38,9 @@
         }
       }
     }));
-    plot = Plotly.react($refs.actionsRewards, data, layout, config);
+    this.plot = Plotly.react($refs.actionsRewards, data, layout, config);
+    $nextTick(() => { Plotly.Plots.resize($refs.actionsRewards); });
+    window.addEventListener('resize', () => { Plotly.Plots.resize($refs.actionsRewards); });
     $watch('visOptions', () => {
       $nextTick(() => {
         Plotly.relayout(
@@ -49,5 +51,5 @@
       });
     });"
 >
-  <div x-ref="actionsRewards"></div>
+  <div x-ref="actionsRewards" class="w-full"></div>
 </div>

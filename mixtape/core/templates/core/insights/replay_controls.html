@@ -1,0 +1,50 @@
+<div class="flex items-center justify-center w-full gap-2 px-2 py-1 rounded-md bg-[var(--color-muted)] border border-[var(--color-border)]">
+  <button
+    class="cursor-pointer hover:text-[var(--color-accent)] rounded-md p-1 text-center disabled:opacity-50"
+    :disabled="currentStep === 0"
+    @click="currentStep = 0"
+  >
+    <i class="ri-rewind-start-line"></i>
+  </button>
+  <button
+    class="cursor-pointer hover:text-[var(--color-accent)] rounded-md p-1 text-center disabled:opacity-50"
+    :disabled="currentStep === 0"
+    @click="currentStep--"
+  >
+    <i class="ri-rewind-line"></i>
+  </button>
+  <button
+    class="cursor-pointer hover:text-[var(--color-accent)] rounded-md p-1 text-center disabled:opacity-50"
+    @click="playing = !playing; if (playing) stepForward()"
+  >
+    <i x-show="!playing" x-cloak class="ri-play-line"></i>
+    <i x-show="playing" x-cloak class="ri-pause-line"></i>
+  </button>
+  <button
+    class="cursor-pointer hover:text-[var(--color-accent)] rounded-md p-1 text-center disabled:opacity-50"
+    :disabled="currentStep === maxSteps"
+    @click="currentStep++"
+  >
+    <i class="ri-speed-line"></i>
+  </button>
+  <button
+    class="cursor-pointer hover:text-[var(--color-accent)] rounded-md p-1 text-center disabled:opacity-50"
+    :disabled="currentStep === maxSteps"
+    @click="currentStep = maxSteps"
+  >
+    <i class="ri-forward-end-line"></i>
+  </button>
+  <div class="flex items-center gap-1 pl-2">
+    <input
+      x-cloak
+      type="number"
+      class="form-input w-16 text-center"
+      min="0"
+      :max="maxStepsGlobal"
+      x-model.number="currentStep"
+      @change="currentStep = Math.min(Math.max(0, Number(currentStep) || 0), maxStepsGlobal)"
+      @keyup.enter="currentStep = Math.min(Math.max(0, Number(currentStep) || 0), maxStepsGlobal)"
+    />
+    <span class="text-sm text-[var(--color-muted-foreground)]">/ <span x-text="maxStepsGlobal"></span></span>
+  </div>
+</div>
