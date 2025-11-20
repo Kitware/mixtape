@@ -1,16 +1,29 @@
 from collections import defaultdict
 from itertools import accumulate
+import json
+import logging
+import os
 
+from django.db import transaction
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 import numpy as np
+from sklearn import cluster, decomposition, pipeline, preprocessing
+import umap.umap_ as umap
 
 from mixtape.core.analysis.clustering import (
     DEFAULT_CLUSTERING_PARAMS,
     cluster_episodes_all_features,
 )
+from mixtape.core.analysis.clustering.algorithms import (
+    _cluster_episodes_by_feature,
+    _fetch_all_episode_features,
+)
 from mixtape.core.models import ClusteringResult, Episode
+from mixtape.core.ray_utils.json_encoder import CustomJSONEncoder
 from mixtape.core.ray_utils.utility_functions import get_environment_mapping
+
+logger = logging.getLogger(__name__)
 
 
 def get_or_compute_clustering_results(episode_ids: list[int], **kwargs) -> tuple[dict, dict]:
@@ -37,15 +50,98 @@ def get_or_compute_clustering_results(episode_ids: list[int], **kwargs) -> tuple
         if obs_clustering and agent_outs_clustering:
             return obs_clustering.results, agent_outs_clustering.results
 
-        # Compute on-demand for single episode
-        obs_results, agent_outs_results = cluster_episodes_all_features(
-            episode_ids=episode_ids, **params
-        )
+        # Compute only missing features
+        computed_obs: dict | None = None
+        computed_agent: dict | None = None
+
+        def _compute_feature(feature_key: str) -> dict:
+            avail_cpus = (os.cpu_count() or 0) - 1
+            manifold_pipeline = pipeline.Pipeline(
+                [
+                    ('scale', preprocessing.StandardScaler()),
+                    (
+                        'manifold',
+                        umap.UMAP(
+                            n_neighbors=params['umap_n_neighbors'],
+                            min_dist=params['umap_min_dist'],
+                            n_components=params['umap_n_components'],
+                            densmap=False,
+                            n_jobs=min(8, max(1, avail_cpus)),
+                        ),
+                    ),
+                    ('decompose', decomposition.PCA(params['pca_n_components'])),
+                ]
+            )
+            cluster_pipeline = cluster.KMeans(
+                params['kmeans_n_clusters'], random_state=params['seed']
+            )
+
+            feats = _fetch_all_episode_features(episode_ids)
+            if feature_key == 'observations':
+                episodes = [{'obs': feat['obs']} for feat in feats if 'obs' in feat]
+                name = 'obs'
+            else:
+                episodes = [
+                    {'agent_outs': feat['agent_outs']} for feat in feats if 'agent_outs' in feat
+                ]
+                name = 'agent_outs'
+
+            ep_clusters, ep_manifolds, all_clusters, all_manifolds = _cluster_episodes_by_feature(
+                episodes,
+                name,
+                manifold_pipeline,
+                cluster_pipeline,
+                dimension_keys=params['feature_dimensions'],
+            )
+            return {
+                'episode_clusters': ep_clusters,
+                'episode_manifolds': ep_manifolds,
+                'all_clusters': all_clusters,
+                'all_manifolds': all_manifolds,
+            }
+
+        if not obs_clustering:
+            computed_obs = _compute_feature('observations')
+            try:
+                with transaction.atomic():
+                    ClusteringResult.objects.create(
+                        episode_id=episode_id,
+                        feature_types=['observations'],
+                        parameters=params,
+                        results=json.loads(json.dumps(computed_obs, cls=CustomJSONEncoder)),
+                        status=ClusteringResult.Status.SUCCESS,
+                        error_message=None,
+                    )
+            except Exception as exc:
+                logger.exception(
+                    'Failed to persist observations clustering for episode_id=%s: %s',
+                    episode_id,
+                    exc,
+                )
+
+        if not agent_outs_clustering:
+            computed_agent = _compute_feature('agent_outputs')
+            try:
+                with transaction.atomic():
+                    ClusteringResult.objects.create(
+                        episode_id=episode_id,
+                        feature_types=['agent_outputs'],
+                        parameters=params,
+                        results=json.loads(json.dumps(computed_agent, cls=CustomJSONEncoder)),
+                        status=ClusteringResult.Status.SUCCESS,
+                        error_message=None,
+                    )
+            except Exception as exc:
+                logger.exception(
+                    'Failed to persist agent_outputs clustering for episode_id=%s: %s',
+                    episode_id,
+                    exc,
+                )
 
         # Prefer cached where available
         return (
-            obs_clustering.results if obs_clustering else obs_results,
-            agent_outs_clustering.results if agent_outs_clustering else agent_outs_results,
+            obs_clustering.results if obs_clustering else (computed_obs or {}),
+            agent_outs_clustering.results if agent_outs_clustering else (computed_agent or {}),
         )
 
     # If no pre-computed results found or multi-episode, compute at runtime
