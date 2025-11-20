@@ -4,8 +4,9 @@ import json
 import logging
 import os
 
+from django.core.files.storage import default_storage
 from django.db import transaction
-from django.http import Http404, HttpRequest, HttpResponse
+from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
 import numpy as np
 from sklearn import cluster, decomposition, pipeline, preprocessing
@@ -22,6 +23,11 @@ from mixtape.core.analysis.clustering.algorithms import (
 from mixtape.core.models import ClusteringResult, Episode
 from mixtape.core.ray_utils.json_encoder import CustomJSONEncoder
 from mixtape.core.ray_utils.utility_functions import get_environment_mapping
+from mixtape.core.tasks.clustering_tasks import (
+    compute_multi_episode_clustering,
+    compute_single_episode_clustering,
+    make_multi_key,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -311,19 +317,109 @@ def insights(request: HttpRequest) -> HttpResponse:
     # Get unique agents across all episodes
     unique_agents = insight_results['unique_agents']
 
-    # Single-episode: compute or use precomputed; no multi-episode artifact logic in this commit
-    obs_clustering, agent_outs_clustering = get_or_compute_clustering_results(episode_pks)
-    clustering_results = [obs_clustering, agent_outs_clustering]
-    array_fields = ['all_manifolds', 'all_clusters', 'episode_manifolds', 'episode_clusters']
-    for clustering in clustering_results:
-        for field in array_fields:
-            if isinstance(clustering[field], list):
-                clustering[field] = np.array(clustering[field])
+    # Get clustering results if available; otherwise enqueue async compute and render placeholders
+    clustering_available = False
+    clustering_task_id = None
+    obs_clustering = None
+    agent_outs_clustering = None
+    artifact_clustering = None
+    if len(episode_pks) == 1:
+        params = {**DEFAULT_CLUSTERING_PARAMS}
+        obs_result = ClusteringResult.get_for_episode_and_type(
+            episode_id=episode_pks[0], feature_type='observations', parameters=params
+        )
+        agent_result = ClusteringResult.get_for_episode_and_type(
+            episode_id=episode_pks[0], feature_type='agent_outputs', parameters=params
+        )
+        if obs_result and agent_result:
+            obs_clustering = obs_result.results
+            agent_outs_clustering = agent_result.results
+            clustering_available = True
+        else:
+            try:
+                async_res = compute_single_episode_clustering.delay(episode_pks[0])
+                clustering_task_id = async_res.id
+            except Exception as exc:
+                logger.exception(
+                    'Failed to enqueue single-episode clustering for episode_id=%s: %s',
+                    episode_pks[0],
+                    exc,
+                )
+                clustering_task_id = None
+            # If one of the results is already available, include it now so UI can render partially
+            if obs_result and not obs_clustering:
+                obs_clustering = obs_result.results
+            if agent_result and not agent_outs_clustering:
+                agent_outs_clustering = agent_result.results
+    else:
+        # Multi-episode: prefer async compute with storage artifact; avoid DB storage
+        params = {**DEFAULT_CLUSTERING_PARAMS}
+        multi_key = make_multi_key(episode_pks, params)
+        artifact_path = f'clustering-temp/{multi_key}.json'
+        if default_storage.exists(artifact_path):
+            try:
+                with default_storage.open(artifact_path, 'rb') as fh:
+                    artifact_clustering = json.load(fh)
+                clustering_available = True
+            except Exception as exc:
+                logger.exception('Failed to read clustering artifact %s: %s', artifact_path, exc)
+                artifact_clustering = None
+                clustering_available = False
+        else:
+            try:
+                compute_multi_episode_clustering.delay(episode_pks, params, multi_key)
+                clustering_task_id = None
+            except Exception as exc:
+                logger.exception(
+                    'Failed to enqueue multi-episode clustering for %s: %s', episode_pks, exc
+                )
+                clustering_task_id = None
+
+    if clustering_available and obs_clustering and agent_outs_clustering:
+        clustering_results = [obs_clustering, agent_outs_clustering]
+        array_fields = ['all_manifolds', 'all_clusters', 'episode_manifolds', 'episode_clusters']
+        for clustering in clustering_results:
+            for field in array_fields:
+                if isinstance(clustering[field], list):
+                    clustering[field] = np.array(clustering[field])
 
     # Get episode total rewards and average rewards (ordered by episode_pks)
     episode_total_rewards = [
         all_episode_total_rewards[pk] for pk in episode_pks if pk in all_episode_total_rewards
     ]
+
+    # Helper to serialize clustering results regardless of list/ndarray types
+    def _serialize_results(results: dict) -> dict:
+        import numpy as _np
+
+        r = results
+        am = (
+            _np.array(r['all_manifolds'])
+            if isinstance(r.get('all_manifolds'), list)
+            else r['all_manifolds']
+        )
+        ac = (
+            _np.array(r['all_clusters'])
+            if isinstance(r.get('all_clusters'), list)
+            else r['all_clusters']
+        )
+        em = (
+            _np.array(r['episode_manifolds'])
+            if isinstance(r.get('episode_manifolds'), list)
+            else r['episode_manifolds']
+        )
+        ec = (
+            _np.array(r['episode_clusters'])
+            if isinstance(r.get('episode_clusters'), list)
+            else r['episode_clusters']
+        )
+        return {
+            'all_manifolds_x': am[:, 0].tolist(),
+            'all_manifolds_y': am[:, 1].tolist(),
+            'all_clusters': ac.tolist(),
+            'episode_manifolds': em.tolist(),
+            'episode_clusters': ec[0].T.tolist(),
+        }
 
     data = {
         'all_episode_details': all_episode_details,
@@ -340,22 +436,34 @@ def insights(request: HttpRequest) -> HttpResponse:
             'timeline_key_steps': all_timeline_steps,
             'episode_total_rewards': episode_total_rewards,
         },
-        'clustering': {
-            'obs': {
-                'all_manifolds_x': obs_clustering['all_manifolds'][:, 0].tolist(),
-                'all_manifolds_y': obs_clustering['all_manifolds'][:, 1].tolist(),
-                'all_clusters': obs_clustering['all_clusters'].tolist(),
-                'episode_manifolds': obs_clustering['episode_manifolds'].tolist(),
-                'episode_clusters': obs_clustering['episode_clusters'][0].T.tolist(),
-            },
-            'agent_outs': {
-                'all_manifolds_x': agent_outs_clustering['all_manifolds'][:, 0].tolist(),
-                'all_manifolds_y': agent_outs_clustering['all_manifolds'][:, 1].tolist(),
-                'all_clusters': agent_outs_clustering['all_clusters'].tolist(),
-                'episode_manifolds': agent_outs_clustering['episode_manifolds'].tolist(),
-                'episode_clusters': agent_outs_clustering['episode_clusters'][0].T.tolist(),
-            },
-        },
+        'clustering': (
+            artifact_clustering
+            if artifact_clustering is not None
+            else (
+                (
+                    {
+                        **({'obs': _serialize_results(obs_clustering)} if obs_clustering else {}),
+                        **(
+                            {'agent_outs': _serialize_results(agent_outs_clustering)}
+                            if agent_outs_clustering
+                            else {}
+                        ),
+                    }
+                    if (obs_clustering or agent_outs_clustering)
+                    else None
+                )
+            )
+        ),
+        'has_reward_mapping': any(
+            episode.inference.checkpoint.training.reward_mapping for episode in all_episode_details
+        ),
+        'clustering_available': clustering_available,
+        'clustering_task_id': clustering_task_id,
+        'multi_key': (
+            make_multi_key(episode_pks, {**DEFAULT_CLUSTERING_PARAMS})
+            if len(episode_pks) > 1
+            else ''
+        ),
     }
 
     return render(
@@ -363,7 +471,149 @@ def insights(request: HttpRequest) -> HttpResponse:
         'core/insights/insights.html',
         data,
     )
-    # No multi-episode endpoints in this commit
+    # End insights
+
+
+def clustering_status(request: HttpRequest) -> HttpResponse:
+    """Return JSON indicating whether clustering results are available for an episode.
+
+    Supports multi-episode by key or by list; and single-episode by id.
+    """
+    # Multi-episode by key
+    multi_key = request.GET.get('multi_key')
+    if multi_key:
+        path = f'clustering-temp/{multi_key}.json'
+        return JsonResponse({'available': default_storage.exists(path)})
+
+    # Optional local override for single-episode ID derived from episode_ids
+    episode_id_override: str | None = None
+
+    # Multi-episode by episode_ids
+    episode_ids = request.GET.get('episode_ids')
+    if episode_ids:
+        try:
+            ids = [int(x) for x in episode_ids.split(',') if x.strip()]
+        except ValueError:
+            return JsonResponse({'error': 'invalid episode_ids'}, status=400)
+        if len(ids) > 1:
+            key = make_multi_key(ids, {**DEFAULT_CLUSTERING_PARAMS})
+            path = f'clustering-temp/{key}.json'
+            return JsonResponse({'available': default_storage.exists(path)})
+        if len(ids) == 1:
+            episode_id_override = str(ids[0])
+
+    episode_id = episode_id_override or request.GET.get('episode_id')
+    if not episode_id:
+        return JsonResponse({'error': 'missing episode_id'}, status=400)
+    try:
+        eid = int(episode_id)
+    except ValueError:
+        return JsonResponse({'error': 'invalid episode_id'}, status=400)
+
+    params = {**DEFAULT_CLUSTERING_PARAMS}
+    obs_result = ClusteringResult.get_for_episode_and_type(
+        episode_id=eid, feature_type='observations', parameters=params
+    )
+    agent_result = ClusteringResult.get_for_episode_and_type(
+        episode_id=eid, feature_type='agent_outputs', parameters=params
+    )
+    available = bool(obs_result and agent_result)
+    return JsonResponse(
+        {
+            'available': available,
+            'obs_available': bool(obs_result),
+            'agent_outs_available': bool(agent_result),
+        }
+    )
+
+
+def clustering_result(request: HttpRequest) -> HttpResponse:
+    """Return clustering JSON for single- or multi-episode.
+
+    Accepts:
+    - multi_key=<key> (preferred for multi)
+    - episode_ids=1,2,3 (server derives key)
+    - episode_id=<id> (single-episode)
+    """
+    # Multi-episode by key or list
+    multi_key = request.GET.get('multi_key')
+    episode_ids_param = request.GET.get('episode_ids')
+    if multi_key or episode_ids_param:
+        if not multi_key:
+            try:
+                ids = [int(x) for x in (episode_ids_param or '').split(',') if x.strip()]
+            except ValueError:
+                return JsonResponse({'error': 'invalid episode_ids'}, status=400)
+            if len(ids) < 2:
+                return JsonResponse({'error': 'need >=2 episode_ids for multi'}, status=400)
+            multi_key = make_multi_key(ids, {**DEFAULT_CLUSTERING_PARAMS})
+        path = f'clustering-temp/{multi_key}.json'
+        if not default_storage.exists(path):
+            return JsonResponse({'error': 'not ready'}, status=404)
+        with default_storage.open(path, 'rb') as fh:
+            try:
+                obj = json.load(fh)
+            except Exception:
+                return JsonResponse({'error': 'corrupt artifact'}, status=500)
+        return JsonResponse(obj)
+
+    # Single-episode
+    episode_id = request.GET.get('episode_id')
+    if not episode_id:
+        return JsonResponse({'error': 'missing episode_id or multi_key/episode_ids'}, status=400)
+    try:
+        eid = int(episode_id)
+    except ValueError:
+        return JsonResponse({'error': 'invalid episode_id'}, status=400)
+    params = {**DEFAULT_CLUSTERING_PARAMS}
+    obs_result = ClusteringResult.get_for_episode_and_type(
+        episode_id=eid, feature_type='observations', parameters=params
+    )
+    agent_result = ClusteringResult.get_for_episode_and_type(
+        episode_id=eid, feature_type='agent_outputs', parameters=params
+    )
+    # Allow partial results: return whichever feature types are ready
+    if not (obs_result or agent_result):
+        return JsonResponse({'error': 'not ready'}, status=404)
+
+    def serialize(results: dict) -> dict:
+        import numpy as _np
+
+        r = results
+        am = (
+            _np.array(r['all_manifolds'])
+            if isinstance(r.get('all_manifolds'), list)
+            else r['all_manifolds']
+        )
+        ac = (
+            _np.array(r['all_clusters'])
+            if isinstance(r.get('all_clusters'), list)
+            else r['all_clusters']
+        )
+        em = (
+            _np.array(r['episode_manifolds'])
+            if isinstance(r.get('episode_manifolds'), list)
+            else r['episode_manifolds']
+        )
+        ec = (
+            _np.array(r['episode_clusters'])
+            if isinstance(r.get('episode_clusters'), list)
+            else r['episode_clusters']
+        )
+        return {
+            'all_manifolds_x': am[:, 0].tolist(),
+            'all_manifolds_y': am[:, 1].tolist(),
+            'all_clusters': ac.tolist(),
+            'episode_manifolds': em.tolist(),
+            'episode_clusters': ec[0].T.tolist(),
+        }
+
+    payload: dict[str, dict] = {}
+    if obs_result:
+        payload['obs'] = serialize(obs_result.results)
+    if agent_result:
+        payload['agent_outs'] = serialize(agent_result.results)
+    return JsonResponse(payload)
 
 
 def home_page(request: HttpRequest) -> HttpResponse:

@@ -2052,6 +2052,8 @@ development = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "django-minio-storage" },
+    { name = "django-s3-file-field", extra = ["minio"] },
     { name = "mixtape", extra = ["development"] },
     { name = "tox" },
     { name = "tox-uv" },
@@ -2133,6 +2135,8 @@ provides-extras = ["development"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "django-minio-storage" },
+    { name = "django-s3-file-field", extras = ["minio"] },
     { name = "mixtape", extras = ["development"] },
     { name = "tox" },
     { name = "tox-uv" },

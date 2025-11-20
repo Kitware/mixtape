@@ -1,12 +1,17 @@
 """Tasks for computing clustering results asynchronously."""
 
+from datetime import timedelta
+import hashlib
 import json
 import logging
 from typing import Any, Optional
 
 from celery import shared_task
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.db import transaction
 from django.db.models.query import QuerySet
+from django.utils import timezone
 
 from mixtape.core.analysis.clustering import (
     DEFAULT_CLUSTERING_PARAMS,
@@ -17,6 +22,28 @@ from mixtape.core.models import ClusteringResult, Episode
 from mixtape.core.ray_utils.json_encoder import CustomJSONEncoder
 
 logger = logging.getLogger(__name__)
+CLUSTERING_LOGIC_VERSION = '1'
+
+
+def _normalize_params(params: dict | None) -> dict:
+    if params is None:
+        params = DEFAULT_CLUSTERING_PARAMS
+    # Dicts preserve insertion order, so two dicts with the same keys/values but built in different
+    # orders can serialize differently. Sort keys to ensure stable hashing.
+    return {k: params[k] for k in sorted(params.keys())}
+
+
+def make_multi_key(episode_ids: list[int], params: Optional[dict] = None) -> str:
+    """Deterministic, order-invariant key for multi-episode clustering artifacts."""
+    norm_params = _normalize_params(params)
+    sorted_ids = sorted(set(int(e) for e in episode_ids))
+    payload = {
+        'version': CLUSTERING_LOGIC_VERSION,
+        'episode_ids': sorted_ids,
+        'params': norm_params,
+    }
+    digest = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
+    return digest
 
 
 @shared_task(bind=True)
@@ -123,3 +150,97 @@ def compute_single_episode_clustering(episode_id: int) -> dict[str, Any]:
         'parent_task_id': async_result.id,
         'episode_id': episode_id,
     }
+
+
+@shared_task(bind=True)
+def compute_multi_episode_clustering(
+    self: Any, episode_ids: list[int], params: Optional[dict] = None, key: Optional[str] = None
+) -> dict[str, Any]:
+    """Compute clustering for multiple episodes and store artifact in default storage.
+
+    Stores JSON at clustering-temp/<key>.json with a minimal structure matching template needs.
+    """
+    try:
+        norm_params = _normalize_params(params)
+        artifact_key = key or make_multi_key(episode_ids, norm_params)
+        path = f'clustering-temp/{artifact_key}.json'
+
+        # Return with results if it already exists
+        if default_storage.exists(path):
+            return {'status': 'exists', 'key': artifact_key}
+
+        obs_results, agent_outs_results = cluster_episodes_all_features(
+            episode_ids=episode_ids, **norm_params
+        )
+
+        def serialize(results: dict) -> dict:
+            # Build per-episode clusters as [episodes][steps][agents]
+            clusters = results['episode_clusters']
+            try:
+                n_eps = clusters.shape[0]
+                ep_clusters = [clusters[i].T.tolist() for i in range(n_eps)]
+            except Exception:
+                try:
+                    ep_clusters = [list(map(list, zip(*ep))) for ep in ecs]
+                except Exception:
+                    ep_clusters = clusters.tolist() if hasattr(clusters, 'tolist') else clusters
+
+            return {
+                'all_manifolds_x': results['all_manifolds'][:, 0].tolist(),
+                'all_manifolds_y': results['all_manifolds'][:, 1].tolist(),
+                'all_clusters': results['all_clusters'].tolist(),
+                'episode_manifolds': results['episode_manifolds'].tolist(),
+                'episode_clusters': ep_clusters,
+            }
+
+        artifact = {
+            'obs': serialize(obs_results),
+            'agent_outs': serialize(agent_outs_results),
+        }
+
+        content = ContentFile(json.dumps(artifact).encode('utf-8'))
+        default_storage.save(path, content)
+        return {'status': 'success', 'key': artifact_key}
+    except Exception as exc:
+        logger.exception('Multi-episode clustering failed for %s: %s', episode_ids, exc)
+        raise self.retry(exc=exc, countdown=60, max_retries=3)
+
+
+@shared_task
+def cleanup_clustering_temp(ttl_days: int = 7) -> dict[str, int]:
+    """Delete clustering-temp/* artifacts older than ttl_days from default storage."""
+    base_prefix = 'clustering-temp'
+    deleted = 0
+    checked = 0
+    cutoff = timezone.now() - timedelta(days=int(ttl_days))
+
+    def _walk(prefix: str) -> list[str]:
+        # Collect all file paths under prefix
+        files_acc: list[str] = []
+        try:
+            dirs, files = default_storage.listdir(prefix)
+        except Exception as exc:
+            logger.debug('Failed to list default_storage for prefix %s: %s', prefix, exc)
+            return files_acc
+        for f in files:
+            files_acc.append(f"{prefix.rstrip('/')}/{f}")
+        for d in dirs:
+            files_acc.extend(_walk(f"{prefix.rstrip('/')}/{d}"))
+        return files_acc
+
+    try:
+        all_files = _walk(base_prefix)
+        for path in all_files:
+            checked += 1
+            try:
+                mod_time = default_storage.get_modified_time(path)
+                if mod_time < cutoff:
+                    default_storage.delete(path)
+                    deleted += 1
+            except Exception as exc:
+                # Ignore individual file errors but log at debug for traceability
+                logger.debug('Skipping path during cleanup due to error: %s (path=%s)', exc, path)
+                continue
+    except Exception as exc:
+        logger.exception('cleanup_clustering_temp failed: %s', exc)
+    return {'checked': checked, 'deleted': deleted}

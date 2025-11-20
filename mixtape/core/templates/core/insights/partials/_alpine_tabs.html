@@ -4,7 +4,7 @@
     return {
       // initial state
       active: 'Overview',
-      pd: null,
+      parsedData: null,
       clustering: null,
       episodesCount: null,
       agentsCount: null,
@@ -47,29 +47,52 @@
         'showMediaViewer',
         'showTimeline',
       ],
-      _resizeQueued: false,
+      resizeQueued: false,
+      multiKey: '',
+      clusteringAvailable: false,
+      pollTimer: null,
+      showToast: false,
+      toastText: '',
+      toastTimer: null,
+      pollStartTs: 0,
+      pollTimeoutMs: 120000,
+      pollAttempts: 0,
+      pollMaxAttempts: 0,
+      pollVisibilityHandler: null,
+      pollPageHideHandler: null,
+      pollBeforeUnloadHandler: null,
 
       init() {
         // Parse JSON data
-        this.pd = JSON.parse(document.getElementById('parsed_data_json')?.textContent || 'null');
-        this.clustering = JSON.parse(document.getElementById('clustering_json')?.textContent || 'null');
-        this.episodeIds = this.pd?.episode_ids ?? [];
-        this.uniqueAgents = this.pd?.unique_agents ?? [];
-        this.rewardsOverTime = this.pd?.rewards_over_time ?? [];
-        this.decomposedRewards = this.pd?.decomposed_rewards ?? [];
-        this.actionVReward = this.pd?.action_v_reward ?? {};
-        this.rewardHistogram = this.pd?.reward_histogram ?? [];
-        this.actionVFrequency = this.pd?.action_v_frequency ?? {};
-        this.stepData = this.pd?.step_data ?? [];
-        this.timelineKeySteps = this.pd?.timeline_key_steps ?? [];
-        this.timelineKeyStepsGlobal = this.pd?.timeline_key_steps_global ?? [];
+        this.parsedData = JSON.parse(
+          document.getElementById('parsed_data_json')?.textContent || 'null'
+        );
+        this.clustering = JSON.parse(
+          document.getElementById('clustering_json')?.textContent || 'null'
+        );
+        this.multiKey = JSON.parse(
+          document.getElementById('clustering_multi_key')?.textContent || '""'
+        );
+        this.clusteringAvailable = JSON.parse(
+          document.getElementById('clustering_available_json')?.textContent || 'false'
+        );
+        this.episodeIds = this.parsedData?.episode_ids ?? [];
+        this.uniqueAgents = this.parsedData?.unique_agents ?? [];
+        this.rewardsOverTime = this.parsedData?.rewards_over_time ?? [];
+        this.decomposedRewards = this.parsedData?.decomposed_rewards ?? [];
+        this.actionVReward = this.parsedData?.action_v_reward ?? {};
+        this.rewardHistogram = this.parsedData?.reward_histogram ?? [];
+        this.actionVFrequency = this.parsedData?.action_v_frequency ?? {};
+        this.stepData = this.parsedData?.step_data ?? [];
+        this.timelineKeySteps = this.parsedData?.timeline_key_steps ?? [];
+        this.timelineKeyStepsGlobal = this.parsedData?.timeline_key_steps_global ?? [];
         this.episodesCount = Array.isArray(this.episodeIds) ? this.episodeIds.length : null;
         this.agentsCount = Array.isArray(this.uniqueAgents) ? this.uniqueAgents.length : null;
-        this.maxStepsGlobal = (this.pd?.max_steps ?? 1) - 1;
+        this.maxStepsGlobal = (this.parsedData?.max_steps ?? 1) - 1;
         this.maxSteps = this.maxStepsGlobal;
 
         // Average reward
-        const avgReward = this.computeAverageReward(this.pd);
+        const avgReward = this.computeAverageReward(this.parsedData);
         this.avgRewardDisplay = (avgReward ?? null) !== null ? Number(avgReward).toFixed(2) : null;
 
         // Episode summary
@@ -85,7 +108,7 @@
           return m || null;
         })();
 
-        // Build pairs and watchers
+        // Build watchers
         this.updateMaxSteps();
         this.$watch('limitToEpisode', () => this.updateMaxSteps());
         this.$watch('selectedEpisodeIdx', () => {
@@ -115,6 +138,9 @@
           store.maxStepsGlobal = this.maxStepsGlobal;
           store.currentStep = this.currentStep;
           store.episodeSummaries = this.episodeSummaries;
+          store.multiKey = this.multiKey;
+          store.clusteringAvailable = this.clusteringAvailable;
+          store.clustering = this.clustering;
         }
         // push changes
         this.$watch('useGlobalTimeline', v => { Alpine.store('insights').useGlobalTimeline = v; });
@@ -124,6 +150,10 @@
         this.$watch('visOptions', v => { Alpine.store('insights').visOptions = v; });
         this.$watch('maxStepsGlobal', v => { Alpine.store('insights').maxStepsGlobal = v; });
         this.$watch('currentStep', v => { Alpine.store('insights').currentStep = v; });
+        this.$watch('clustering', (v) => {
+          const store = (window.Alpine && Alpine.store('insights')) || null;
+          if (store) store.clustering = v;
+        });
         // pull changes
         this.$watch('$store.insights.useGlobalTimeline', v => { this.useGlobalTimeline = v; this.updateMaxSteps(); });
         this.$watch('$store.insights.timelineEpisodeIdx', v => { this.timelineEpisodeIdx = v; });
@@ -136,6 +166,14 @@
         this.$watch('$store.insights.sidePanelCollapsed', () => { this.queuePlotResize(); });
         // Observe once on init for plots that become visible later
         this.$nextTick(() => { this.observeResizeOnVisible(); });
+
+        // Polling: multi-episode artifact or single-episode partials
+        const isMulti = Array.isArray(this.episodeIds) && this.episodeIds.length > 1;
+        const isSingle = Array.isArray(this.episodeIds) && this.episodeIds.length === 1;
+        if ((isMulti && !this.clustering && this.multiKey)
+            || (isSingle && (!this.clustering || !this.clustering?.obs || !this.clustering?.agent_outs))) {
+          this.startClusteringPolling();
+        }
       },
 
       stepForward() {
@@ -174,13 +212,13 @@
         return c >= 3 ? 'lg:grid-cols-3' : (c === 2 ? 'lg:grid-cols-2' : 'lg:grid-cols-1');
       },
       maxStepsTooltip() {
-        const n = Array.isArray(this.episodeSummaries) ? this.episodeSummaries.length : 0;
-        if (n <= 1) {
+        const numEpSummaries = Array.isArray(this.episodeSummaries) ? this.episodeSummaries.length : 0;
+        if (numEpSummaries <= 1) {
           const steps = this.episodeSummaries?.[0]?.steps ?? null;
           return `Total Steps: ${steps ?? '—'}`;
         }
         const lines = [`Max Steps: ${this.maxStepsCount ?? '—'}`];
-        for (let i = 0; i < n; i++) {
+        for (let i = 0; i < numEpSummaries; i++) {
           const steps = this.episodeSummaries?.[i]?.steps ?? '—';
           lines.push(`Ep ${i + 1}: ${steps}`);
         }
@@ -222,30 +260,30 @@
         return this.getEpisodeStepData(this.selectedEpisodeIdx);
       },
       getAgentStep(epIdx, agent) {
-        const s = this.getEpisodeStepData(epIdx);
-        const arr = s && Array.isArray(s.agent_steps) ? s.agent_steps : [];
-        return arr.find(as => as.agent === agent) || null;
+        const epStepData = this.getEpisodeStepData(epIdx);
+        const agentSteps = epStepData && Array.isArray(epStepData.agent_steps) ? epStepData.agent_steps : [];
+        return agentSteps.find(agentStep => agentStep.agent === agent) || null;
       },
       getAgentAction(epIdx, agent) {
-        const as = this.getAgentStep(epIdx, agent);
-        return (as && (as.action ?? as.action_string ?? as.action_name ?? as.action_id)) ?? '—';
+        const agentStep = this.getAgentStep(epIdx, agent);
+        return (agentStep && (agentStep.action ?? agentStep.action_string ?? agentStep.action_name ?? agentStep.action_id)) ?? '—';
       },
       getAgentRewardStr(epIdx, agent) {
-        const as = this.getAgentStep(epIdx, agent);
-        const val = as ? (as.total_reward ?? as.reward ?? null) : null;
-        return (typeof val === 'number') ? val.toFixed(3) : (val ?? '—');
+        const agentStep = this.getAgentStep(epIdx, agent);
+        const totalReward = agentStep ? (agentStep.total_reward ?? agentStep.reward ?? null) : null;
+        return (typeof totalReward === 'number') ? totalReward.toFixed(3) : (totalReward ?? '—');
       },
       getEpisodeImageUrl(epIdx) {
-        const s = this.getEpisodeStepData(epIdx);
-        return s && s.image_url ? s.image_url : null;
+        const epStepData = this.getEpisodeStepData(epIdx);
+        return epStepData && epStepData.image_url ? epStepData.image_url : null;
       },
       get episodePairs() {
-        const out = [];
-        const n = Array.isArray(this.episodeSummaries) ? this.episodeSummaries.length : 0;
-        for (let i = 0; i < n; i++) {
-          out.push({ epIdx: i, kind: 'action' }); out.push({ epIdx: i, kind: 'reward' });
+        const pairs = [];
+        const numEpSummaries = Array.isArray(this.episodeSummaries) ? this.episodeSummaries.length : 0;
+        for (let i = 0; i < numEpSummaries; i++) {
+          pairs.push({ epIdx: i, kind: 'action' }); pairs.push({ epIdx: i, kind: 'reward' });
         }
-        return out;
+        return pairs;
       },
       resizePlots(panelId) {
         if (!window.Plotly) return;
@@ -257,19 +295,21 @@
           try {
             Plotly.Plots.resize(el);
             Plotly.relayout(el, { autosize: true });
-          } catch (_) {}
+          } catch (error) {
+            console.error(error);
+          }
         });
       },
       queuePlotResize() {
         // Debounce resize to prevent Plotly "jumpiness"
-        if (this._resizeQueued) return;
-        this._resizeQueued = true;
+        if (this.resizeQueued) return;
+        this.resizeQueued = true;
         this.$nextTick(() => {
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
               this.resizePlots();
               this.observeResizeOnVisible();
-              this._resizeQueued = false;
+              this.resizeQueued = false;
             });
           });
         });
@@ -291,52 +331,156 @@
         }, { root: null, threshold: 0 });
         nodes.forEach((el) => { io.observe(el); });
       },
-      totalFromSeries(y) {
-        const arr = Array.isArray(y) ? y.filter(v => typeof v === 'number') : [];
-        if (!arr.length) return null;
-        const last = arr[arr.length - 1];
-        return (typeof last === 'number' && arr.some(v => v < last))
+      totalFromSeries(yTrace) {
+        const rewards = Array.isArray(yTrace) ? yTrace.filter(reward => typeof reward === 'number') : [];
+        if (!rewards.length) return null;
+        const last = rewards[rewards.length - 1];
+        return (typeof last === 'number' && rewards.some(reward => reward < last))
           ? last
-          : arr.reduce((a, b) => a + b, 0);
+          : rewards.reduce((a, b) => a + b, 0);
       },
-      computeAverageReward(pd) {
-        if (!pd) return null;
-        if (pd.rewards_totals && typeof pd.rewards_totals.average_per_episode === 'number') {
-          return pd.rewards_totals.average_per_episode;
+      computeAverageReward(parsedData) {
+        if (!parsedData) return null;
+        if (parsedData.rewards_totals && typeof parsedData.rewards_totals.average_per_episode === 'number') {
+          return parsedData.rewards_totals.average_per_episode;
         }
-        if (Array.isArray(pd.episode_total_rewards)) {
-          const arr = pd.episode_total_rewards.filter(v => typeof v === 'number');
-          return arr.length ? arr.reduce((a,b)=>a+b,0) / arr.length : null;
+        if (Array.isArray(parsedData.episode_total_rewards)) {
+          const rewards = parsedData.episode_total_rewards.filter(reward => typeof reward === 'number');
+          return rewards.length ? rewards.reduce((a,b)=>a+b,0) / rewards.length : null;
         }
-        if (Array.isArray(pd.episode_rewards)) {
-          const arr = pd.episode_rewards.filter(v => typeof v === 'number');
-          return arr.length ? arr.reduce((a,b)=>a+b,0) / arr.length : null;
+        if (Array.isArray(parsedData.episode_rewards)) {
+          const rewards = parsedData.episode_rewards.filter(reward => typeof reward === 'number');
+          return rewards.length ? rewards.reduce((a,b)=>a+b,0) / rewards.length : null;
         }
-        if (Array.isArray(pd.rewards_over_time)) {
-          const perEpTotals = pd.rewards_over_time.map(trace => {
+        if (Array.isArray(parsedData.rewards_over_time)) {
+          const perEpTotals = parsedData.rewards_over_time.map(trace => {
             if (!trace) return null;
-            const y = Array.isArray(trace.y) ? trace.y : [];
-            return this.totalFromSeries(y);
-          }).filter(v => typeof v === 'number');
+            const yTrace = Array.isArray(trace.y) ? trace.y : [];
+            return this.totalFromSeries(yTrace);
+          }).filter(reward => typeof reward === 'number');
           return perEpTotals.length ? perEpTotals.reduce((a,b)=>a+b,0) / perEpTotals.length : null;
         }
         return null;
       },
       summarizeEpisode(idx, id) {
-        const yFull = Array.isArray(this.rewardsOverTime[idx]) ? this.rewardsOverTime[idx] : [];
-        const steps = yFull.length || null;
-        const perStep = yFull.filter(v => typeof v === 'number');
+        const allRewards = Array.isArray(this.rewardsOverTime[idx]) ? this.rewardsOverTime[idx] : [];
+        const steps = allRewards.length || null;
+        const perStep = allRewards.filter(rewards => typeof rewards === 'number');
         let totalReward = null;
-        if (Array.isArray(this.pd?.episode_total_rewards)) {
-          totalReward = typeof this.pd.episode_total_rewards[idx] === 'number' ? this.pd.episode_total_rewards[idx] : null;
+        if (Array.isArray(this.parsedData?.episode_total_rewards)) {
+          totalReward = typeof this.parsedData.episode_total_rewards[idx] === 'number' ? this.parsedData.episode_total_rewards[idx] : null;
         }
-        if (totalReward === null && yFull.length) {
-          totalReward = this.totalFromSeries(yFull);
+        if (totalReward === null && allRewards.length) {
+          totalReward = this.totalFromSeries(allRewards);
         }
         const minPerStep = perStep.length ? Math.min(...perStep) : null;
         const maxPerStep = perStep.length ? Math.max(...perStep) : null;
         const avgPerStep = perStep.length ? (perStep.reduce((a,b)=> a + b, 0) / perStep.length) : null;
         return { id: id ?? idx, steps, totalReward, minPerStep, maxPerStep, avgPerStep };
+      },
+      startClusteringPolling() {
+        if (this.pollTimer) return;
+        this.pollStartTs = Date.now();
+        this.pollAttempts = 0;
+        this.pollMaxAttempts = Math.ceil((this.pollTimeoutMs || 120000) / 2000) + 1;
+        const fn = async () => {
+          this.pollAttempts += 1;
+          const elapsed = Date.now() - this.pollStartTs;
+          if (elapsed > this.pollTimeoutMs || this.pollAttempts > this.pollMaxAttempts) {
+            this.stopClusteringPolling();
+            return;
+          }
+          await this.checkClusteringStatus();
+        };
+        fn();
+        this.pollTimer = setInterval(fn, 2000);
+        // Stop polling on navigation away or when tab is hidden
+        this.pollVisibilityHandler = () => { if (document.hidden) this.stopClusteringPolling(); };
+        this.pollPageHideHandler = () => { this.stopClusteringPolling(); };
+        this.pollBeforeUnloadHandler = () => { this.stopClusteringPolling(); };
+        document.addEventListener('visibilitychange', this.pollVisibilityHandler);
+        window.addEventListener('pagehide', this.pollPageHideHandler);
+        window.addEventListener('beforeunload', this.pollBeforeUnloadHandler);
+      },
+      stopClusteringPolling() {
+        if (this.pollTimer) { clearInterval(this.pollTimer); this.pollTimer = null; }
+        if (this.pollVisibilityHandler) { document.removeEventListener('visibilitychange', this.pollVisibilityHandler); this.pollVisibilityHandler = null; }
+        if (this.pollPageHideHandler) { window.removeEventListener('pagehide', this.pollPageHideHandler); this.pollPageHideHandler = null; }
+        if (this.pollBeforeUnloadHandler) { window.removeEventListener('beforeunload', this.pollBeforeUnloadHandler); this.pollBeforeUnloadHandler = null; }
+      },
+      async checkClusteringStatus() {
+        try {
+          const isMulti = !!this.multiKey && Array.isArray(this.episodeIds) && this.episodeIds.length > 1;
+          if (isMulti) {
+            const resp = await fetch(
+              `/api/v1/clustering/status/?multi_key=${encodeURIComponent(this.multiKey)}`,
+              { credentials: 'same-origin' }
+            );
+            if (!resp.ok) return;
+            const data = await resp.json();
+            if (data && data.available) {
+              this.clusteringAvailable = true;
+              await this.fetchClusteringResult();
+              this.stopClusteringPolling();
+            }
+            return;
+          }
+          const isSingle = Array.isArray(this.episodeIds) && this.episodeIds.length === 1;
+          if (isSingle) {
+            const eid = this.episodeIds[0];
+            const resp = await fetch(
+              `/api/v1/clustering/status/?episode_id=${encodeURIComponent(eid)}`,
+              { credentials: 'same-origin' }
+            );
+            if (!resp.ok) return;
+            const data = await resp.json();
+            if (!data) return;
+            if (data.obs_available || data.agent_outs_available) {
+              await this.fetchClusteringResult();
+            }
+            if (data.available) {
+              this.clusteringAvailable = true;
+              this.stopClusteringPolling();
+            }
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      },
+      async fetchClusteringResult() {
+        try {
+          let resp = null;
+          const isMulti = !!this.multiKey && Array.isArray(this.episodeIds) && this.episodeIds.length > 1;
+          if (isMulti) {
+            resp = await fetch(
+              `/api/v1/clustering/result/?multi_key=${encodeURIComponent(this.multiKey)}`,
+              { credentials: 'same-origin' }
+            );
+          } else if (Array.isArray(this.episodeIds) && this.episodeIds.length === 1) {
+            const eid = this.episodeIds[0];
+            resp = await fetch(
+              `/api/v1/clustering/result/?episode_id=${encodeURIComponent(eid)}`,
+              { credentials: 'same-origin' }
+            );
+          }
+          if (!resp || !resp.ok) return;
+          const obj = await resp.json();
+          this.clustering = obj;
+          const store = (window.Alpine && Alpine.store('insights')) || null;
+          if (store) store.clustering = obj;
+          this.queuePlotResize();
+          if (this.clustering && ((this.clustering.obs && this.clustering.agent_outs) || isMulti)) {
+            this.toastText = 'Clustering computation completed';
+            this.showToast = true;
+            if (this.toastTimer) { clearTimeout(this.toastTimer); }
+            this.toastTimer = setTimeout(
+              () => { this.showToast = false; this.toastTimer = null; },
+              4000
+            );
+          }
+        } catch (error) {
+          console.error(error);
+        }
       },
     };
   };

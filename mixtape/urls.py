@@ -20,6 +20,8 @@ urlpatterns = [
     path('oauth/', include('oauth2_provider.urls')),
     path('admin/', admin.site.urls),
     path('api/v1/s3-upload/', include('s3_file_field.urls')),
+    path('api/v1/clustering/status/', views.clustering_status, name='clustering-status'),
+    path('api/v1/clustering/result/', views.clustering_result, name='clustering-result'),
     path('api/v1/', include(router.urls)),
     path('api/docs/redoc/', schema_view.with_ui('redoc'), name='docs-redoc'),
     path('api/docs/swagger/', schema_view.with_ui('swagger'), name='docs-swagger'),
