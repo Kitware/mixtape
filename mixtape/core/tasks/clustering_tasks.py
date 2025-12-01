@@ -128,8 +128,8 @@ def compute_episode_clustering(
     except Exception as exc:
         logger.exception('Clustering computation failed for episodes %s', episode_ids)
         raise self.retry(
-            exc=exc,        # pass along original exception for logging
-            countdown=60,   # wait 60 seconds before retry
+            exc=exc,  # pass along original exception for logging
+            countdown=60,  # wait 60 seconds before retry
             max_retries=3,  # try up to 3 times total
         )
 
@@ -181,7 +181,7 @@ def compute_multi_episode_clustering(
                 ep_clusters = [clusters[i].T.tolist() for i in range(n_eps)]
             except Exception:
                 try:
-                    ep_clusters = [list(map(list, zip(*ep))) for ep in ecs]
+                    ep_clusters = [list(map(list, zip(*ep))) for ep in clusters]
                 except Exception:
                     ep_clusters = clusters.tolist() if hasattr(clusters, 'tolist') else clusters
 
