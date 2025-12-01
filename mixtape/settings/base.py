@@ -124,11 +124,24 @@ if value not in context_processors:
 # Run daily cleanup of temporary clustering artifacts stored in default storage (MinIO)
 CELERY_BEAT_SCHEDULE: dict[str, dict[str, Any]] = locals().get('CELERY_BEAT_SCHEDULE', {})
 
-CELERY_BEAT_SCHEDULE.setdefault(
-    'cleanup-clustering-temp-daily',
-    {
-        'task': 'mixtape.core.tasks.clustering_tasks.cleanup_clustering_temp',
-        'schedule': crontab(hour=3, minute=0),  # Daily at 03:00 UTC
-        'args': (7,),  # TTL in days
-    },
-)
+cleanup_enabled: bool = env.bool('DJANGO_COMPUTE_CLEANUP_ENABLED', default=True)
+if cleanup_enabled:
+    minute = env('DJANGO_COMPUTE_CLEANUP_MINUTE', default='0')
+    hour = env('DJANGO_COMPUTE_CLEANUP_HOUR', default='3')
+    day_of_month = env('DJANGO_COMPUTE_CLEANUP_DAY_OF_MONTH', default='*')
+    month_of_year = env('DJANGO_COMPUTE_CLEANUP_MONTH_OF_YEAR', default='*')
+    ttl_days: int = env.int('DJANGO_COMPUTE_CLEANUP_TTL_DAYS', default=7)
+
+    CELERY_BEAT_SCHEDULE.setdefault(
+        'cleanup-clustering-temp-daily',
+        {
+            'task': 'mixtape.core.tasks.clustering_tasks.cleanup_clustering_temp',
+            'schedule': crontab(
+                minute=minute,
+                hour=hour,
+                day_of_month=day_of_month,
+                month_of_year=month_of_year,
+            ),  # Daily at 03:00 UTC
+            'args': (ttl_days,),  # TTL in days
+        },
+    )
