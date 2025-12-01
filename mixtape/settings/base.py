@@ -4,6 +4,7 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
+from celery.schedules import crontab
 import django_stubs_ext
 from environ import Env
 from resonant_settings.allauth import *
@@ -119,3 +120,15 @@ context_processors = options.setdefault('context_processors', [])  # type: ignor
 value = 'mixtape.core.context_processors.demo_feedback_modal'
 if value not in context_processors:
     context_processors.append(value)
+
+# Run daily cleanup of temporary clustering artifacts stored in default storage (MinIO)
+CELERY_BEAT_SCHEDULE: dict[str, dict[str, Any]] = locals().get('CELERY_BEAT_SCHEDULE', {})
+
+CELERY_BEAT_SCHEDULE.setdefault(
+    'cleanup-clustering-temp-daily',
+    {
+        'task': 'mixtape.core.tasks.clustering_tasks.cleanup_clustering_temp',
+        'schedule': crontab(hour=3, minute=0),  # Daily at 03:00 UTC
+        'args': (7,),  # TTL in days
+    },
+)

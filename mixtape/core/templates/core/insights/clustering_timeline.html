@@ -9,50 +9,148 @@
       font: $store.theme.font,
     },
     plot: null,
+    buildPlot() {
+      let clustering = null;
+      if ($store.insights && $store.insights.clustering) {
+        clustering = $store.insights.clustering;
+      }
+      if (!clustering || !clustering[{{key}}]) return;
+      const epClusters = clustering[{{key}}].episode_clusters;
+      let epIdx = 0;
+      if (typeof $store.insights?.timelineEpisodeIdx === 'number') {
+        epIdx = $store.insights.timelineEpisodeIdx;
+      }
+      // If multi-episode shape [episodes][agents][steps], pick selected episode; else assume [agents][steps]
+      let agentStepClusters = Array.isArray(epClusters?.[0]?.[0])
+        ? (epClusters?.[epIdx] || epClusters?.[0] || [])
+        : epClusters;
+      // Pad each agent row to equal length [agents][steps]
+      const maxLen = Array.isArray(agentStepClusters)
+        ? Math.max(
+            ...agentStepClusters.map(r => (Array.isArray(r) ? r.length : 0))
+          )
+        : 0;
+      agentStepClusters = Array.isArray(agentStepClusters)
+        ? agentStepClusters.map(r => {
+            const row = Array.isArray(r) ? r.slice() : [];
+            while (row.length < maxLen) row.push(null);
+            return row;
+          })
+        : agentStepClusters;
+      this.data = [
+        {
+          agentStepClusters: agentStepClusters,
+          type: 'heatmap',
+          showscale: false,
+          colorscale: 'YlGnBu',
+        },
+        {
+          let currentStepVal = 0;
+          if ($store.insights && typeof $store.insights.currentStep === 'number') {
+            currentStepVal = $store.insights.currentStep;
+          }
+          const yVal = Array.isArray(agentStepClusters)
+            ? agentStepClusters.length - 1
+            : 1;
+          x: [currentStepVal, currentStepVal],
+          y: [0, yVal],
+          type: 'scatter',
+          mode: 'lines',
+          showlegend: false,
+          line: { color: 'red', width: 4, opacity: 0.5 },
+        }
+      ];
+      this.plot = Plotly.newPlot(
+        $refs.allManifolds,
+        this.data,
+        this.layout,
+        {
+          displayModeBar: false,
+          responsive: true
+        }
+      );
+      this.$nextTick(() => { Plotly.Plots.resize($refs.allManifolds); });
+      window.addEventListener('resize', () => { Plotly.Plots.resize($refs.allManifolds); });
+      this.$watch('visOptions', () => {
+        this.$nextTick(() => {
+          Plotly.relayout(
+            $refs.allManifolds,
+            {
+              autosize: true,
+              showlegend: visOptions.includes('plotLegends')
+            }
+          );
+        });
+      });
+    },
   }"
   x-init="
-    data = [
-      {
-        z: clustering[{{key}}].episode_clusters,
-        type: 'heatmap',
-        showscale: false,
-        colorscale: 'YlGnBu',
-      },
-      {
-        x: [[currentStep, currentStep]],
-        y: [[0, clustering[{{key}}].episode_clusters.length - 1]],
-        type: 'scatter',
-        mode: 'lines',
-        showlegend: false,
-        line: {
-          color: 'red',
-          width: 4,
-          opacity: 0.5,
-        },
+    if ($store.insights && $store.insights.clustering && $store.insights.clustering[{{key}}]) {
+      buildPlot();
+    }
+    $watch(
+      '$store.insights.timelineEpisodeIdx',
+      () => {
+        if ($store.insights && $store.insights.clustering && $store.insights.clustering[{{key}}]) {
+          buildPlot();
+        }
       }
-    ];
-    this.plot = Plotly.newPlot($refs.allManifolds, data, layout, {displayModeBar: false, responsive: true});
-    $nextTick(() => { Plotly.Plots.resize($refs.allManifolds); });
-    window.addEventListener('resize', () => { Plotly.Plots.resize($refs.allManifolds); });
-    $watch('visOptions', () => {
-      $nextTick(() => {
-        Plotly.relayout(
-          $refs.allManifolds, {
-            autosize: true,
-            showlegend: visOptions.includes('plotLegends')
-          })
-      });
-    });"
+    );
+    $watch(
+      () => $store.insights && $store.insights.clustering && $store.insights.clustering[{{key}}],
+      (v) => {
+        if (v) {
+          buildPlot();
+        }
+      }
+    );
+  "
   x-effect="
+    if (
+      !this.plot
+      && $store.insights
+      && $store.insights.clustering && $store.insights.clustering[{{key}}]
+    ) { buildPlot(); }
     if (this.plot) {
-      // Use the heatmap data dimensions directly
+      const plotElement = $refs.allManifolds;
+      const traces = plotElement && plotElement.data ? plotElement.data : null;
+      if (!traces || traces.length < 2) return;
+      let clustering = null;
+      if ($store.insights && $store.insights.clustering) {
+        clustering = $store.insights.clustering;
+      }
+      if (!clustering) return;
+      const epClusters = clustering[{{key}}]?.episode_clusters;
+      if (!epClusters) return;
+      const epIdx = 0;
+      if (typeof $store.insights?.timelineEpisodeIdx === 'number') {
+        epIdx = $store.insights.timelineEpisodeIdx;
+      }
+      const zNow = Array.isArray(epClusters?.[0]?.[0])
+        ? (epClusters?.[epIdx] || epClusters?.[0] || [])
+        : epClusters;
+      if (!Array.isArray(zNow) || zNow.length === 0) { return; }
+      const agentsNow = zNow.length;
       const yMin = 0;
-      const yMax = clustering[{{key}}].episode_clusters.length - 1;
-      Plotly.update($refs.allManifolds, {
-        x: [[currentStep, currentStep]],
-        y: [[yMin - 0.5, yMax + 0.5]],
-      }, {}, [1]);
+      const yMax = Math.max(0, (agentsNow || 1) - 1);
+      const step = (
+        $store.insights && typeof $store.insights.currentStep === 'number'
+      ) ? $store.insights.currentStep : currentStep;
+      const xLine = [step, step];
+      const yLine = [yMin - 0.5, yMax + 0.5];
+      // Use restyle: arguments must be arrays-of-arrays per selected trace
+      Plotly.restyle($refs.allManifolds, { x: [xLine], y: [yLine] }, [1]);
     }"
 >
-  <div x-ref="allManifolds" class="w-full"></div>
+  <div
+    class="skeleton h-[300px] w-full"
+    x-show="!($store.insights && $store.insights.clustering && $store.insights.clustering[{{key}}])"
+    x-cloak
+  ></div>
+  <div
+    x-ref="allManifolds"
+    class="w-full"
+    x-show="$store.insights && $store.insights.clustering && $store.insights.clustering[{{key}}]"
+    x-cloak
+  ></div>
 </div>
