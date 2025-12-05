@@ -1,6 +1,5 @@
-// Factory for the Insights tabs
-window.insightsTabs = function insightsTabs() {
-  return {
+document.addEventListener('alpine:init', () => {
+  Alpine.data('insightsTabs', () => ({
     // initial state
     active: 'Overview',
     parsedData: null,
@@ -469,5 +468,5 @@ window.insightsTabs = function insightsTabs() {
         );
       }
     },
-  };
-};
+  }));
+});
