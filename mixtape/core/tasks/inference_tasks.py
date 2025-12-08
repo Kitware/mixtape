@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import contextlib
 import itertools
-from typing import cast
+from typing import TYPE_CHECKING, cast
 from uuid import uuid4
 
 from celery import shared_task
@@ -16,6 +18,9 @@ from ray.rllib.algorithms.algorithm import Algorithm
 from mixtape.core.models import AgentStep, Episode, Inference
 from mixtape.core.models.step import Step
 from mixtape.core.ray_utils.environments import register_environment
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 
 @shared_task
@@ -52,7 +57,7 @@ def run_inference_task(inference_pk: int):
                             observation, full_fetch=True
                         )
 
-                        rgb_image_array = cast(np.ndarray, env.render())
+                        rgb_image_array = cast('npt.NDArray', env.render())
                         with Step.rgb_array_to_file(
                             rgb_image_array, f'step/{uuid4()}'
                         ) as image_file:
@@ -96,7 +101,6 @@ def run_inference_task(inference_pk: int):
                             actions[agent] = action
                             action_distributions[agent] = extras.get('action_dist_inputs')
                         rgb_image_array = env.render()
-                        assert isinstance(rgb_image_array, np.ndarray)
                         with Step.rgb_array_to_file(
                             rgb_image_array, f'step/{uuid4()}'
                         ) as image_file:
@@ -138,7 +142,6 @@ def run_inference_task(inference_pk: int):
                         # No action needed if the agent is done
                         action = None if termination or truncation else action
                         rgb_image_array = env.render()
-                        assert isinstance(rgb_image_array, np.ndarray)
                         with Step.rgb_array_to_file(
                             rgb_image_array, f'step/{uuid4()}'
                         ) as image_file:
