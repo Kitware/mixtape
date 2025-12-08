@@ -100,6 +100,7 @@ test = [
   "pytest",
   "pytest-django",
   "pytest-mock",
+  "pytest-playwright",
   # Enable with "pytest --random-order ..."
   "pytest-random-order",
   # Enable with "pytest --count=... ..."
