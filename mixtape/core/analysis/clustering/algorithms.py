@@ -1,6 +1,9 @@
 """Clustering computation utilities for episode analysis."""
 
+from __future__ import annotations
+
 import os
+from typing import TYPE_CHECKING
 
 from django.http import Http404
 import einops
@@ -10,6 +13,9 @@ import umap.umap_ as umap
 
 from mixtape.core.analysis.constants import DEFAULT_CLUSTERING_DIMENSIONS
 from mixtape.core.models.step import Step
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 # Default clustering parameters used across the application
 DEFAULT_CLUSTERING_PARAMS = {
@@ -93,7 +99,7 @@ def _cluster_episodes_by_feature(
     manifold_pipeline: pipeline.Pipeline,
     cluster_pipeline: cluster.KMeans,
     dimension_keys: str,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray]:
     # Stack all episodes' features along the episode dimension
     episode_features = np.stack([episode[feature_name] for episode in episodes])
 

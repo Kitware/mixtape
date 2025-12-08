@@ -1,13 +1,18 @@
+from __future__ import annotations
+
 from collections.abc import Generator
 from contextlib import contextmanager
 from io import BytesIO
+from typing import TYPE_CHECKING
 
 from PIL import Image
 from django.core.files import File
 from django.db import models
-import numpy as np
 
 from .episode import Episode
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 
 class Step(models.Model):
@@ -23,7 +28,7 @@ class Step(models.Model):
 
     @contextmanager
     @staticmethod
-    def rgb_array_to_file(rgb_array: np.ndarray, file_base_name: str) -> Generator[File]:
+    def rgb_array_to_file(rgb_array: npt.NDArray, file_base_name: str) -> Generator[File]:
         """Yield a Django File containing an encoded Image."""
         with BytesIO() as rendering_stream:
             Image.fromarray(rgb_array).save(rendering_stream, format='PNG')
