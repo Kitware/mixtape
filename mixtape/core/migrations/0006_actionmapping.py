@@ -7,9 +7,9 @@ from mixtape.environments.mappings import action_maps
 
 def create_default_action_mappings(apps, schema_editor):
     # Create the default action mappings for all of the environments we support
-    action_mapping = apps.get_model('core', 'ActionMapping')
+    ActionMapping = apps.get_model('core', 'ActionMapping')  # noqa: N806
     for environment, mapping in action_maps.items():
-        action_mapping.objects.create(
+        ActionMapping.objects.create(
             environment=environment,
             mapping=mapping,
         )
