@@ -105,7 +105,7 @@
       (v) => { if (v) { buildPlot(); } }
     );
   "
-  x-effect="
+  x-effect="() => {
     if (!this.plot
         && $store.insights
         && $store.insights.clustering && $store.insights.clustering[{{key}}]
@@ -149,11 +149,11 @@
           ) {
             highlightX.push(agentTrace.x[currentStep]);
             highlightY.push(agentTrace.y[currentStep]);
-            const agents = [];
+            let agents = [];
             if ($store.insights && Array.isArray($store.insights.uniqueAgents)) {
               agents = $store.insights.uniqueAgents;
             }
-            const episodes = [];
+            let episodes = [];
             if ($store.insights && Array.isArray($store.insights.episodeIds)) {
               episodes = $store.insights.episodeIds;
             }
@@ -199,7 +199,7 @@
         }]);
       }
     }
-  "
+  }"
   >
   <div
     class="skeleton h-[450px] w-full"
