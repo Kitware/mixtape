@@ -1,7 +1,6 @@
 import json
 from typing import Any
 
-from gymnasium.wrappers import LazyFrames
 import numpy as np
 
 
@@ -15,8 +14,10 @@ class CustomJSONEncoder(json.JSONEncoder):
         Returns:
             Any: The converted, serializable object.
         """
-        if isinstance(obj, LazyFrames):
-            obj = np.array(obj)
+        # `gymnasium.wrappers.LazyFrames` can be coerced to a numpy array
+        if hasattr(obj, '__array__'):
+            # `np.asanyarray` will preserve an existing ndarray
+            obj = np.asanyarray(obj)
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         if isinstance(obj, np.int32) or isinstance(obj, np.int64):
