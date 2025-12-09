@@ -291,12 +291,8 @@ window.insightsTabs = function insightsTabs() {
       if (!scope) return;
       const nodes = scope.querySelectorAll('.js-plotly-plot, [data-plotly]');
       nodes.forEach((el) => {
-        try {
-          Plotly.Plots.resize(el);
-          Plotly.relayout(el, { autosize: true });
-        } catch (error) {
-          console.error(error);
-        }
+        Plotly.Plots.resize(el);
+        Plotly.relayout(el, { autosize: true });
       });
     },
     queuePlotResize() {
@@ -408,77 +404,69 @@ window.insightsTabs = function insightsTabs() {
       if (this.pollBeforeUnloadHandler) { window.removeEventListener('beforeunload', this.pollBeforeUnloadHandler); this.pollBeforeUnloadHandler = null; }
     },
     async checkClusteringStatus() {
-      try {
-        const isMulti = !!this.multiKey && Array.isArray(this.episodeIds) && this.episodeIds.length > 1;
-        if (isMulti) {
-          const resp = await fetch(
-            `/api/v1/clustering/status/?multi_key=${encodeURIComponent(this.multiKey)}`,
-            { credentials: 'same-origin' }
-          );
-          if (!resp.ok) return;
-          const data = await resp.json();
-          if (data && data.available) {
-            this.clusteringAvailable = true;
-            await this.fetchClusteringResult();
-            this.stopClusteringPolling();
-          }
-          return;
+      const isMulti = !!this.multiKey && Array.isArray(this.episodeIds) && this.episodeIds.length > 1;
+      if (isMulti) {
+        const resp = await fetch(
+          `/api/v1/clustering/status/?multi_key=${encodeURIComponent(this.multiKey)}`,
+          { credentials: 'same-origin' }
+        );
+        if (!resp.ok) return;
+        const data = await resp.json();
+        if (data && data.available) {
+          this.clusteringAvailable = true;
+          await this.fetchClusteringResult();
+          this.stopClusteringPolling();
         }
-        const isSingle = Array.isArray(this.episodeIds) && this.episodeIds.length === 1;
-        if (isSingle) {
-          const eid = this.episodeIds[0];
-          const resp = await fetch(
-            `/api/v1/clustering/status/?episode_id=${encodeURIComponent(eid)}`,
-            { credentials: 'same-origin' }
-          );
-          if (!resp.ok) return;
-          const data = await resp.json();
-          if (!data) return;
-          if (data.obs_available || data.agent_outs_available) {
-            await this.fetchClusteringResult();
-          }
-          if (data.available) {
-            this.clusteringAvailable = true;
-            this.stopClusteringPolling();
-          }
+        return;
+      }
+      const isSingle = Array.isArray(this.episodeIds) && this.episodeIds.length === 1;
+      if (isSingle) {
+        const eid = this.episodeIds[0];
+        const resp = await fetch(
+          `/api/v1/clustering/status/?episode_id=${encodeURIComponent(eid)}`,
+          { credentials: 'same-origin' }
+        );
+        if (!resp.ok) return;
+        const data = await resp.json();
+        if (!data) return;
+        if (data.obs_available || data.agent_outs_available) {
+          await this.fetchClusteringResult();
         }
-      } catch (error) {
-        console.error(error);
+        if (data.available) {
+          this.clusteringAvailable = true;
+          this.stopClusteringPolling();
+        }
       }
     },
     async fetchClusteringResult() {
-      try {
-        let resp = null;
-        const isMulti = !!this.multiKey && Array.isArray(this.episodeIds) && this.episodeIds.length > 1;
-        if (isMulti) {
-          resp = await fetch(
-            `/api/v1/clustering/result/?multi_key=${encodeURIComponent(this.multiKey)}`,
-            { credentials: 'same-origin' }
-          );
-        } else if (Array.isArray(this.episodeIds) && this.episodeIds.length === 1) {
-          const eid = this.episodeIds[0];
-          resp = await fetch(
-            `/api/v1/clustering/result/?episode_id=${encodeURIComponent(eid)}`,
-            { credentials: 'same-origin' }
-          );
-        }
-        if (!resp || !resp.ok) return;
-        const obj = await resp.json();
-        this.clustering = obj;
-        const store = (window.Alpine && Alpine.store('insights')) || null;
-        if (store) store.clustering = obj;
-        this.queuePlotResize();
-        if (this.clustering && ((this.clustering.obs && this.clustering.agent_outs) || isMulti)) {
-          this.toastText = 'Clustering computation completed';
-          this.showToast = true;
-          if (this.toastTimer) { clearTimeout(this.toastTimer); }
-          this.toastTimer = setTimeout(
-            () => { this.showToast = false; this.toastTimer = null; },
-            4000
-          );
-        }
-      } catch (error) {
-        console.error(error);
+      let resp = null;
+      const isMulti = !!this.multiKey && Array.isArray(this.episodeIds) && this.episodeIds.length > 1;
+      if (isMulti) {
+        resp = await fetch(
+          `/api/v1/clustering/result/?multi_key=${encodeURIComponent(this.multiKey)}`,
+          { credentials: 'same-origin' }
+        );
+      } else if (Array.isArray(this.episodeIds) && this.episodeIds.length === 1) {
+        const eid = this.episodeIds[0];
+        resp = await fetch(
+          `/api/v1/clustering/result/?episode_id=${encodeURIComponent(eid)}`,
+          { credentials: 'same-origin' }
+        );
+      }
+      if (!resp || !resp.ok) return;
+      const obj = await resp.json();
+      this.clustering = obj;
+      const store = (window.Alpine && Alpine.store('insights')) || null;
+      if (store) store.clustering = obj;
+      this.queuePlotResize();
+      if (this.clustering && ((this.clustering.obs && this.clustering.agent_outs) || isMulti)) {
+        this.toastText = 'Clustering computation completed';
+        this.showToast = true;
+        if (this.toastTimer) { clearTimeout(this.toastTimer); }
+        this.toastTimer = setTimeout(
+          () => { this.showToast = false; this.toastTimer = null; },
+          4000
+        );
       }
     },
   };
