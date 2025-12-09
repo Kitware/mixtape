@@ -2,7 +2,7 @@
 
 from django.db import migrations, models
 
-import mixtape.core.ray_utils.json_encoder
+import mixtape.core.json_encoder
 
 
 class Migration(migrations.Migration):
@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
             field=models.JSONField(
                 blank=True,
                 default=dict,
-                encoder=mixtape.core.ray_utils.json_encoder.CustomJSONEncoder,
+                encoder=mixtape.core.json_encoder.CustomJSONEncoder,
                 null=True,
             ),
         ),
@@ -33,7 +33,7 @@ class Migration(migrations.Migration):
             field=models.JSONField(
                 blank=True,
                 default=dict,
-                encoder=mixtape.core.ray_utils.json_encoder.CustomJSONEncoder,
+                encoder=mixtape.core.json_encoder.CustomJSONEncoder,
                 null=True,
             ),
         ),

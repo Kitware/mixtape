@@ -1,8 +1,8 @@
 from django.core.exceptions import ValidationError
 from django.db import models
 
+from mixtape.core.json_encoder import CustomJSONEncoder
 from mixtape.core.ray_utils.constants import ExampleEnvs, SupportedAlgorithm
-from mixtape.core.ray_utils.json_encoder import CustomJSONEncoder
 
 
 class Training(models.Model):
