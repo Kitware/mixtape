@@ -112,15 +112,13 @@ CORS_ALLOWED_ORIGIN_REGEXES: list[str] = env.list(
 # This makes Ray happy for now, since it wants to redirect stdout
 CELERY_WORKER_REDIRECT_STDOUTS = False
 
-# Demo feedback modal
-DEMO_FEEDBACK_MODAL_ENABLED: bool = env.bool('DJANGO_DEMO_FEEDBACK_MODAL_ENABLED', default=True)
-
-template = TEMPLATES[0]
-options = template.setdefault('OPTIONS', {})
-context_processors = options.setdefault('context_processors', [])  # type: ignore[attr-defined]
-value = 'mixtape.core.context_processors.demo_feedback_modal'
-if value not in context_processors:
-    context_processors.append(value)
+# Feedback modal, for use in demo deployments
+MIXTAPE_FEEDBACK_MODAL_ENABLED: bool = env.bool(
+    'DJANGO_MIXTAPE_FEEDBACK_MODAL_ENABLED', default=False
+)
+TEMPLATES[0]['OPTIONS']['context_processors'].append(
+    'mixtape.core.context_processors.mixtape_feedback_modal_enabled'
+)
 
 # Run daily cleanup of temporary clustering artifacts stored in default storage (MinIO)
 CELERY_BEAT_SCHEDULE: dict[str, dict[str, Any]] = locals().get('CELERY_BEAT_SCHEDULE', {})
