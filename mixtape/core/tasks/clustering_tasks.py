@@ -18,8 +18,8 @@ from mixtape.core.analysis.clustering import (
     cluster_episodes_all_features,
 )
 from mixtape.core.analysis.constants import DEFAULT_FEATURE_TYPES
+from mixtape.core.json_encoder import CustomJSONEncoder
 from mixtape.core.models import ClusteringResult, Episode
-from mixtape.core.ray_utils.json_encoder import CustomJSONEncoder
 
 logger = logging.getLogger(__name__)
 CLUSTERING_LOGIC_VERSION = '1'

@@ -1,6 +1,6 @@
 from django.db import models
 
-from mixtape.core.ray_utils.json_encoder import CustomJSONEncoder
+from mixtape.core.json_encoder import CustomJSONEncoder
 
 from .checkpoint import Checkpoint
 
