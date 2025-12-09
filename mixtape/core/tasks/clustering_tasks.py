@@ -46,9 +46,9 @@ def make_multi_key(episode_ids: list[int], params: Optional[dict] = None) -> str
     return digest
 
 
-@shared_task(bind=True)
+@shared_task(autoretry_for=(Exception,))
 def compute_episode_clustering(
-    self: Any, episode_ids: list[int], feature_types: Optional[list[str]] = None, **kwargs
+    episode_ids: list[int], feature_types: Optional[list[str]] = None, **kwargs
 ) -> dict[str, Any]:
     """Compute clustering results for the specified episodes.
 
@@ -84,54 +84,47 @@ def compute_episode_clustering(
     if episode is None:
         raise ValueError(f'Episodes not found: {episode_ids}')
     created_results: list[int] = []
-    try:
-        obs_results, agent_outs_results = cluster_episodes_all_features(
-            episode_ids=episode_ids, **params
+
+    obs_results, agent_outs_results = cluster_episodes_all_features(
+        episode_ids=episode_ids, **params
+    )
+
+    obs_results_json = json.loads(json.dumps(obs_results, cls=CustomJSONEncoder))
+    agent_outs_results_json = json.loads(json.dumps(agent_outs_results, cls=CustomJSONEncoder))
+
+    for feature_type in feature_types:
+        existing_result = ClusteringResult.get_for_episode_and_type(
+            episode_id=episode.id, feature_type=feature_type, parameters=params
         )
 
-        obs_results_json = json.loads(json.dumps(obs_results, cls=CustomJSONEncoder))
-        agent_outs_results_json = json.loads(json.dumps(agent_outs_results, cls=CustomJSONEncoder))
+        if existing_result:
+            created_results.append(existing_result.id)
+            continue
 
-        for feature_type in feature_types:
-            existing_result = ClusteringResult.get_for_episode_and_type(
-                episode_id=episode.id, feature_type=feature_type, parameters=params
+        if feature_type == 'observations':
+            results_data = obs_results_json
+        elif feature_type == 'agent_outputs':
+            results_data = agent_outs_results_json
+        else:
+            continue
+
+        with transaction.atomic():
+            clustering_result = ClusteringResult.objects.create(
+                episode=episode,
+                feature_types=[feature_type],
+                parameters=params,
+                results=results_data,
+                status=ClusteringResult.Status.SUCCESS,
+                error_message=None,
             )
+            created_results.append(clustering_result.id)
 
-            if existing_result:
-                created_results.append(existing_result.id)
-                continue
-
-            if feature_type == 'observations':
-                results_data = obs_results_json
-            elif feature_type == 'agent_outputs':
-                results_data = agent_outs_results_json
-            else:
-                continue
-
-            with transaction.atomic():
-                clustering_result = ClusteringResult.objects.create(
-                    episode=episode,
-                    feature_types=[feature_type],
-                    parameters=params,
-                    results=results_data,
-                    status=ClusteringResult.Status.SUCCESS,
-                    error_message=None,
-                )
-                created_results.append(clustering_result.id)
-
-        return {
-            'status': 'success',
-            'clustering_result_ids': created_results,
-            'episode_ids': episode_ids,
-            'feature_types': feature_types,
-        }
-    except Exception as exc:
-        logger.exception('Clustering computation failed for episodes %s', episode_ids)
-        raise self.retry(
-            exc=exc,  # pass along original exception for logging
-            countdown=60,  # wait 60 seconds before retry
-            max_retries=3,  # try up to 3 times total
-        )
+    return {
+        'status': 'success',
+        'clustering_result_ids': created_results,
+        'episode_ids': episode_ids,
+        'feature_types': feature_types,
+    }
 
 
 @shared_task
@@ -152,58 +145,54 @@ def compute_single_episode_clustering(episode_id: int) -> dict[str, Any]:
     }
 
 
-@shared_task(bind=True)
+@shared_task(autoretry_for=(Exception,))
 def compute_multi_episode_clustering(
-    self: Any, episode_ids: list[int], params: Optional[dict] = None, key: Optional[str] = None
+    episode_ids: list[int], params: Optional[dict] = None, key: Optional[str] = None
 ) -> dict[str, Any]:
     """Compute clustering for multiple episodes and store artifact in default storage.
 
     Stores JSON at clustering-temp/<key>.json with a minimal structure matching template needs.
     """
-    try:
-        norm_params = _normalize_params(params)
-        artifact_key = key or make_multi_key(episode_ids, norm_params)
-        path = f'clustering-temp/{artifact_key}.json'
+    norm_params = _normalize_params(params)
+    artifact_key = key or make_multi_key(episode_ids, norm_params)
+    path = f'clustering-temp/{artifact_key}.json'
 
-        # Return with results if it already exists
-        if default_storage.exists(path):
-            return {'status': 'exists', 'key': artifact_key}
+    # Return with results if it already exists
+    if default_storage.exists(path):
+        return {'status': 'exists', 'key': artifact_key}
 
-        obs_results, agent_outs_results = cluster_episodes_all_features(
-            episode_ids=episode_ids, **norm_params
-        )
+    obs_results, agent_outs_results = cluster_episodes_all_features(
+        episode_ids=episode_ids, **norm_params
+    )
 
-        def serialize(results: dict) -> dict:
-            # Build per-episode clusters as [episodes][steps][agents]
-            clusters = results['episode_clusters']
+    def serialize(results: dict) -> dict:
+        # Build per-episode clusters as [episodes][steps][agents]
+        clusters = results['episode_clusters']
+        try:
+            n_eps = clusters.shape[0]
+            ep_clusters = [clusters[i].T.tolist() for i in range(n_eps)]
+        except Exception:
             try:
-                n_eps = clusters.shape[0]
-                ep_clusters = [clusters[i].T.tolist() for i in range(n_eps)]
+                ep_clusters = [list(map(list, zip(*ep))) for ep in clusters]
             except Exception:
-                try:
-                    ep_clusters = [list(map(list, zip(*ep))) for ep in clusters]
-                except Exception:
-                    ep_clusters = clusters.tolist() if hasattr(clusters, 'tolist') else clusters
+                ep_clusters = clusters.tolist() if hasattr(clusters, 'tolist') else clusters
 
-            return {
-                'all_manifolds_x': results['all_manifolds'][:, 0].tolist(),
-                'all_manifolds_y': results['all_manifolds'][:, 1].tolist(),
-                'all_clusters': results['all_clusters'].tolist(),
-                'episode_manifolds': results['episode_manifolds'].tolist(),
-                'episode_clusters': ep_clusters,
-            }
-
-        artifact = {
-            'obs': serialize(obs_results),
-            'agent_outs': serialize(agent_outs_results),
+        return {
+            'all_manifolds_x': results['all_manifolds'][:, 0].tolist(),
+            'all_manifolds_y': results['all_manifolds'][:, 1].tolist(),
+            'all_clusters': results['all_clusters'].tolist(),
+            'episode_manifolds': results['episode_manifolds'].tolist(),
+            'episode_clusters': ep_clusters,
         }
 
-        content = ContentFile(json.dumps(artifact).encode('utf-8'))
-        default_storage.save(path, content)
-        return {'status': 'success', 'key': artifact_key}
-    except Exception as exc:
-        logger.exception('Multi-episode clustering failed for %s: %s', episode_ids, exc)
-        raise self.retry(exc=exc, countdown=60, max_retries=3)
+    artifact = {
+        'obs': serialize(obs_results),
+        'agent_outs': serialize(agent_outs_results),
+    }
+
+    content = ContentFile(json.dumps(artifact).encode('utf-8'))
+    default_storage.save(path, content)
+    return {'status': 'success', 'key': artifact_key}
 
 
 @shared_task
