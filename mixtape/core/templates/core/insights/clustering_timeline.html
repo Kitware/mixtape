@@ -37,6 +37,13 @@
             return row;
           })
         : agentStepClusters;
+      let currentStepVal = 0;
+      if ($store.insights && typeof $store.insights.currentStep === 'number') {
+        currentStepVal = $store.insights.currentStep;
+      }
+      const yVal = Array.isArray(agentStepClusters)
+        ? agentStepClusters.length - 1
+        : 1;
       this.data = [
         {
           agentStepClusters: agentStepClusters,
@@ -45,13 +52,6 @@
           colorscale: 'YlGnBu',
         },
         {
-          let currentStepVal = 0;
-          if ($store.insights && typeof $store.insights.currentStep === 'number') {
-            currentStepVal = $store.insights.currentStep;
-          }
-          const yVal = Array.isArray(agentStepClusters)
-            ? agentStepClusters.length - 1
-            : 1;
           x: [currentStepVal, currentStepVal],
           y: [0, yVal],
           type: 'scatter',
@@ -105,7 +105,7 @@
       }
     );
   "
-  x-effect="
+  x-effect="() => {
     if (
       !this.plot
       && $store.insights
@@ -122,7 +122,7 @@
       if (!clustering) return;
       const epClusters = clustering[{{key}}]?.episode_clusters;
       if (!epClusters) return;
-      const epIdx = 0;
+      let epIdx = 0;
       if (typeof $store.insights?.timelineEpisodeIdx === 'number') {
         epIdx = $store.insights.timelineEpisodeIdx;
       }
@@ -140,7 +140,8 @@
       const yLine = [yMin - 0.5, yMax + 0.5];
       // Use restyle: arguments must be arrays-of-arrays per selected trace
       Plotly.restyle($refs.allManifolds, { x: [xLine], y: [yLine] }, [1]);
-    }"
+    }
+  }"
 >
   <div
     class="skeleton h-[300px] w-full"
