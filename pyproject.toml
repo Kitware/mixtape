@@ -12,7 +12,6 @@ classifiers = ["Private :: Do Not Upload"]
 dependencies = [
   # Runtime dependencies, always needed
   "ale-py",
-  "autorom[accept-rom-license]",
   "celery",
   "django[argon2]",
   "django-allauth",
