@@ -226,34 +226,6 @@ wheels = [
 ]
 
 [[package]]
-name = "autorom"
-version = "0.6.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "click" },
-    { name = "requests" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/5b/22/bce7442af5e6961e5a7434e0aeb64eba17c6e1eff11fc45613d68d22ce60/AutoROM-0.6.1.tar.gz", hash = "sha256:6eff1f1b96a9d519577437f71d96a8d3b896238eca3433a8e69c5c92f6de3231", size = 9204, upload-time = "2023-04-06T15:29:10.223Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/02/e1/90b168a5dbc89a4e9b2206a99238f3ea3fc281052bb2dc236d4aa15e5e87/AutoROM-0.6.1-py3-none-any.whl", hash = "sha256:e734fdad23dc8e48897de013803eba3c9e109e028d5463a4817346f7f669604f", size = 9435, upload-time = "2023-04-06T15:29:06.995Z" },
-]
-
-[package.optional-dependencies]
-accept-rom-license = [
-    { name = "autorom-accept-rom-license" },
-]
-
-[[package]]
-name = "autorom-accept-rom-license"
-version = "0.6.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "click" },
-    { name = "requests" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/a1/67/cc207fe30615001ce713e58dd975124985dc6f7e5ac1141f8bb342ebf3fe/AutoROM.accept-rom-license-0.6.1.tar.gz", hash = "sha256:0c905a708d634a076f686802f672817d3585259ce3be0bde8713a4fb59e3159e", size = 434689, upload-time = "2023-04-06T15:29:13.295Z" }
-
-[[package]]
 name = "billiard"
 version = "4.2.1"
 source = { registry = "https://pypi.org/simple" }
