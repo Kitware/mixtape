@@ -1,6 +1,6 @@
 <div class="header">
   <div></div>
-  <h1>{{ all_episode_details.first.inference.checkpoint.training.environment }} {% if all_episode_details|length > 1 %}Episodes{% else %}Episode{% endif %}</h1>
+  <h1>{{ all_episode_details.first.inference.checkpoint.training.environment }} Episode{{ all_episode_details|pluralize }}</h1>
   <div>
     <a href="{% url 'home' %}" class="btn btn-icon btn-accent">
       <i class="ri-home-2-line"></i>
