@@ -78,7 +78,6 @@ def ingest_episode(json_file: TextIO, allow_existing: bool) -> None:
         # Create the checkpoint
         checkpoint = Checkpoint.objects.create(
             training=training,
-            best=False,
             last=False,
         )
 
