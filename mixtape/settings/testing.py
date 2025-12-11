@@ -16,3 +16,5 @@ STORAGES['default'] = {
 MINIO_STORAGE_MEDIA_BUCKET_NAME = f'test-django-storage-{randbelow(1_000_000):06d}'
 
 # Testing will set EMAIL_BACKEND to use the memory backend
+
+CELERY_TASK_EAGER_PROPAGATES = True
