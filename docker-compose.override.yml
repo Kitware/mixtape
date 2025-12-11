@@ -16,6 +16,7 @@ services:
     volumes:
       - .:/opt/django-project
       - uv_cache:/var/cache/uv
+      - playwright_cache:/root/.cache/ms-playwright
     ports:
       - 8000:8000
     depends_on:
@@ -57,3 +58,4 @@ services:
 
 volumes:
   uv_cache:
+  playwright_cache:

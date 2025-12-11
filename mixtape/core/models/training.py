@@ -10,7 +10,7 @@ class Training(models.Model):
 
     environment = models.CharField(max_length=200)
     algorithm = models.CharField(max_length=200)
-    parallel = models.BooleanField()
+    parallel = models.BooleanField(default=False)
     num_gpus = models.FloatField(default=0.0)
     iterations = models.PositiveIntegerField(default=100)
 

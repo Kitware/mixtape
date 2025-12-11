@@ -14,15 +14,12 @@ from .training import Training
 class Checkpoint(models.Model):
     class Meta:
         constraints = [
-            # TODO: What if best / last is False? Should it be excluded from the constraint?
-            models.UniqueConstraint(fields=['training', 'best'], name='unique_checkpoint_best'),
             models.UniqueConstraint(fields=['training', 'last'], name='unique_checkpoint_last'),
         ]
 
     created = models.DateTimeField(auto_now_add=True)
 
     training = models.ForeignKey(Training, on_delete=models.CASCADE, related_name='checkpoints')
-    best = models.BooleanField(default=False)
     last = models.BooleanField(default=False)
     archive = models.FileField(null=True, blank=True)
 
