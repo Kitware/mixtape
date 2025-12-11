@@ -174,4 +174,6 @@ filterwarnings = [
   "ignore:checkpoint_at_end is deprecated:DeprecationWarning:ray.tune.tune",
   "ignore:.*Box bound precision lowered by casting:UserWarning:gymnasium.spaces.box",
   "ignore:.*The obs returned by the `reset:UserWarning:gymnasium.utils.passive_env_checker",
+  "ignore:unclosed file:ResourceWarning:ray._private.node",
+  "ignore::ray.util.annotations.RayDeprecationWarning",
 ]

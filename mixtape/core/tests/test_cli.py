@@ -1,8 +1,11 @@
 from click.testing import CliRunner
 import pytest
 
+from mixtape.core.management.commands.inference import inference as inference_command
 from mixtape.core.management.commands.training import training as training_command
-from mixtape.core.models import Training
+from mixtape.core.models import Checkpoint, Episode, Training
+
+from .factories import CheckpointFactory
 
 
 @pytest.mark.parametrize(
@@ -39,3 +42,18 @@ def test_cli_training(cli_runner: CliRunner, env_name: str, parallel: bool):
     assert training.algorithm == 'PPO'
     assert training.parallel is parallel
     assert training.iterations == 2
+
+
+@pytest.mark.django_db
+def test_cli_inference(cli_runner: CliRunner):
+    checkpoint = CheckpointFactory.create()
+
+    inference_result = cli_runner.invoke(
+        inference_command,
+        [
+            str(checkpoint.id),
+            '--immediate',
+        ],
+    )
+    assert inference_result.exit_code == 0
+    assert Episode.objects.filter(inference__checkpoint=checkpoint).exists()
