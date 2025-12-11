@@ -3,22 +3,22 @@ document.addEventListener('alpine:init', () => {
     data: [],
     layout: {
       title: {text: 'Rewards VS Frequency'},
-      xaxis: {title: {text: 'Reward'}},
-      yaxis: {title: {text: 'Frequency'}},
+      xaxis: {
+        title: {text: 'Reward'},
+        gridcolor: Alpine.store('theme').axis.gridcolor,
+        zerolinecolor: Alpine.store('theme').axis.zerolinecolor
+      },
+      yaxis: {
+        title: {text: 'Frequency'},
+        gridcolor: Alpine.store('theme').axis.gridcolor,
+        zerolinecolor: Alpine.store('theme').axis.zerolinecolor
+      },
       autosize: true,
       barmode: 'overlay',
       showlegend: Alpine.store('insights').visOptions.includes('plotLegends'),
       paper_bgcolor: Alpine.store('theme').paper_bgcolor,
       plot_bgcolor: Alpine.store('theme').plot_bgcolor,
       font: Alpine.store('theme').font,
-      xaxis: {
-        gridcolor: Alpine.store('theme').axis.gridcolor,
-        zerolinecolor: Alpine.store('theme').axis.zerolinecolor
-      },
-      yaxis: {
-        gridcolor: Alpine.store('theme').axis.gridcolor,
-        zerolinecolor: Alpine.store('theme').axis.zerolinecolor
-      },
     },
     config: {
       displayModeBar: false,
