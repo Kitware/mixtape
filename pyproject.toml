@@ -165,4 +165,7 @@ filterwarnings = [
   "error",
   # pytest often causes unclosed socket warnings
   "ignore:unclosed <socket\\.socket:ResourceWarning",
+  "ignore:Tensorflow not installed; ParametricUMAP will be unavailable:ImportWarning:umap",
+  # Fixed by https://github.com/ray-project/ray/pull/49004 in Ray 2.43
+  "ignore:invalid escape sequence:DeprecationWarning",
 ]
