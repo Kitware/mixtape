@@ -1,6 +1,8 @@
+{% load static %}
+<script src="{% static 'mixtape/core/insights/insightsTabs.js' %}"></script>
+<script src="{% static 'mixtape/core/insights/rewardsOverTimeDecomp.js' %}"></script>
 <div
-  x-data="insightsTabs()"
-  x-init="init()"
+  x-data="insightsTabs"
   x-cloak
   class="
     bg-[var(--color-surface)]
@@ -165,7 +167,7 @@
           x-show="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('rewardsOverTime')"
         >
           <div class="min-h-[18rem]">
-            {% include "core/insights/rewards_over_time_decomp.html" %}
+            <div x-data="rewardsOverTime" x-ref="rewardsOverTime"></div>
           </div>
         </section>
         {% endif %}

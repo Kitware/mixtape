@@ -1,24 +1,24 @@
-<div
-  x-data="{
+document.addEventListener('alpine:init', () => {
+  Alpine.data('rewardsOverTimeDecomp', () => ({
     data: [],
     layout: {
       title: {text: 'Rewards Over Time (Decomposed)'},
       xaxis: {title: {text: 'Time Step'}},
       yaxis: {title: {text: 'Cumulative Reward'}},
       autosize: true,
-      showlegend: visOptions.includes('plotLegends'),
-      paper_bgcolor: $store.theme.paper_bgcolor,
-      plot_bgcolor: $store.theme.plot_bgcolor,
-      font: $store.theme.font,
+      showlegend: Alpine.store('insights').visOptions.includes('plotLegends'),
+      paper_bgcolor: Alpine.store('theme').paper_bgcolor,
+      plot_bgcolor: Alpine.store('theme').plot_bgcolor,
+      font: Alpine.store('theme').font,
       annotations: [],
       shapes: [],
       xaxis: {
-        gridcolor: $store.theme.axis.gridcolor,
-        zerolinecolor: $store.theme.axis.zerolinecolor
+        gridcolor: Alpine.store('theme').axis.gridcolor,
+        zerolinecolor: Alpine.store('theme').axis.zerolinecolor
       },
       yaxis: {
-        gridcolor: $store.theme.axis.gridcolor,
-        zerolinecolor: $store.theme.axis.zerolinecolor
+        gridcolor: Alpine.store('theme').axis.gridcolor,
+        zerolinecolor: Alpine.store('theme').axis.zerolinecolor
       },
     },
     config: {
@@ -26,9 +26,23 @@
       responsive: true
     },
     plot: null,
+    init() {
+      this.initPlot();
+      this.$watch('$store.insights.visOptions', () => {
+        this.$nextTick(() => {
+          Plotly.relayout(
+            this.$refs.rewardsOverTime,
+            {
+              autosize: true,
+              showlegend: this.$store.insights.visOptions.includes('plotLegends')
+            })
+        });
+      });
+      Alpine.effect(this.updateCurrentStep);
+    },
     initPlot() {
       // Plot decomposed rewards for each episode
-      decomposedRewards.forEach((episodeRewards, episodeIdx) => {
+      this.decomposedRewards.forEach((episodeRewards, episodeIdx) => {
         Object.keys(episodeRewards).forEach((rewardType, rewardIdx) => {
           const rewardData = episodeRewards[rewardType];
           this.data.push({
@@ -36,13 +50,13 @@
             y: rewardData,
             type: 'scatter',
             mode: 'lines',
-            name: `Episode ${episodeIds[episodeIdx]} - ${rewardType}`,
+            name: `Episode ${this.episodeIds[episodeIdx]} - ${rewardType}`,
           });
         });
       });
 
       // Calculate overall min and max Y values from all data
-      const allYValues = decomposedRewards.flatMap(episodeRewards =>
+      const allYValues = this.decomposedRewards.flatMap(episodeRewards =>
         Object.values(episodeRewards).flatMap(rewardData => rewardData)
       );
 
@@ -52,7 +66,7 @@
       // Add annotations for current step values
       this.layout.annotations = this.createAnnotations();
 
-      this.plot = Plotly.newPlot($refs.rewardsOverTime, this.data, this.layout, {displayModeBar: false});
+      this.plot = Plotly.newPlot(this.$refs.rewardsOverTime, this.data, this.layout, {displayModeBar: false});
     },
     createShapes(allYValues) {
       const maxY = Math.max(...allYValues);
@@ -60,8 +74,8 @@
 
       return [{
         type: 'line',
-        x0: currentStep,
-        x1: currentStep,
+        x0: this.currentStep,
+        x1: this.currentStep,
         y0: minY,
         y1: maxY,
         line: {
@@ -72,15 +86,15 @@
       }];
     },
     createAnnotations() {
-      const episodeCount = Object.keys(decomposedRewards).length;
-      const annotations = decomposedRewards.flatMap((episodeRewards, episodeIdx) => {
+      const episodeCount = Object.keys(this.decomposedRewards).length;
+      const annotations = this.decomposedRewards.flatMap((episodeRewards, episodeIdx) => {
         const componentCount = Object.keys(episodeRewards).length;
         const offset = 40 / (componentCount * episodeCount);
         return Object.entries(episodeRewards).map(([rewardType, rewardData]) => {
-          const currentValue = rewardData[currentStep] || rewardData[rewardData.length - 1];
+          const currentValue = rewardData[this.currentStep] || rewardData[rewardData.length - 1];
 
           return {
-            x: currentStep,
+            x: this.currentStep,
             y: currentValue,
             text: currentValue.toFixed(2),
             showarrow: true,
@@ -102,31 +116,17 @@
         // Calculate overall min and max Y values from all data
         let allYValues = [];
         // Get all Y values from decomposed rewards
-        decomposedRewards.forEach(episodeRewards => {
+        this.decomposedRewards.forEach(episodeRewards => {
           Object.values(episodeRewards).forEach(rewardData => {
             allYValues = allYValues.concat(rewardData);
           });
         });
 
-        Plotly.relayout($refs.rewardsOverTime, {
+        Plotly.relayout(this.$refs.rewardsOverTime, {
           shapes: this.createShapes(allYValues),
           annotations: this.createAnnotations()
         });
       }
     }
-  }"
-  x-init="initPlot();
-  $watch('visOptions', () => {
-    $nextTick(() => {
-      Plotly.relayout(
-        $refs.rewardsOverTime,
-        {
-          autosize: true,
-          showlegend: visOptions.includes('plotLegends')
-        })
-    });
-  });"
-  x-effect="updateCurrentStep()"
->
-  <div x-ref="rewardsOverTime"></div>
-</div>
+  }));
+});
