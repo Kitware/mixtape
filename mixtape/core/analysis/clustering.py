@@ -11,8 +11,9 @@ import numpy as np
 from sklearn import cluster, decomposition, pipeline, preprocessing
 import umap.umap_ as umap
 
-from mixtape.core.analysis.constants import DEFAULT_CLUSTERING_DIMENSIONS
 from mixtape.core.models.step import Step
+
+from .constants import DEFAULT_CLUSTERING_DIMENSIONS
 
 if TYPE_CHECKING:
     import numpy.typing as npt
