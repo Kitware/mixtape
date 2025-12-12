@@ -17,17 +17,6 @@ from mixtape.core.models.step import Step
 if TYPE_CHECKING:
     import numpy.typing as npt
 
-# Default clustering parameters used across the application
-DEFAULT_CLUSTERING_PARAMS = {
-    'umap_n_neighbors': 30,
-    'umap_min_dist': 0.5,
-    'umap_n_components': 20,
-    'pca_n_components': 2,
-    'kmeans_n_clusters': 10,
-    'feature_dimensions': DEFAULT_CLUSTERING_DIMENSIONS,
-    'seed': 42,
-}
-
 
 def _fetch_all_episode_features(episode_ids: list[int]) -> list[dict]:
     # Fetch all episodes and their steps

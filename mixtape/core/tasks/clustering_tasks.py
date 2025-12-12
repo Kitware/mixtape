@@ -13,11 +13,8 @@ from django.db import transaction
 from django.db.models.query import QuerySet
 from django.utils import timezone
 
-from mixtape.core.analysis.clustering import (
-    DEFAULT_CLUSTERING_PARAMS,
-    cluster_episodes_all_features,
-)
-from mixtape.core.analysis.constants import DEFAULT_FEATURE_TYPES
+from mixtape.core.analysis.clustering import cluster_episodes_all_features
+from mixtape.core.analysis.constants import DEFAULT_CLUSTERING_PARAMS, DEFAULT_FEATURE_TYPES
 from mixtape.core.json_encoder import CustomJSONEncoder
 from mixtape.core.models import ClusteringResult, Episode
 

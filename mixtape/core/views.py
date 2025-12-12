@@ -12,14 +12,12 @@ import numpy as np
 from sklearn import cluster, decomposition, pipeline, preprocessing
 import umap.umap_ as umap
 
-from mixtape.core.analysis.clustering import (
-    DEFAULT_CLUSTERING_PARAMS,
-    cluster_episodes_all_features,
-)
+from mixtape.core.analysis.clustering import cluster_episodes_all_features
 from mixtape.core.analysis.clustering.algorithms import (
     _cluster_episodes_by_feature,
     _fetch_all_episode_features,
 )
+from mixtape.core.analysis.constants import DEFAULT_CLUSTERING_PARAMS
 from mixtape.core.json_encoder import CustomJSONEncoder
 from mixtape.core.models import ActionMapping, ClusteringResult, Episode
 from mixtape.core.tasks.clustering_tasks import (

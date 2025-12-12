@@ -5,8 +5,7 @@ from typing import Optional
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
-from mixtape.core.analysis.clustering import DEFAULT_CLUSTERING_PARAMS
-from mixtape.core.analysis.constants import FEATURE_TYPES
+from mixtape.core.analysis.constants import DEFAULT_CLUSTERING_PARAMS, FEATURE_TYPES
 
 from .episode import Episode
 
