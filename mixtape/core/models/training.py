@@ -2,7 +2,6 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 from mixtape.core.json_encoder import CustomJSONEncoder
-from mixtape.core.ray_utils.constants import ExampleEnvs, SupportedAlgorithm
 
 
 class Training(models.Model):
@@ -27,3 +26,26 @@ class Training(models.Model):
                 raise ValidationError({'environment': 'Invalid environment'})
             if self.algorithm not in SupportedAlgorithm.values:
                 raise ValidationError({'algorithm': 'Invalid algorithm'})
+
+
+class ExampleEnvs(models.TextChoices):
+    # Example PettingZoo Environments
+    PZ_KnightsArchersZombies = 'knights_archers_zombies_v10'
+    PZ_Pistonball = 'pistonball_v6'
+    PZ_Pong = 'cooperative_pong_v5'
+    # Example Gymnasium Environments
+    GYM_BattleZone = 'BattleZone-v5'
+    GYM_Berzerk = 'Berzerk-v5'
+    GYM_ChopperCommand = 'ChopperCommand-v5'
+
+    @classmethod
+    def type(cls, value):
+        if cls(value).name.startswith('PZ'):
+            return 'PettingZoo'
+        elif cls(value).name.startswith('GYM'):
+            return 'Gymnasium'
+
+
+class SupportedAlgorithm(models.TextChoices):
+    PPO = 'PPO'
+    DQN = 'DQN'
