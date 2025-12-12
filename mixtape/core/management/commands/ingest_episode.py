@@ -5,15 +5,14 @@ from django.core.files.base import ContentFile
 from django.db import transaction
 import djclick as click
 
-from mixtape.core.analysis.ray_utils.utility_functions import get_environment_mapping
 from mixtape.core.management.ingest.external_episode import ExternalImport
 from mixtape.core.models import (
+    ActionMapping,
     AgentStep,
     Episode,
     Step,
     Training,
 )
-from mixtape.core.models.action_mapping import ActionMapping
 from mixtape.core.models.checkpoint import Checkpoint
 from mixtape.core.models.inference import Inference
 
@@ -39,7 +38,7 @@ def ingest_episode(json_file: TextIO, allow_existing: bool) -> None:
 
     if external_import.action_mapping:
         environment = external_training.environment
-        existing_mapping = get_environment_mapping(environment)
+        existing_mapping = ActionMapping.get_environment_mapping(environment)
 
         if existing_mapping and existing_mapping != external_import.action_mapping:
             if not allow_existing:
