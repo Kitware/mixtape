@@ -1,3 +1,5 @@
+from typing import Literal
+
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -39,11 +41,16 @@ class ExampleEnvs(models.TextChoices):
     GYM_ChopperCommand = 'ChopperCommand-v5'
 
     @classmethod
-    def type(cls, value):
+    def type(cls, value) -> Literal['PettingZoo', 'Gymnasium', 'Unknown']:
         if cls(value).name.startswith('PZ'):
             return 'PettingZoo'
         elif cls(value).name.startswith('GYM'):
             return 'Gymnasium'
+        return 'Unknown'
+
+    @classmethod
+    def is_gymnasium_env(cls, env_name: str) -> bool:
+        return cls.type(env_name) == 'Gymnasium'
 
 
 class SupportedAlgorithm(models.TextChoices):

@@ -1,6 +1,5 @@
 import click
 
-from mixtape.core.analysis.ray_utils.environments import is_gymnasium_env
 from mixtape.core.models.training import ExampleEnvs
 
 
@@ -9,7 +8,7 @@ def check_parallel(
 ) -> bool | ExampleEnvs:
     env_name = value if param.name == 'env_name' else ctx.params.get('env_name')
     parallel = value if param.name == 'parallel' else ctx.params.get('parallel', False)
-    if env_name and is_gymnasium_env(env_name) and parallel:  # type: ignore
+    if env_name and ExampleEnvs.is_gymnasium_env(env_name) and parallel:  # type: ignore
         click.echo(
             click.style(
                 'Warning: The parallel option is only available for PettingZoo environments. '
