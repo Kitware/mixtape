@@ -2,17 +2,20 @@ from tempfile import mkdtemp
 from uuid import uuid4
 
 from celery import shared_task
-from ray.rllib.algorithms.dqn import DQNConfig
-from ray.rllib.algorithms.ppo import PPOConfig
-from ray.tune import run
 
-from mixtape.core.analysis.ray_utils.environments import register_environment
 from mixtape.core.models import Checkpoint, Training
 from mixtape.core.models.training import ExampleEnvs, SupportedAlgorithm
 
 
 @shared_task
 def run_training_task(training_pk: int):
+    # Import slow / task-specific dependencies locally
+    from ray.rllib.algorithms.dqn import DQNConfig
+    from ray.rllib.algorithms.ppo import PPOConfig
+    from ray.tune import run
+
+    from mixtape.core.analysis.ray_utils.environments import register_environment
+
     training = Training.objects.get(pk=training_pk)
 
     training_config = training.config or {}

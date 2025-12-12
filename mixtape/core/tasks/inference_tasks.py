@@ -7,15 +7,8 @@ from uuid import uuid4
 
 from celery import shared_task
 from django.db import transaction
-import gymnasium as gym
-from gymnasium.wrappers.atari_preprocessing import AtariPreprocessing
-from gymnasium.wrappers.frame_stack import FrameStack
 import numpy as np
-from pettingzoo import AECEnv
-from pettingzoo.utils import ParallelEnv
-from ray.rllib.algorithms.algorithm import Algorithm
 
-from mixtape.core.analysis.ray_utils.environments import register_environment
 from mixtape.core.models import AgentStep, Episode, Inference
 from mixtape.core.models.step import Step
 
@@ -25,6 +18,16 @@ if TYPE_CHECKING:
 
 @shared_task
 def run_inference_task(inference_pk: int):
+    # Import slow / task-specific dependencies locally
+    import gymnasium as gym
+    from gymnasium.wrappers.atari_preprocessing import AtariPreprocessing
+    from gymnasium.wrappers.frame_stack import FrameStack
+    from pettingzoo import AECEnv
+    from pettingzoo.utils import ParallelEnv
+    from ray.rllib.algorithms.algorithm import Algorithm
+
+    from mixtape.core.analysis.ray_utils.environments import register_environment
+
     inference = Inference.objects.select_related('checkpoint__training').get(pk=inference_pk)
     env_config = (inference.config or {}).get('env_config', {})
 
