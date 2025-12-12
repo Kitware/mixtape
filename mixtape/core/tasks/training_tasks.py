@@ -6,9 +6,9 @@ from ray.rllib.algorithms.dqn import DQNConfig
 from ray.rllib.algorithms.ppo import PPOConfig
 from ray.tune import run
 
-from mixtape.core.analysis.ray_utils.environments import is_gymnasium_env, register_environment
+from mixtape.core.analysis.ray_utils.environments import register_environment
 from mixtape.core.models import Checkpoint, Training
-from mixtape.core.models.training import SupportedAlgorithm
+from mixtape.core.models.training import ExampleEnvs, SupportedAlgorithm
 
 
 @shared_task
@@ -18,7 +18,7 @@ def run_training_task(training_pk: int):
     training_config = training.config or {}
     env_config = training_config.get('env_config', {})
 
-    parallel = False if is_gymnasium_env(training.environment) else training.parallel
+    parallel = False if ExampleEnvs.is_gymnasium_env(training.environment) else training.parallel
     register_environment(training.environment, env_config, parallel)
 
     # Ensure all arguments default to empty dict, not None

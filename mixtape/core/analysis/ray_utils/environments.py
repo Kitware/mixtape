@@ -11,10 +11,6 @@ from mixtape.core.analysis.ray_utils.wrappers import ParallelPZWrapper, PZWrappe
 from mixtape.core.models.training import ExampleEnvs
 
 
-def is_gymnasium_env(env_name: str) -> bool:
-    return ExampleEnvs.type(env_name) == 'Gymnasium'
-
-
 def reshape_if_necessary(env) -> AECEnv | ParallelEnv:
     # Re-shape the environment if necessary
     allowed = [[42, 42], [84, 84], [64, 64], [10, 10]]
@@ -50,7 +46,7 @@ def register_environment(
     env_name: str, config: dict, parallel: bool
 ) -> AECEnv | ParallelEnv | gym.Env:
     # Register the selected environment with RLlib
-    if is_gymnasium_env(env_name):
+    if ExampleEnvs.is_gymnasium_env(env_name):
         register_env(env_name, lambda config: gym_env_creator(env_name, config))
         return gym_env_creator(env_name, config)
     else:
