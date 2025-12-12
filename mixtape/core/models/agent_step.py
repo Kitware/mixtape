@@ -1,8 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.db import models
 
-from mixtape.core.analysis.ray_utils.utility_functions import get_environment_mapping
-
+from .action_mapping import ActionMapping
 from .step import Step
 
 
@@ -45,7 +44,7 @@ class AgentStep(models.Model):
         # Note: "select_related" should be called on any AgentStep where this is used, otherwise
         # this property can create very inefficient queries
         environment = self.step.episode.inference.checkpoint.training.environment
-        mapping = get_environment_mapping(environment)
+        mapping = ActionMapping.get_environment_mapping(environment)
         return mapping.get(f'{int(self.action)}', f'{self.action}')
 
     @property

@@ -1,3 +1,4 @@
+from .action_mapping import ActionMapping
 from .agent_step import AgentStep
 from .checkpoint import Checkpoint
 from .clustering_result import ClusteringResult
@@ -7,6 +8,7 @@ from .step import Step
 from .training import Training
 
 __all__ = [
+    'ActionMapping',
     'AgentStep',
     'Checkpoint',
     'ClusteringResult',

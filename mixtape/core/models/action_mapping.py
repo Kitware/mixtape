@@ -9,3 +9,11 @@ class ActionMapping(models.Model):
 
     environment = models.CharField(max_length=200)
     mapping = models.JSONField()
+
+    @classmethod
+    def get_environment_mapping(cls, environment: str) -> dict:
+        try:
+            custom_mapping = cls.objects.get(environment=environment)
+        except cls.DoesNotExist:
+            return {}
+        return custom_mapping.mapping
