@@ -1,6 +1,6 @@
 import click
 
-from mixtape.core.ray_utils.constants import ExampleEnvs
+from mixtape.core.models.training import ExampleEnvs
 from mixtape.core.ray_utils.environments import is_gymnasium_env
 
 

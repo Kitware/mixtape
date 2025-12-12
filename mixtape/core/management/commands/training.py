@@ -5,7 +5,7 @@ import yaml
 
 from mixtape.core.management.commands._utils import check_parallel
 from mixtape.core.models import Training
-from mixtape.core.ray_utils.constants import ExampleEnvs, SupportedAlgorithm
+from mixtape.core.models.training import ExampleEnvs, SupportedAlgorithm
 from mixtape.core.tasks.training_tasks import run_training_task
 
 

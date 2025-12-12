@@ -10,7 +10,7 @@ import factory.django
 import factory.fuzzy
 
 from mixtape.core.models import AgentStep, Checkpoint, Episode, Inference, Step, Training
-from mixtape.core.ray_utils.constants import SupportedAlgorithm
+from mixtape.core.models.training import SupportedAlgorithm
 
 
 class UserFactory(factory.django.DjangoModelFactory[User]):
