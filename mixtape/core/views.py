@@ -20,9 +20,9 @@ from mixtape.core.analysis.clustering.algorithms import (
     _cluster_episodes_by_feature,
     _fetch_all_episode_features,
 )
+from mixtape.core.analysis.ray_utils.utility_functions import get_environment_mapping
 from mixtape.core.json_encoder import CustomJSONEncoder
 from mixtape.core.models import ClusteringResult, Episode
-from mixtape.core.ray_utils.utility_functions import get_environment_mapping
 from mixtape.core.tasks.clustering_tasks import (
     compute_multi_episode_clustering,
     compute_single_episode_clustering,

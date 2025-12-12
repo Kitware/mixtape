@@ -6,9 +6,9 @@ from ray.rllib.algorithms.dqn import DQNConfig
 from ray.rllib.algorithms.ppo import PPOConfig
 from ray.tune import run
 
+from mixtape.core.analysis.ray_utils.environments import is_gymnasium_env, register_environment
 from mixtape.core.models import Checkpoint, Training
 from mixtape.core.models.training import SupportedAlgorithm
-from mixtape.core.ray_utils.environments import is_gymnasium_env, register_environment
 
 
 @shared_task

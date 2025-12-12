@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.db import models
 
-from mixtape.core.ray_utils.utility_functions import get_environment_mapping
+from mixtape.core.analysis.ray_utils.utility_functions import get_environment_mapping
 
 from .step import Step
 

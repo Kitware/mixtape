@@ -15,9 +15,9 @@ from pettingzoo import AECEnv
 from pettingzoo.utils import ParallelEnv
 from ray.rllib.algorithms.algorithm import Algorithm
 
+from mixtape.core.analysis.ray_utils.environments import register_environment
 from mixtape.core.models import AgentStep, Episode, Inference
 from mixtape.core.models.step import Step
-from mixtape.core.ray_utils.environments import register_environment
 
 if TYPE_CHECKING:
     import numpy.typing as npt

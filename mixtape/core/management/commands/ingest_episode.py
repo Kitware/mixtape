@@ -5,6 +5,7 @@ from django.core.files.base import ContentFile
 from django.db import transaction
 import djclick as click
 
+from mixtape.core.analysis.ray_utils.utility_functions import get_environment_mapping
 from mixtape.core.management.ingest.external_episode import ExternalImport
 from mixtape.core.models import (
     AgentStep,
@@ -15,7 +16,6 @@ from mixtape.core.models import (
 from mixtape.core.models.action_mapping import ActionMapping
 from mixtape.core.models.checkpoint import Checkpoint
 from mixtape.core.models.inference import Inference
-from mixtape.core.ray_utils.utility_functions import get_environment_mapping
 
 
 @click.command()
