@@ -168,4 +168,12 @@ filterwarnings = [
   "ignore:Tensorflow not installed; ParametricUMAP will be unavailable:ImportWarning:umap",
   # Fixed by https://github.com/ray-project/ray/pull/49004 in Ray 2.43
   "ignore:invalid escape sequence:DeprecationWarning",
+  "ignore:pkg_resources is deprecated:UserWarning:pygame.pkgdata",
+  "ignore:Deprecated call to `pkg_resources.declare_namespace:DeprecationWarning:pkg_resources",
+  "ignore:checkpoint_freq is deprecated:DeprecationWarning:ray.tune.tune",
+  "ignore:checkpoint_at_end is deprecated:DeprecationWarning:ray.tune.tune",
+  "ignore:.*Box bound precision lowered by casting:UserWarning:gymnasium.spaces.box",
+  "ignore:.*The obs returned by the `reset:UserWarning:gymnasium.utils.passive_env_checker",
+  "ignore:unclosed file:ResourceWarning:ray._private.node",
+  "ignore::ray.util.annotations.RayDeprecationWarning",
 ]

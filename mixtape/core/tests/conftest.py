@@ -1,3 +1,4 @@
+from click.testing import CliRunner
 from playwright.sync_api import BrowserContext
 import pytest
 from pytest_django.live_server_helper import LiveServer
@@ -8,6 +9,12 @@ from rest_framework.test import APIClient
 @pytest.fixture
 def api_client() -> APIClient:
     return APIClient()
+
+
+@pytest.fixture
+def cli_runner() -> CliRunner:
+    # Don't catch exceptions, so they'll be raised in the test case
+    return CliRunner(catch_exceptions=False)
 
 
 # This intentionally overrides the built-in fixture from pytest_playwright.
