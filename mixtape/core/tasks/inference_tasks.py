@@ -7,7 +7,6 @@ from uuid import uuid4
 
 from celery import shared_task
 from django.db import transaction
-import numpy as np
 
 from mixtape.core.models import AgentStep, Episode, Inference
 from mixtape.core.models.step import Step
@@ -20,8 +19,6 @@ if TYPE_CHECKING:
 def run_inference_task(inference_pk: int):
     # Import slow / task-specific dependencies locally
     import gymnasium as gym
-    from gymnasium.wrappers.atari_preprocessing import AtariPreprocessing
-    from gymnasium.wrappers.frame_stack import FrameStack
     from pettingzoo import AECEnv
     from pettingzoo.utils import ParallelEnv
     from ray.rllib.algorithms.algorithm import Algorithm
@@ -30,10 +27,11 @@ def run_inference_task(inference_pk: int):
 
     inference = Inference.objects.select_related('checkpoint__training').get(pk=inference_pk)
     env_config = (inference.config or {}).get('env_config', {})
+    env_name = inference.checkpoint.training.environment
 
     with contextlib.closing(
         register_environment(
-            inference.checkpoint.training.environment,
+            env_name,
             env_config,
             inference.parallel,
         )
@@ -47,15 +45,12 @@ def run_inference_task(inference_pk: int):
                 episode = Episode.objects.create(inference=inference)
 
                 if isinstance(env, gym.Env):
-                    env = AtariPreprocessing(env, grayscale_obs=True, scale_obs=False, frame_skip=1)
-                    env = FrameStack(env, num_stack=4)
                     observation, _ = (
                         env.reset()
                     )  # `reset` returns observation for single agent in Gym envs
                     reward = 0.0
 
                     for step in itertools.count(start=0):
-                        observation = np.transpose(observation, (1, 2, 0))
                         action, state, extras = algorithm.compute_single_action(
                             observation, full_fetch=True
                         )
@@ -84,7 +79,8 @@ def run_inference_task(inference_pk: int):
                         agent_step.save()
 
                         # Step the environment forward with the computed actions
-                        observation, reward, terminated, truncated, info = env.step(action)
+                        observation, step_reward, terminated, truncated, info = env.step(action)
+                        reward = float(step_reward)
 
                         if terminated or truncated:
                             break

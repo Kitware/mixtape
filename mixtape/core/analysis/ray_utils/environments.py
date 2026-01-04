@@ -8,7 +8,14 @@ from ray.tune.registry import register_env
 import supersuit as ss
 
 from mixtape.core.analysis.ray_utils.wrappers import ParallelPZWrapper, PZWrapper
-from mixtape.core.models.training import ExampleEnvs
+
+
+def is_gymnasium_registered_env(env_name: str) -> bool:
+    try:
+        gym.spec(env_name)
+    except Exception:
+        return False
+    return True
 
 
 def reshape_if_necessary(env) -> AECEnv | ParallelEnv:
@@ -39,14 +46,14 @@ def parallel_env_creator(env_module: types.ModuleType, config: dict) -> Parallel
 
 def gym_env_creator(env_module: str, config: dict) -> gym.Env:
     # Create the selected Gymnasium environment
-    return gym.make(f'ale_py:ALE/{env_module}', render_mode='rgb_array', **config)
+    return gym.make(env_module, render_mode='rgb_array', **config)
 
 
 def register_environment(
     env_name: str, config: dict, parallel: bool
 ) -> AECEnv | ParallelEnv | gym.Env:
     # Register the selected environment with RLlib
-    if ExampleEnvs.is_gymnasium_env(env_name):
+    if is_gymnasium_registered_env(env_name):
         register_env(env_name, lambda config: gym_env_creator(env_name, config))
         return gym_env_creator(env_name, config)
     else:
