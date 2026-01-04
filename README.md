@@ -68,6 +68,26 @@ Notes:
 - Use `-p/--parallel` only for PettingZoo environments.
 - DQN is for discrete action spaces; it is not available for Pistonball (continuous).
 
+### Inference
+
+Review available checkpoints:
+```bash
+docker compose run --rm django ./manage.py list_checkpoints
+```
+
+You will see a list of available checkpoints, with the most recent at the top.
+```bash
+environment                 | checkpoint_pk | created             | inferences | episodes
+----------------------------+---------------+---------------------+------------+---------
+pistonball_v6               | 2             | 2026-01-03 19:29:25 | 1          | 1
+knights_archers_zombies_v10 | 1             | 2026-01-03 19:27:32 | 1          | 1
+```
+
+Select an existing checkpoint to run inference. For example:
+```bash
+docker compose run --rm django ./manage.py inference 2 -p --immediate
+```
+
 If you've already started the server with `docker compose up`, you can see all available checkpoints at <http://localhost:8000/admin/core/checkpoint/>.
 
 ### Ingest existing episode(s)
