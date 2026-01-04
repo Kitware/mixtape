@@ -102,6 +102,9 @@ When running the "Develop with Docker" configuration, all tox commands must be r
 ### Running Tests
 Run `uv run tox` to launch the full test suite.
 
+Note: Tests are configured to run with `--reuse-db` by default. If you change migrations or suspect the test database is out of sync, rebuild with:
+`docker compose run --rm django uv run tox -e test -- --create-db`
+
 Individual test environments may be selectively run.
 This also allows additional options to be be added.
 Useful sub-commands include:
