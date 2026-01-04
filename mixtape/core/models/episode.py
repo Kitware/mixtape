@@ -1,6 +1,5 @@
 from typing import Any
 
-from django.conf import settings
 from django.db import models, transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -17,7 +16,7 @@ def auto_compute_clustering(
     sender: type[Episode], instance: Episode, created: bool, **_: Any
 ) -> None:
     """Compute clustering when new episodes are created."""
-    if created and not getattr(settings, 'TESTING', False):
+    if created:
         # Avoid circular import
         from mixtape.core.tasks.clustering_tasks import compute_single_episode_clustering
 

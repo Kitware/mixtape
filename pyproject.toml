@@ -153,6 +153,7 @@ addopts = [
   # Test utilities should be imported absolutely from the pythonpath,
   # so use the Pytest-recommended "importlib" mode
   "--import-mode=importlib",
+  "--reuse-db",
   "--strict-config",
   "--strict-markers",
   "--showlocals",
