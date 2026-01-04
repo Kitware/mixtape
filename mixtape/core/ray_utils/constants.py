@@ -5,18 +5,20 @@ class ExampleEnvs(models.TextChoices):
     # Example PettingZoo Environments
     PZ_KnightsArchersZombies = 'knights_archers_zombies_v10'
     PZ_Pistonball = 'pistonball_v6'
-    PZ_Pong = 'cooperative_pong_v5'
     # Example Gymnasium Environments
-    GYM_BattleZone = 'BattleZone-v5'
-    GYM_Berzerk = 'Berzerk-v5'
-    GYM_ChopperCommand = 'ChopperCommand-v5'
+    GYM_LunarLander = 'LunarLander-v2'
 
     @classmethod
-    def type(cls, value):
+    def type(cls, value) -> Literal['PettingZoo', 'Gymnasium', 'Unknown']:
         if cls(value).name.startswith('PZ'):
             return 'PettingZoo'
         elif cls(value).name.startswith('GYM'):
             return 'Gymnasium'
+        return 'Unknown'
+
+    @classmethod
+    def is_gymnasium_env(cls, env_name: str) -> bool:
+        return cls.type(env_name) == 'Gymnasium'
 
 
 class SupportedAlgorithm(models.TextChoices):

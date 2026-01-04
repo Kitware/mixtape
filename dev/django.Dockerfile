@@ -11,3 +11,9 @@ ENV UV_PROJECT_ENVIRONMENT=/var/lib/venv \
   # The uv cache and environment are expected to be mounted on different volumes,
   # so hardlinks won't work
   UV_LINK_MODE=symlink
+
+# swig and build-essential are required for gymnasium[box2d]
+RUN \
+  --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,target=/var/lib/apt,sharing=locked \
+  apt update && apt-get --no-install-recommends install -y swig build-essential
