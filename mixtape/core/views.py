@@ -84,10 +84,10 @@ def _episode_insights(episode_pk: int, group_by_episode: bool = False) -> dict:
                         enemy_health_data[enemy_agent_key] = []
                     enemy_health_data[enemy_agent_key].append(enemy_health)
 
-            # Process enemy unit health
+            # Process enemy unit health (rename to enemy_1..enemy_5)
             if agent_step.enemy_unit_health:
                 for i, enemy_health in enumerate(agent_step.enemy_unit_health):
-                    enemy_unit_key = f'eu{i}'
+                    enemy_unit_key = f'enemy_{i+1}'
                     if enemy_unit_key not in enemy_health_data:
                         enemy_health_data[enemy_unit_key] = []
                     enemy_health_data[enemy_unit_key].append(enemy_health)
