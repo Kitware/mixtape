@@ -30,4 +30,32 @@
   >
     <i class="ri-forward-end-line"></i>
   </button>
+  <!-- Playback Speed Dropdown -->
+  <div class="dropdown dropdown-end mx-2">
+    <button
+      class="btn btn-sm btn-neutral"
+      tabindex="0"
+      :title="'Playback Speed (' + playbackSpeed.toFixed(1) + 'x, ' + (fps * playbackSpeed).toFixed(1) + ' steps/s)'"
+    >
+      <span x-text="playbackSpeed.toFixed(1) + 'x'"></span>
+      <i class="ri-arrow-down-s-line"></i>
+    </button>
+    <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-24">
+      <li>
+        <a @click="setPlaybackSpeed(1); $event.target.closest('ul')?.blur?.();">1x</a>
+      </li>
+      <li>
+        <a @click="setPlaybackSpeed(1.5); $event.target.closest('ul')?.blur?.();">1.5x</a>
+      </li>
+      <li>
+        <a @click="setPlaybackSpeed(2); $event.target.closest('ul')?.blur?.();">2x</a>
+      </li>
+      <li>
+        <a @click="setPlaybackSpeed(3); $event.target.closest('ul')?.blur?.();">3x</a>
+      </li>
+      <li>
+        <a @click="setPlaybackSpeed(5); $event.target.closest('ul')?.blur?.();">5x</a>
+      </li>
+    </ul>
+  </div>
 </div>

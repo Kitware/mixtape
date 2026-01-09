@@ -7,6 +7,7 @@
       xaxis: {
         ...basePlotLayout.xaxis,
         title: { text: 'Step' },
+        automargin: true,
         zeroline: true,
         zerolinecolor: 'rgba(128, 128, 128, 0.5)',
         zerolinewidth: 2
@@ -14,10 +15,14 @@
       yaxis: {
         ...basePlotLayout.yaxis,
         title: { text: 'Reward' },
+        automargin: true,
         zeroline: true,
         zerolinecolor: 'rgba(128, 128, 128, 0.5)',
         zerolinewidth: 2
       },
+      hovermode: 'closest',
+      hoverlabel: { bgcolor: $store.theme.paper_bgcolor, font: { color: $store.theme.font.color, size: 11 }, align: 'left', namelength: -1 },
+      margin: {l: 80, r: 40, t: 40, b: 60},
     },
     plot: null,
     yRange: [0, 0],
@@ -26,6 +31,12 @@
     previousStep: 0,
   }"
   x-init="
+    const renderPlot = () => {
+      data = [];
+      yRange = [0, 0];
+      shapesAndAnnotationsByStep = {};
+      plot = null;
+
     // Get agent steps data
     agentSteps = [];
     if (parsedData && parsedData.agent_steps) {
@@ -53,84 +64,165 @@
         });
       }
 
-      if (step.unit_steps) {
-        Object.keys(step.unit_steps).forEach((unitId, idx) => {
-          unit = step.unit_steps[unitId];
-          data.push({
-            name: unitId + ' Health: ' + unit.health,
-            x: [idx * 0.2],
-            y: [0],
-            type: 'scatter',
-            mode: 'markers+text',
-            text: [unitId + ': ' + unit.health + ' HP'],
-            textposition: 'bottom',
-            marker: { size: 8, color: '#ff7f0e' },
-          });
-        });
-      }
-
       plot = Plotly.react($refs.healthDeathRewardsPlot, data, layout, basePlotConfig);
       return;
     }
 
-    // Use structured health data if available
+    // If structured health data is available, aggregate to agent-level only
     if (friendlyHealthData.length > 0 || enemyHealthData.length > 0) {
-      // Calculate rewards from health changes
-      friendlyHealthData.forEach((episodeData, idx) => {
-        if (!episodeData) return;
+      let enemyHealthRewards = [];
+      let friendlyHealthPenalties = [];
+      let overallRewards = [];
+      let maxLen = 0;
 
+      const accumulate = (arr, idx, val) => {
+        arr[idx] = (arr[idx] || 0) + val;
+      };
+
+      friendlyHealthData.forEach((episodeData) => {
+        if (!episodeData) return;
         Object.keys(episodeData).forEach(entity => {
           healthValues = episodeData[entity];
           if (!healthValues || healthValues.length < 2) return;
-
-          friendlyPenalties = [];
+          maxLen = Math.max(maxLen, healthValues.length - 1);
           for (let i = 1; i < healthValues.length; i++) {
             healthLoss = Math.max(0, healthValues[i-1] - healthValues[i]);
-            friendlyPenalties.push(-healthLoss * 0.1);
-          }
-
-          if (friendlyPenalties.length > 0) {
-            data.push({
-              name: 'Friendly ' + entity + ' Health Penalties',
-              x: Array.from({length: friendlyPenalties.length}, (_, i) => i + 1),
-              y: friendlyPenalties,
-              type: 'scatter',
-              mode: 'lines',
-              line: { color: '#ff7f0e', width: 2 },
-              connectgaps: true,
-            });
+            accumulate(friendlyHealthPenalties, i - 1, -healthLoss * 0.1);
           }
         });
       });
 
-      enemyHealthData.forEach((episodeData, idx) => {
+      enemyHealthData.forEach((episodeData) => {
         if (!episodeData) return;
-
         Object.keys(episodeData).forEach(entity => {
           healthValues = episodeData[entity];
           if (!healthValues || healthValues.length < 2) return;
-
-          enemyRewards = [];
+          maxLen = Math.max(maxLen, healthValues.length - 1);
           for (let i = 1; i < healthValues.length; i++) {
             healthLoss = Math.max(0, healthValues[i-1] - healthValues[i]);
-            enemyRewards.push(healthLoss * 0.2);
-          }
-
-          if (enemyRewards.length > 0) {
-            data.push({
-              name: 'Enemy ' + entity + ' Health Rewards',
-              x: Array.from({length: enemyRewards.length}, (_, i) => i + 1),
-              y: enemyRewards,
-              type: 'scatter',
-              mode: 'lines',
-              line: { color: '#1f77b4', width: 2 },
-              connectgaps: true,
-            });
+            accumulate(enemyHealthRewards, i - 1, healthLoss * 0.2);
           }
         });
       });
 
-      plot = Plotly.react($refs.healthDeathRewardsPlot, data, layout, basePlotConfig);
+      for (let i = 0; i < maxLen; i++) {
+        const e = enemyHealthRewards[i] || 0;
+        const f = friendlyHealthPenalties[i] || 0;
+        overallRewards[i] = e + f;
+      }
+
+      timeSteps = Array.from({length: maxLen}, (_, i) => i);
+
+      // Add reward traces to plot
+      if (enemyHealthRewards.length > 0) {
+        data.push({
+          name: 'Enemy HP Loss Rewards',
+          x: timeSteps,
+          y: enemyHealthRewards,
+          type: 'scatter',
+          mode: 'lines',
+          line: { color: '#1f77b4', width: 2 },
+          connectgaps: true,
+          hovertemplate: '%{data.name}<br>Step=%{x}<br>Reward=%{y:.2f}<extra></extra>'
+        });
+        yRange = [Math.min(yRange[0], Math.min(...enemyHealthRewards)), 
+                  Math.max(yRange[1], Math.max(...enemyHealthRewards))];
+      }
+
+      if (friendlyHealthPenalties.length > 0) {
+        data.push({
+          name: 'Friendly HP Loss Penalties',
+          x: timeSteps,
+          y: friendlyHealthPenalties,
+          type: 'scatter',
+          mode: 'lines',
+          line: { color: '#ff7f0e', width: 2 },
+          connectgaps: true,
+          hovertemplate: '%{data.name}<br>Step=%{x}<br>Penalty=%{y:.2f}<extra></extra>'
+        });
+        yRange = [Math.min(yRange[0], Math.min(...friendlyHealthPenalties)), 
+                  Math.max(yRange[1], Math.max(...friendlyHealthPenalties))];
+      }
+
+      if (overallRewards.length > 0) {
+        data.push({
+          name: 'Overall Health Rewards',
+          x: timeSteps,
+          y: overallRewards,
+          type: 'scatter',
+          mode: 'lines',
+          line: { color: '#2ca02c', width: 3, dash: 'dash' },
+          connectgaps: true,
+          hovertemplate: '%{data.name}<br>Step=%{x}<br>Total=%{y:.2f}<extra></extra>'
+        });
+        yRange = [Math.min(yRange[0], Math.min(...overallRewards)), 
+                  Math.max(yRange[1], Math.max(...overallRewards))];
+      }
+
+      maxAbsValue = Math.max(Math.abs(yRange[0]), Math.abs(yRange[1]));
+      const pad = maxAbsValue === 0 ? 1 : maxAbsValue * 1.1;
+      yRange = [-pad, pad];
+      layout.yaxis.range = yRange;
+
+      timeSteps.forEach((ts) => {
+        shapesAndAnnotationsByStep[ts] = [];
+        shapesAndAnnotationsByStep[ts].push({
+          shapes: {
+            type: 'line',
+            x0: ts, x1: ts,
+            y0: yRange[0], y1: yRange[1],
+            line: { color: 'red', width: 2, dash: 'dot' }
+          }
+        });
+
+        if (ts < enemyHealthRewards.length) {
+          let annotationY = yRange[1] * 0.9;
+
+          if (enemyHealthRewards[ts] !== 0) {
+            shapesAndAnnotationsByStep[ts].push({
+              annotations: {
+                x: ts, y: annotationY,
+                text: 'Enemy: +' + enemyHealthRewards[ts].toFixed(2),
+                bgcolor: 'rgba(31, 119, 180, 0.8)',
+                font: { color: 'white', size: 10 },
+                bordercolor: '#1f77b4', borderwidth: 1
+              }
+            });
+            annotationY -= Math.abs(yRange[1] - yRange[0]) * 0.15;
+          }
+
+          if (friendlyHealthPenalties[ts] !== 0) {
+            shapesAndAnnotationsByStep[ts].push({
+              annotations: {
+                x: ts, y: annotationY,
+                text: 'Friendly: ' + friendlyHealthPenalties[ts].toFixed(2),
+                bgcolor: 'rgba(255, 127, 14, 0.8)',
+                font: { color: 'white', size: 10 },
+                bordercolor: '#ff7f0e', borderwidth: 1
+              }
+            });
+            annotationY -= Math.abs(yRange[1] - yRange[0]) * 0.15;
+          }
+
+          if (overallRewards[ts] !== undefined) {
+            shapesAndAnnotationsByStep[ts].push({
+              annotations: {
+                x: ts, y: annotationY,
+                text: 'Total: ' + overallRewards[ts].toFixed(2),
+                bgcolor: 'rgba(44, 160, 44, 0.8)',
+                font: { color: 'white', size: 10, weight: 'bold' },
+                bordercolor: '#2ca02c', borderwidth: 2
+              }
+            });
+          }
+        }
+      });
+
+      plot = Plotly.react($refs.healthDeathRewardsPlot, data, {
+        ...layout,
+        shapes: shapesAndAnnotationsByStep[0]?.filter(item => item.shapes).map(item => item.shapes) || [],
+        annotations: shapesAndAnnotationsByStep[0]?.filter(item => item.annotations).map(item => item.annotations) || [],
+      }, basePlotConfig);
       return;
     }
 
@@ -152,22 +244,6 @@
           text: ['Current health: ' + step.health],
           textposition: 'top center',
           marker: { size: 8, color: '#1f77b4' },
-        });
-      }
-
-      if (step.unit_steps) {
-        Object.keys(step.unit_steps).forEach((unitId, idx) => {
-          unit = step.unit_steps[unitId];
-          data.push({
-            x: [idx * 0.1],
-            y: [0],
-            type: 'scatter',
-            mode: 'markers+text',
-            name: unitId + ' Health: ' + unit.health,
-            text: [unitId + ': ' + unit.health],
-            textposition: 'bottom center',
-            marker: { size: 6, color: '#ff7f0e' },
-          });
         });
       }
 
@@ -225,6 +301,7 @@
         mode: 'lines',
         line: { color: '#1f77b4', width: 2 },
         connectgaps: true,
+        hovertemplate: '%{data.name}<br>Step=%{x}<br>Reward=%{y:.2f}<extra></extra>'
       });
       yRange = [Math.min(yRange[0], Math.min(...enemyHealthRewards)), 
                 Math.max(yRange[1], Math.max(...enemyHealthRewards))];
@@ -239,6 +316,7 @@
         mode: 'lines',
         line: { color: '#ff7f0e', width: 2 },
         connectgaps: true,
+        hovertemplate: '%{data.name}<br>Step=%{x}<br>Penalty=%{y:.2f}<extra></extra>'
       });
       yRange = [Math.min(yRange[0], Math.min(...friendlyHealthPenalties)), 
                 Math.max(yRange[1], Math.max(...friendlyHealthPenalties))];
@@ -253,6 +331,7 @@
         mode: 'lines',
         line: { color: '#2ca02c', width: 3, dash: 'dash' },
         connectgaps: true,
+        hovertemplate: '%{data.name}<br>Step=%{x}<br>Total=%{y:.2f}<extra></extra>'
       });
       yRange = [Math.min(yRange[0], Math.min(...overallRewards)), 
                 Math.max(yRange[1], Math.max(...overallRewards))];
@@ -260,7 +339,8 @@
 
     // Set symmetric y-axis range centered on zero
     maxAbsValue = Math.max(Math.abs(yRange[0]), Math.abs(yRange[1]));
-    yRange = [-maxAbsValue * 1.1, maxAbsValue * 1.1];
+    const pad = maxAbsValue === 0 ? 1 : maxAbsValue * 1.1;
+    yRange = [-pad, pad];
     layout.yaxis.range = yRange;
 
     // Create step annotations
@@ -325,6 +405,10 @@
       annotations: shapesAndAnnotationsByStep[0]?.filter(item => item.annotations).map(item => item.annotations) || [],
     }, basePlotConfig);
 
+    };
+
+    renderPlot();
+
     $watch('$store.visOptions', () => {
       $nextTick(() => {
         Plotly.relayout(
@@ -336,6 +420,15 @@
           })
       });
     })
+    
+    // Adapt to theme changes (light/dark)
+    $watch('$store.theme', () => {
+      $nextTick(() => {
+        Plotly.relayout($refs.healthDeathRewardsPlot, {
+          ...basePlotStyling(),
+        });
+      });
+    });
   "
   x-effect="
     if (plot && shapesAndAnnotationsByStep[currentStep]) {
@@ -347,7 +440,7 @@
       previousStep = currentStep;
     }
   "
-  class="w-full"
+  class="w-full" style="overflow:visible;"
 >
   <div x-ref="healthDeathRewardsPlot"></div>
 </div>

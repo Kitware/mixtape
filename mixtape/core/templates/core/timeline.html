@@ -1,14 +1,42 @@
-<div class="max-w-full">
-  <ul class="timeline min-w-max">
-    <template x-for="ts, index in timelineKeySteps[index]">
-      <li style="width: 45px; flex-grow: 1;">
-        <hr :class="currentStep >= ts.number ? 'bg-success' : 'bg-info'" />
-        <div class="timeline-box pa-2! text-xs" x-text="ts.total_rewards.toFixed(2)" :class="index % 2 === 0 ? 'timeline-start' : 'timeline-end'"></div>
-        <div class="timeline-middle">
-          <i class="ri-record-circle-fill cursor-pointer" :class="currentStep >= ts.number ? 'text-success' : 'text-info'" @click="currentStep = ts.number"></i>
-        </div>
-        <hr :class="currentStep > ts.number ? 'bg-success' : 'bg-info'" />
-      </li>
+<div class="w-full flex flex-col items-center"
+     x-data="{
+       dragging:false,
+       tickSteps:[],
+       init(){
+         this.tickSteps = [0, Math.round((maxSteps-1)*0.25), Math.round((maxSteps-1)*0.5), Math.round((maxSteps-1)*0.75), maxSteps-1];
+       },
+       setFromEvent(e){
+         const rect = this.$refs.scrubber.getBoundingClientRect();
+         let ratio = (e.clientX - rect.left) / rect.width;
+         ratio = Math.max(0, Math.min(1, ratio));
+         currentStep = Math.round(ratio * (maxSteps - 1));
+       },
+       startDrag(e){ this.dragging=true; this.setFromEvent(e); },
+       onMove(e){ if(this.dragging){ this.setFromEvent(e); } },
+       endDrag(){ this.dragging=false; }
+     }"
+>
+  <!-- Linear scrubber bar -->
+    <div x-ref="scrubber"
+       @mousedown="startDrag($event)"
+       @mousemove="onMove($event)"
+       @mouseup="endDrag()"
+       @mouseleave="endDrag()"
+       @click="setFromEvent($event)"
+      class="relative w-[95%] md:w-[92%] h-4 rounded bg-gray-700 cursor-pointer select-none">
+    <!-- Filled progress -->
+    <div class="absolute top-0 left-0 h-full bg-primary rounded"
+         :style="`width: ${(currentStep/(maxSteps-1))*100}%;`"></div>
+    <!-- Handle -->
+    <div class="absolute top-1/2 -translate-y-1/2 h-5 w-5 rounded-full border border-white shadow bg-primary"
+         :style="`left: calc(${(currentStep/(maxSteps-1))*100}% - 10px);`"></div>
+  </div>
+  <!-- Step ticks -->
+  <div class="flex justify-between text-[10px] font-mono mt-1 w-[95%] md:w-[92%]">
+    <template x-for="t in tickSteps" :key="t">
+      <span x-text="t"></span>
     </template>
-  </ul>
+  </div>
+  <!-- Current step display (redundant with header, but local context) -->
+  <div class="text-xs mt-1 text-center w-[95%] md:w-[92%]" x-text="'Step ' + currentStep + ' / ' + (maxSteps-1)"></div>
 </div>

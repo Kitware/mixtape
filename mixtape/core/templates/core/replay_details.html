@@ -40,7 +40,7 @@
                     <strong>Action:</strong> <span x-text="unit.action_name"></span>
                   </span>
                   <span class="mr-1">
-                    <strong>Total Reward:</strong> <span x-text="unit.reward"></span>
+                    <strong>Total Reward:</strong> <span x-text="(Number.isFinite(parseFloat(unit.reward)) ? parseFloat(unit.reward).toFixed(4) : unit.reward)"></span>
                   </span>
                   <span class="mr-1">
                     <strong>Health:</strong> <span x-text="unit.health"></span>

@@ -84,23 +84,43 @@
       }
       return step[Object.keys(step).length - 1];
     },
-    fps: 10,  // frames per second
+  fps: 1,  // steps per second at 1x playback
     lastFrameTime: 0,
+    playbackSpeed: 1.0,  // playback speed multiplier (1x, 1.5x, 2x, 3x, 5x)
+    _stepAccumulator: 0,
+
+    setPlaybackSpeed(speed) {
+      const v = Number(speed);
+      if (!Number.isFinite(v) || v <= 0) return;
+      this.playbackSpeed = v;
+      // Make the new speed take effect immediately (avoid waiting for old threshold)
+      this.lastFrameTime = performance.now();
+      this._stepAccumulator = 0;
+    },
 
     stepForward() {
       this.playing = true;
       this.lastFrameTime = performance.now();
+      this._stepAccumulator = 0;
       requestAnimationFrame(this.animationLoop.bind(this));
     },
 
     animationLoop(timestamp) {
       if (!this.playing) return;
 
-      const elapsed = timestamp - this.lastFrameTime;
-      if (elapsed > (1000 / this.fps)) {
-        this.lastFrameTime = timestamp;
-        if (this.currentStep < this.maxSteps) {
-          this.currentStep++;
+      // Time-based accumulation: advances N steps based on elapsed time * fps * playbackSpeed.
+      // This makes >1x speeds visible even if the UI/image loading can't render more often.
+      const elapsedMs = Math.max(0, timestamp - this.lastFrameTime);
+      this.lastFrameTime = timestamp;
+
+      const stepsPerSecond = (this.fps * this.playbackSpeed);
+      this._stepAccumulator += (elapsedMs * stepsPerSecond) / 1000;
+      const stepsToAdvance = Math.floor(this._stepAccumulator);
+      if (stepsToAdvance >= 1) {
+        this._stepAccumulator -= stepsToAdvance;
+        const nextStep = this.currentStep + stepsToAdvance;
+        if (nextStep < this.maxSteps) {
+          this.currentStep = nextStep;
         } else {
           this.playing = false;
           this.currentStep = 0;
@@ -124,28 +144,31 @@ style="height: calc(100vh - 4rem);"
     <div
       id="episode-details-container"
       class="flex flex-col overflow-y-auto overflow-x-hidden transition-all duration-300"
-      :class="$store.theme.denseLayout ? 'w-1/3' : 'w-1/2'"
+      :class="$store.theme.denseLayout ? 'w-1/3' : 'w-1/3'"
     >
-      <div x-show="$store.visOptions.visible.includes('playbackControls')" class="max-w-full pa-1 rounded-md mx-1 my-2 sticky top-0 z-1 bg-base-300">
-        {% include "core/replay_controls.html" %}
-      </div>
       <template x-for="(step, index) in stepData">
-        <div class="episode-container w-full mb-2">
-          <div class="card raised flex flex-col w-full min-h-fit">
-            <h1 class="text-xl font-bold text-center flex-none mb-4">Step <span x-text="currentStep"></span> of <span x-text="maxSteps"></span></h1>
+        <div class="episode-container w-full mb-0">
+           <div class="flex flex-col w-full min-h-fit p-0 m-0">
+             <!-- Removed top step counter header per UX request -->
+             
             <div class="flex p-2 min-h-0 col-span-12">
               <div
                 x-show="$store.visOptions.visible.includes('episodeImages')"
-                class="flex-1 min-h-0 flex items-center justify-center relative"
+                class="flex-1 min-h-0 flex items-center justify-center relative py-2"
               >
-                <img x-show="getStep(step).image_url" class="m-auto h-full" :src="getStep(step).image_url" alt="Step Image">
-                <div class="absolute bottom-0 left-0 right-0 text-center">
-                  Episode <span x-text="episodeIds[index]"></span>: Step <span x-text="currentStep < Object.keys(step).length ? currentStep : Object.keys(step).length - 1"></span>
-                </div>
+                <img
+                  x-show="getStep(step).image_url"
+                  class="m-0 block w-full max-h-[calc(100vh-12rem)] object-contain"
+                  :src="getStep(step).image_url"
+                  alt="Step Image"
+                >
               </div>
             </div>
           </div>
-          <div x-show="$store.visOptions.visible.includes('timelines')" class="max-w-full my-2">
+          <div x-show="$store.visOptions.visible.includes('playbackControls')" class="max-w-full p-0 m-0">
+            {% include "core/replay_controls.html" %}
+          </div>
+          <div x-show="$store.visOptions.visible.includes('timelines')" class="max-w-full p-0 m-0">
             {% include "core/timeline.html" %}
           </div>
           <div x-show="$store.visOptions.visible.includes('episodeDetails')" class="w-full mt-2 mr-1">
@@ -170,7 +193,7 @@ style="height: calc(100vh - 4rem);"
     <div
       id="plots-container"
       class="flex flex-col overflow-y-auto overflow-x-hidden transition-all duration-300"
-      :class="$store.theme.denseLayout ? 'w-2/3 flex-row' : 'w-1/2'"
+      :class="$store.theme.denseLayout ? 'w-2/3 flex-row' : 'w-2/3'"
     >
       <!-- When in normal layout, this is a single column -->
       <div
@@ -188,11 +211,27 @@ style="height: calc(100vh - 4rem);"
           {% include "core/friendly_health_over_time.html" %}
         </div>
         <div
+          id="decomp-container-B"
+          data-ga-id="navigation-reward-plot"
+          data-ga-threshold="0.5"
+          x-show="$store.visOptions.visible.includes('navigation')"
+          class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
+        >
+          {% include "core/navigation_reward_over_time.html" %}
+        </div>
+        <div
           id="health-container-C"
           x-show="$store.visOptions.visible.includes('enemyHealth')"
           class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
         >
           {% include "core/enemy_health_over_time.html" %}
+        </div>
+        <div
+          id="decomp-container-C"
+          class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
+          x-show="$store.visOptions.visible.includes('combatReward')"
+        >
+          {% include "core/combat_reward_over_time.html" %}
         </div>
         <div
           id="health-death-rewards-container"
@@ -204,29 +243,11 @@ style="height: calc(100vh - 4rem);"
           {% include "core/health_death_rewards.html" %}
         </div>
         <div
-          id="decomp-container-B"
-          data-ga-id="navigation-reward-plot"
-          data-ga-threshold="0.5"
-          x-show="$store.visOptions.visible.includes('navigation')"
+          id="units-container-B"
+          x-show="$store.visOptions.visible.includes('unitsOverTime')"
           class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
         >
-          {% include "core/navigation_reward_over_time.html" %}
-        </div>
-        <div
-          id="decomp-container-C"
-          class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
-          x-show="$store.visOptions.visible.includes('combatReward')"
-        >
-          {% include "core/combat_reward_over_time.html" %}
-        </div>
-        <div
-          id="decomp-container-D"
-          data-ga-id="overall-nav-vs-combat-plot"
-          data-ga-threshold="0.5"
-          class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
-          x-show="$store.visOptions.visible.includes('overallNavVsCombat')"
-        >
-          {% include "core/overall_nav_vs_combat.html" %}
+          {% include "core/units_over_time.html" %}
         </div>
         <div
           id="reward-container-C"
@@ -234,13 +255,6 @@ style="height: calc(100vh - 4rem);"
           class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
         >
           {% include "core/env_reward_value_estimate.html" %}
-        </div>
-        <div
-          id="units-container-B"
-          x-show="$store.visOptions.visible.includes('unitsOverTime')"
-          class="flex-1 flex-grow min-w-[500px] max-w-full p-1 h-fit"
-        >
-          {% include "core/units_over_time.html" %}
         </div>
         <div
           id="units-container-C"
@@ -269,18 +283,18 @@ style="height: calc(100vh - 4rem);"
             {% include "core/friendly_health_over_time.html" %}
           </div>
           <div
-            id="health-death-rewards-container-B"
-            x-show="$store.visOptions.visible.includes('healthDeathRewards')"
-            class="w-full p-1 h-fit"
-          >
-            {% include "core/health_death_rewards.html" %}
-          </div>
-          <div
             id="decomp-container-B"
             x-show="$store.visOptions.visible.includes('navigation')"
             class="w-full p-1 h-fit"
           >
             {% include "core/navigation_reward_over_time.html" %}
+          </div>
+          <div
+            id="health-death-rewards-container-B"
+            x-show="$store.visOptions.visible.includes('healthDeathRewards')"
+            class="w-full p-1 h-fit"
+          >
+            {% include "core/health_death_rewards.html" %}
           </div>
           <div
             id="units-container-B"

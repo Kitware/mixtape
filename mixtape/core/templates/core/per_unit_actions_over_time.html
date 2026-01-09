@@ -5,13 +5,29 @@
       ...basePlotLayout,
       title: {text: 'Per-Unit Actions Over Time'},
       xaxis: { ...basePlotLayout.xaxis, title: {text: 'Time Step'} },
-      yaxis: { ...basePlotLayout.yaxis, title: {text: 'Units'}, type: 'category' },
+      yaxis: { ...basePlotLayout.yaxis, title: {text: 'Units'} },
       margin: {l: 100, r: 40, t: 40, b: 40},
-      showlegend: false,
+      showlegend: $store.visOptions.visible.includes('plotLegends'),
       showscale: $store.visOptions.visible.includes('plotLegends'),
     },
     plot: null,
     units: [],
+    timeSteps: [],
+    zData: [],
+    unitRows: [],
+    unitYCenters: [],
+    actionLabel(v) {
+      if (v === 0) return 'Noop';
+      if (v === 1) return 'Move';
+      if (v === 2) return 'Attack';
+      return String(v);
+    },
+    actionColor(v) {
+      if (v === 0) return '#1f77b4';
+      if (v === 1) return '#ff7f0e';
+      if (v === 2) return '#2ca02c';
+      return '#ffffff';
+    },
   }"
   x-init="
     const unitMapping = parsedData.unit_mapping || [];
@@ -20,13 +36,39 @@
     const timeSteps = [];
     let prefixedUnits = [];
     const z = [];
+    const zCustom = [];
+    const actionNames = { 0: 'Noop', 1: 'Move', 2: 'Attack' };
+
+    const displayUnit = (unit) => {
+      if (unitMapping && typeof unitMapping === 'object') {
+        const direct = unitMapping[unit] ?? unitMapping[String(unit)];
+        if (typeof direct === 'string') return direct;
+        // If mapping is reversed (display -> raw), fall back to reverse lookup
+        for (const [k, v] of Object.entries(unitMapping)) {
+          if (String(v) === String(unit)) return k;
+        }
+      }
+      return String(unit);
+    };
+
+    const numericSuffix = (s) => {
+      const m = String(s).match(/(\d+)\s*$/);
+      return m ? Number(m[1]) : Number.POSITIVE_INFINITY;
+    };
 
     // Process each episode
     unitActions.forEach((episodeActions, idx) => {
       if (!episodeActions) return;
 
       const ep = unitActions.length > 1 ? `ep ${episodeIds[idx]} - ` : '';
-      const episodeUnits = Object.keys(episodeActions).sort();
+      const episodeUnits = Object.keys(episodeActions).sort((a, b) => {
+        const da = displayUnit(a);
+        const db = displayUnit(b);
+        const na = numericSuffix(da);
+        const nb = numericSuffix(db);
+        if (na !== nb) return na - nb;
+        return da.localeCompare(db, undefined, { numeric: true });
+      });
 
       // Collect all time steps for this episode
       episodeUnits.forEach(unit => {
@@ -37,8 +79,8 @@
         });
       });
 
-      // Create prefixed unit names
-      prefixedUnits = [...prefixedUnits, ...episodeUnits.map(unit => `${ep}${unit}`)];
+      // Create prefixed *display* unit names (marine_1..)
+      prefixedUnits = [...prefixedUnits, ...episodeUnits.map(unit => `${ep}${displayUnit(unit)}`)];
       units = [...units, ...prefixedUnits];
 
       // Create z-data for heatmap
@@ -46,38 +88,87 @@
         const unitRow = [];
         timeSteps.forEach(step => {
           const actionData = episodeActions[unit].find(d => d.step === step);
-          const action = actionData ? (actionData.action === null ? -1 : actionData.action) : -1;
+          // Use null for dead/missing to render transparent with no legend entry
+          const action = actionData ? (actionData.action === null ? null : actionData.action) : null;
           unitRow.push(action);
         });
         z.push(unitRow);
+        zCustom.push([]);
       });
     });
 
-    // Add this episode's data
+    // Ensure time steps are sorted so x and z columns are stable
+    const sortedTimeSteps = Array.from(new Set(timeSteps)).sort((a, b) => Number(a) - Number(b));
+
+    // Rebuild z + customdata against sorted time steps
+    const zSorted = [];
+    const zCustomSorted = [];
+
+    // Use numeric y-centers (0.5..N-0.5) so we can set an exact y-range [0..N]
+    // and avoid extra padding above the top row.
+    const yCenters = Array.from({ length: prefixedUnits.length }, (_, i) => i + 0.5);
+
+    for (let r = 0; r < prefixedUnits.length; r++) {
+      const row = z[r] || [];
+      const rowSorted = [];
+      const rowCustom = [];
+      for (let c = 0; c < sortedTimeSteps.length; c++) {
+        const step = sortedTimeSteps[c];
+        const originalIdx = timeSteps.findIndex(s => Number(s) === Number(step));
+        const v = originalIdx >= 0 ? row[originalIdx] : null;
+        rowSorted.push(v);
+        rowCustom.push([
+          prefixedUnits[r],
+          v === null || v === undefined ? '' : (actionNames[v] || String(v)),
+        ]);
+      }
+      zSorted.push(rowSorted);
+      zCustomSorted.push(rowCustom);
+    }
+
+    // Add heatmap data (no colorbar) representing actions (dead/null transparent)
     data.push({
-      z: z,
-      x: timeSteps,
-      y: prefixedUnits,
+      z: zSorted,
+      customdata: zCustomSorted,
+      x: sortedTimeSteps,
+      y: yCenters,
       type: 'heatmap',
       colorscale: [
-        [0, '#00000000'],
-        [.25, '#00000000'],  // Transparent - Dead
-        [0.25, '#1f77b4'],
-        [0.5, '#1f77b4'],    // Blue - Noop
-        [0.5, '#ff7f0e'],
-        [0.75, '#ff7f0e'],   // Orange - Move
-        [0.75, '#2ca02c'],
-        [1, '#2ca02c'],      // Green - Attack
+        [0, '#1f77b4'],      // No-Op (value 0)
+        [0.5, '#ff7f0e'],    // Move (value 1)
+        [1, '#2ca02c'],      // Attack (value 2)
       ],
-      colorbar: {
-        title: 'Action',
-        tickmode: 'array',
-        tickvals: [-1, 0, 1, 2],
-        ticktext: ['Dead', 'Noop', 'Move', 'Attack'],
-      },
+      showscale: false,
+      hovertemplate: 'Unit: %{customdata[0]}<br>Step: %{x}<br>Action: %{customdata[1]}<extra></extra>',
+      zmin: 0,
+      zmax: 2,
     });
 
+    // Legend entries matching 'Actions stacked over time' order: Noop, Move, Attack
+    data.push({ x: [null], y: [null], type: 'scatter', mode: 'markers', marker: {color: '#1f77b4'}, name: 'Noop', showlegend: true, hoverinfo: 'skip' });
+    data.push({ x: [null], y: [null], type: 'scatter', mode: 'markers', marker: {color: '#ff7f0e'}, name: 'Move', showlegend: true, hoverinfo: 'skip' });
+    data.push({ x: [null], y: [null], type: 'scatter', mode: 'markers', marker: {color: '#2ca02c'}, name: 'Attack', showlegend: true, hoverinfo: 'skip' });
+
+    // Display unit names as tick labels, but position them at row boundaries (1..N)
+    // so the top row ends exactly at the top-most label.
+    layout = {
+      ...layout,
+      yaxis: {
+        ...layout.yaxis,
+        tickmode: 'array',
+        tickvals: Array.from({ length: prefixedUnits.length }, (_, i) => i + 1),
+        ticktext: prefixedUnits,
+        range: [0, prefixedUnits.length],
+      }
+    };
+
     plot = Plotly.react($refs.unitActionsPlot, data, layout, basePlotConfig);
+
+    // Persist for x-effect annotations
+    this.timeSteps = sortedTimeSteps;
+    this.zData = zSorted;
+    this.unitRows = prefixedUnits;
+    this.unitYCenters = yCenters;
     $watch('$store.visOptions', () => {
       $nextTick(() => {
         Plotly.relayout(
@@ -92,8 +183,61 @@
   "
   x-effect="
     if (plot) {
+      const stepLine = {
+        type: 'line',
+        x0: currentStep,
+        x1: currentStep,
+        xref: 'x',
+        y0: 0,
+        y1: 1,
+        yref: 'paper',
+        line: { color: 'red', width: 2, dash: 'dot' }
+      };
+
+      const stepNow = Number(currentStep);
+      let idx = -1;
+      if (Number.isFinite(stepNow) && Array.isArray(timeSteps) && timeSteps.length) {
+        idx = timeSteps.findIndex(s => Number(s) === stepNow);
+        if (idx < 0) {
+          // Fallback: pick the nearest timestep so annotations still appear
+          let bestIdx = 0;
+          let bestDist = Infinity;
+          for (let i = 0; i < timeSteps.length; i++) {
+            const s = Number(timeSteps[i]);
+            if (!Number.isFinite(s)) continue;
+            const d = Math.abs(s - stepNow);
+            if (d < bestDist) { bestDist = d; bestIdx = i; }
+          }
+          idx = bestIdx;
+        }
+      }
+      const annotations = [];
+      if (idx >= 0 && Array.isArray(unitRows) && Array.isArray(unitYCenters) && Array.isArray(zData)) {
+        const xAt = (Array.isArray(timeSteps) && timeSteps[idx] !== undefined) ? Number(timeSteps[idx]) : stepNow;
+        for (let r = 0; r < unitRows.length; r++) {
+          const v = zData?.[r]?.[idx];
+          if (v === null || v === undefined) continue;
+          const color = actionColor(v);
+          annotations.push({
+            x: xAt,
+            y: unitYCenters[r],
+            text: actionLabel(v),
+            bgcolor: 'rgba(0, 0, 0, 0.5)',
+            showarrow: true,
+            arrowhead: 2,
+            arrowcolor: color,
+            font: { color: color },
+            // Small stagger to reduce overlap
+            ax: 28,
+            ay: (r % 3 === 0) ? -12 : (r % 3 === 1 ? 0 : 12),
+          });
+        }
+      }
+
       Plotly.relayout($refs.unitActionsPlot, {
         ...basePlotStyling(),
+        shapes: [stepLine],
+        annotations: annotations,
       });
     }
   "

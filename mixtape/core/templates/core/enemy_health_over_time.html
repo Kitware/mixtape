@@ -8,8 +8,8 @@
       yaxis: { ...basePlotLayout.yaxis, title: { text: 'Health' } },
     },
     plot: null,
-    healthData: [],
     yRange: [Infinity, -Infinity],
+    healthData: [],
     shapesAndAnnotationsByStep: {},
     previousStep: 0,
   }"
@@ -19,28 +19,24 @@
 
     healthData.forEach((episodeData, idx) => {
       if (!episodeData) return;
-
       const ep = healthData.length > 1 ? `episode ${episodeIds[idx]} - ` : '';
-
       Object.keys(episodeData).forEach((entity, index) => {
         const healthValues = episodeData[entity];
-        if (healthValues && healthValues.length > 0) {
-          const xValues = Array.from({length: healthValues.length}, (_, i) => i);
-
-          data.push({
-            name: `${ep}${entity}`,
-            x: xValues,
-            y: healthValues,
-            type: 'scatter',
-            mode: 'lines',
-            line: {
-              dash: entity.toLowerCase().startsWith('eu') ? 'dash' : 'solid',
-            },
-            connectgaps: true,
-          });
-          const currentYRange = [Math.min(...healthValues), Math.max(...healthValues)];
-          yRange = [Math.min(yRange[0], currentYRange[0]), Math.max(yRange[1], currentYRange[1])];
-        }
+        if (!healthValues || healthValues.length === 0) return;
+        const xValues = Array.from({length: healthValues.length}, (_, i) => i);
+        data.push({
+          name: `${ep}${entity}`,
+          x: xValues,
+          y: healthValues,
+          type: 'scatter',
+          mode: 'lines',
+          line: {
+            dash: entity.toLowerCase().startsWith('enemy_') ? 'dash' : 'solid',
+          },
+          connectgaps: true,
+        });
+        const currentYRange = [Math.min(...healthValues), Math.max(...healthValues)];
+        yRange = [Math.min(yRange[0], currentYRange[0]), Math.max(yRange[1], currentYRange[1])];
       });
     });
 
@@ -49,10 +45,9 @@
       if (!shapesAndAnnotationsByStep[ts]) {
         shapesAndAnnotationsByStep[ts] = [];
       }
-
       // Add vertical line shape for this step
       shapesAndAnnotationsByStep[ts].push({
-        shape: {
+        shapes: {
           type: 'line',
           x0: ts,
           x1: ts,
@@ -62,18 +57,16 @@
             color: 'red',
             width: 2,
             dash: 'dot'
-          },
+          }
         }
       });
-
       // Add annotations for each entity at this step
       healthData.forEach((episodeData, idx) => {
         if (!episodeData) return;
-
         Object.keys(episodeData).forEach((entity, entityIdx) => {
           if (episodeData[entity] && episodeData[entity][ts] !== undefined) {
             shapesAndAnnotationsByStep[ts].push({
-              annotation: {
+              annotations: {
                 x: ts,
                 y: episodeData[entity][ts],
                 text: episodeData[entity][ts].toFixed(2),
@@ -81,18 +74,17 @@
                 arrowcolor: $store.categoricalColors[entityIdx % $store.categoricalColors.length],
                 font: {
                   color: $store.categoricalColors[entityIdx % $store.categoricalColors.length],
-                },
+                }
               }
             });
           }
         });
       });
     });
-
     plot = Plotly.react($refs.enemyHealthPlot, data, {
       ...layout,
-      shapes: shapesAndAnnotationsByStep[0].map(({shape}) => shape).filter(Boolean),
-      annotations: shapesAndAnnotationsByStep[0].map(({annotation}) => annotation).filter(Boolean),
+      shapes: shapesAndAnnotationsByStep[0]?.filter(item => item.shapes).map(item => item.shapes) || [],
+      annotations: shapesAndAnnotationsByStep[0]?.filter(item => item.annotations).map(item => item.annotations) || [],
     }, basePlotConfig);
 
     $watch('$store.visOptions', () => {
@@ -105,14 +97,30 @@
             legend: legendLayout(),
           })
       });
-    });
+    })
   "
   x-effect="
     if (plot) {
+      // Hide the previous step shapes and annotations
+      if (shapesAndAnnotationsByStep[previousStep]) {
+        shapesAndAnnotationsByStep[previousStep].forEach(item => {
+          if (item.shapes) item.shapes.visible = false;
+          if (item.annotations) item.annotations.visible = false;
+        });
+      }
+
+      // Show the current step shapes and annotations
+      if (shapesAndAnnotationsByStep[currentStep]) {
+        shapesAndAnnotationsByStep[currentStep].forEach(item => {
+          if (item.shapes) item.shapes.visible = true;
+          if (item.annotations) item.annotations.visible = true;
+        });
+      }
+
       // Update the plot with visibility changes
       Plotly.relayout($refs.enemyHealthPlot, {
-        shapes: shapesAndAnnotationsByStep[currentStep].map(({shape}) => shape).filter(Boolean),
-        annotations: shapesAndAnnotationsByStep[currentStep].map(({annotation}) => annotation).filter(Boolean),
+        shapes: shapesAndAnnotationsByStep[currentStep]?.filter(item => item.shapes).map(item => item.shapes) || [],
+        annotations: shapesAndAnnotationsByStep[currentStep]?.filter(item => item.annotations).map(item => item.annotations) || [],
         ...basePlotStyling()
       });
 
@@ -122,5 +130,6 @@
   "
   class="w-full"
 >
+  <div data-debug="enemy-health-template-v2"></div>
   <div x-ref="enemyHealthPlot"></div>
 </div>

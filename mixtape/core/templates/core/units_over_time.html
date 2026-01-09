@@ -12,11 +12,15 @@
       showscale: $store.visOptions.visible.includes('plotLegends'),
     },
     plot: null,
+    timeSteps: [],
+    actionCounts: { noop: [], move: [], attack: [] },
+    actionUnitLists: { noop: [], move: [], attack: [] },
   }"
   x-init="
     const unitActions = parsedData.unit_actions || [];
     const episodeIds = parsedData.episode_ids || [];
     const timeSteps = [];
+    const timeStepSet = new Set();
 
     // Action counts for each timestep
     const actionCounts = {
@@ -26,17 +30,27 @@
       attack: []
     };
 
+    // For hover: list of unit names performing each action per timestep
+    const actionUnitLists = {
+      noop: [],
+      move: [],
+      attack: [],
+    };
+
     // Process first episode (or combine if multiple)
     if (unitActions.length > 0) {
       const episodeActions = unitActions[0]; // Focus on first episode for now
       if (episodeActions) {
-        const episodeUnits = Object.keys(episodeActions);
+        const episodeUnits = Object.keys(episodeActions).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
         // Collect all time steps
         episodeUnits.forEach(unit => {
           episodeActions[unit].forEach(stepData => {
-            if (!timeSteps.includes(stepData.step)) {
-              timeSteps.push(stepData.step);
+            const s = Number(stepData.step);
+            if (!Number.isFinite(s)) return;
+            if (!timeStepSet.has(s)) {
+              timeStepSet.add(s);
+              timeSteps.push(s);
             }
           });
         });
@@ -47,10 +61,11 @@
         // Track when each unit dies (first time action becomes -1)
         const unitDeathSteps = {};
         episodeUnits.forEach(unit => {
-          const unitActions = episodeActions[unit];
-          for (const stepData of unitActions) {
+          const unitSteps = episodeActions[unit];
+          for (const stepData of unitSteps) {
             if (stepData.action === -1 || stepData.action === null) {
-              unitDeathSteps[unit] = stepData.step;
+              const ds = Number(stepData.step);
+              unitDeathSteps[unit] = Number.isFinite(ds) ? ds : stepData.step;
               break; // Found first death, stop looking
             }
           }
@@ -62,26 +77,37 @@
           let moveCount = 0;
           let attackCount = 0;
 
+          const noopUnits = [];
+          const moveUnits = [];
+          const attackUnits = [];
+
           episodeUnits.forEach(unit => {
             // Check if this unit has died by this timestep
             const deathStep = unitDeathSteps[unit];
-            if (deathStep === undefined || step < deathStep) {
+            const ds = Number(deathStep);
+            const isAlive = (deathStep === undefined) || (Number.isFinite(ds) ? (step < ds) : true);
+            if (isAlive) {
               // Unit is still alive, check its current action
-              const stepData = episodeActions[unit].find(d => d.step === step);
-              const action = stepData ? stepData.action : 0; // Default to no-op if no data
+              const stepData = episodeActions[unit].find(d => Number(d.step) === step);
+              const rawAction = stepData ? stepData.action : 0; // Default to no-op if no data
+              const action = rawAction === null || rawAction === undefined ? 0 : Number(rawAction);
 
               switch(action) {
                 case 0:
                   noopCount++;
+                  noopUnits.push(unit);
                   break;
                 case 1:
                   moveCount++;
+                  moveUnits.push(unit);
                   break;
                 case 2:
                   attackCount++;
+                  attackUnits.push(unit);
                   break;
                 default:
                   noopCount++; // Treat unknown as no-op for alive units
+                  noopUnits.push(unit);
               }
             }
             // Dead units are completely ignored - not counted at all
@@ -91,33 +117,52 @@
           actionCounts.noop.push(noopCount);
           actionCounts.move.push(moveCount);
           actionCounts.attack.push(attackCount);
+
+          noopUnits.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+          moveUnits.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+          attackUnits.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+          actionUnitLists.noop.push(noopUnits.length ? noopUnits.join(', ') : 'None');
+          actionUnitLists.move.push(moveUnits.length ? moveUnits.join(', ') : 'None');
+          actionUnitLists.attack.push(attackUnits.length ? attackUnits.join(', ') : 'None');
         });
       }
     }
+
+    // Persist for x-effect annotations
+    this.timeSteps = timeSteps;
+    this.actionCounts = actionCounts;
+    this.actionUnitLists = actionUnitLists;
 
     // Create stacked bar traces (only alive units: No-op, Move, Attack)
     data.push({
       x: timeSteps,
       y: actionCounts.noop,
+      customdata: actionUnitLists.noop,
       name: 'Noop',
       type: 'bar',
       marker: { color: '#1f77b4' }, // Blue for noop
+      hovertemplate: 'Unit: %{customdata}<br>Step: %{x}<br>Action: Noop<extra></extra>',
     });
 
     data.push({
       x: timeSteps,
       y: actionCounts.move,
+      customdata: actionUnitLists.move,
       name: 'Move',
       type: 'bar',
       marker: { color: '#ff7f0e' }, // Orange for move
+      hovertemplate: 'Unit: %{customdata}<br>Step: %{x}<br>Action: Move<extra></extra>',
     });
 
     data.push({
       x: timeSteps,
       y: actionCounts.attack,
+      customdata: actionUnitLists.attack,
       name: 'Attack',
       type: 'bar',
       marker: { color: '#2ca02c' }, // Green for attack
+      hovertemplate: 'Unit: %{customdata}<br>Step: %{x}<br>Action: Attack<extra></extra>',
     });
 
     // Add invisible heatmap trace for the colorbar (same as per_unit_actions_over_time.html)
@@ -161,8 +206,62 @@
   "
   x-effect="
     if (plot) {
+      const stepLine = {
+        type: 'line',
+        x0: currentStep,
+        x1: currentStep,
+        xref: 'x',
+        y0: 0,
+        y1: 1,
+        yref: 'paper',
+        line: { color: 'red', width: 2, dash: 'dot' }
+      };
+
+      const stepNow = Number(currentStep);
+      let idx = -1;
+      if (Number.isFinite(stepNow) && Array.isArray(timeSteps) && timeSteps.length) {
+        idx = timeSteps.findIndex(s => Number(s) === stepNow);
+        if (idx < 0) {
+          // Fallback: pick the nearest timestep so annotations still appear
+          let bestIdx = 0;
+          let bestDist = Infinity;
+          for (let i = 0; i < timeSteps.length; i++) {
+            const s = Number(timeSteps[i]);
+            if (!Number.isFinite(s)) continue;
+            const d = Math.abs(s - stepNow);
+            if (d < bestDist) { bestDist = d; bestIdx = i; }
+          }
+          idx = bestIdx;
+        }
+      }
+      const annotations = [];
+      if (idx >= 0) {
+        const noop = Number(actionCounts?.noop?.[idx] ?? 0);
+        const move = Number(actionCounts?.move?.[idx] ?? 0);
+        const attack = Number(actionCounts?.attack?.[idx] ?? 0);
+
+        // Stack positions (top of each segment)
+        const yNoop = noop;
+        const yMove = noop + move;
+        const yAttack = noop + move + attack;
+
+        // Match trace colors
+        const cNoop = '#1f77b4';
+        const cMove = '#ff7f0e';
+        const cAttack = '#2ca02c';
+
+        // Slightly stagger labels so they don't overlap
+        const xAt = (Array.isArray(timeSteps) && timeSteps[idx] !== undefined) ? Number(timeSteps[idx]) : stepNow;
+        const base = { x: xAt, bgcolor: 'rgba(0, 0, 0, 0.5)', showarrow: true, arrowhead: 2 };
+        annotations.push({ ...base, y: yNoop, text: String(noop), arrowcolor: cNoop, font: { color: cNoop }, ax: 18, ay: -18 });
+        annotations.push({ ...base, y: yMove, text: String(move), arrowcolor: cMove, font: { color: cMove }, ax: 0, ay: -28 });
+        annotations.push({ ...base, y: yAttack, text: String(attack), arrowcolor: cAttack, font: { color: cAttack }, ax: -18, ay: -18 });
+      }
+
       Plotly.relayout($refs.unitsOverTime, {
         ...basePlotStyling(),
+        shapes: [stepLine],
+        annotations: annotations,
       });
     }
   "
