@@ -10,7 +10,7 @@ module "django" {
   source  = "kitware-resonant/resonant/heroku"
   version = "3.1.0"
 
-  project_slug           = "mixtape"
+  project_slug           = "kw-mixtape"
   route53_zone_id        = aws_route53_zone.this.zone_id
   heroku_team_name       = data.heroku_team.this.name
   subdomain_name         = "www"
