@@ -26,6 +26,7 @@ class Step(models.Model):
     number = models.PositiveIntegerField()
     image = models.ImageField(null=True, blank=True)
 
+    # TODO: move to algorithms?
     @contextmanager
     @staticmethod
     def rgb_array_to_file(rgb_array: npt.NDArray, file_base_name: str) -> Generator[File]:

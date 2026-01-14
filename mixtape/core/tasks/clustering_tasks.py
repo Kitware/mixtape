@@ -13,8 +13,8 @@ from django.db import transaction
 from django.db.models.query import QuerySet
 from django.utils import timezone
 
-from mixtape.core.analysis.clustering import cluster_episodes_all_features
-from mixtape.core.analysis.constants import DEFAULT_CLUSTERING_PARAMS, DEFAULT_FEATURE_TYPES
+# from mixtape.core.analysis.clustering import cluster_episodes_all_features
+# from mixtape.core.analysis.constants import DEFAULT_CLUSTERING_PARAMS, DEFAULT_FEATURE_TYPES
 from mixtape.core.json_encoder import CustomJSONEncoder
 from mixtape.core.models import ClusteringResult, Episode
 
@@ -134,7 +134,9 @@ def compute_single_episode_clustering(episode_id: int) -> dict[str, Any]:
     Returns:
         Dict with task status and clustering result ID
     """
+    # TODO: why is this delaying another task?
     async_result = compute_episode_clustering.delay([episode_id])
+    # TODO: why is this returning a result in a task?
     return {
         'status': 'queued',
         'parent_task_id': async_result.id,
