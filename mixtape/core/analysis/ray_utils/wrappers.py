@@ -11,7 +11,7 @@ class PZWrapper(PettingZooEnv):
     render function, but PettingZoo environments no longer accept an argument.
     """
 
-    def render(self) -> np._typing.NDArray[np.uint8]:  # type: ignore[override]
+    def render(self) -> np._typing.NDArray[np.uint8]:
         """RGB image given the current observation.
 
         Returns:
@@ -29,7 +29,7 @@ class ParallelPZWrapper(ParallelPettingZooEnv):
     render function, but PettingZoo environments no longer accept an argument.
     """
 
-    def render(self) -> np._typing.NDArray[np.uint8]:  # type: ignore[override]
+    def render(self) -> np._typing.NDArray[np.uint8]:
         """RGB image given the current observation.
 
         Returns:

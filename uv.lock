@@ -2060,8 +2060,6 @@ name = "mixtape"
 version = "0.0.0"
 source = { editable = "." }
 dependencies = [
-    { name = "ale-py" },
-    { name = "autorom", extra = ["accept-rom-license"] },
     { name = "celery" },
     { name = "django", extra = ["argon2"] },
     { name = "django-allauth" },
@@ -2081,18 +2079,11 @@ dependencies = [
     { name = "drf-yasg" },
     { name = "einops" },
     { name = "gunicorn" },
-    { name = "gymnasium", extra = ["atari", "other"] },
-    { name = "pettingzoo" },
     { name = "pillow" },
     { name = "psycopg", extra = ["binary"] },
-    { name = "pygame" },
-    { name = "pymunk" },
-    { name = "ray", extra = ["default", "rllib"] },
     { name = "rich" },
     { name = "scikit-learn" },
     { name = "sentry-sdk", extra = ["celery", "django", "pure-eval"] },
-    { name = "supersuit" },
-    { name = "torch" },
     { name = "umap-learn" },
     { name = "whitenoise", extra = ["brotli"] },
 ]
@@ -2108,12 +2099,23 @@ development = [
     { name = "watchdog" },
     { name = "werkzeug" },
 ]
+tasks = [
+    { name = "ale-py" },
+    { name = "autorom", extra = ["accept-rom-license"] },
+    { name = "gymnasium", extra = ["atari", "other"] },
+    { name = "pettingzoo" },
+    { name = "pygame" },
+    { name = "pymunk" },
+    { name = "ray", extra = ["default", "rllib"] },
+    { name = "supersuit" },
+    { name = "torch" },
+]
 
 [package.dev-dependencies]
 dev = [
     { name = "django-minio-storage" },
     { name = "django-s3-file-field", extra = ["minio"] },
-    { name = "mixtape", extra = ["development"] },
+    { name = "mixtape", extra = ["development", "tasks"] },
     { name = "tox" },
     { name = "tox-uv" },
 ]
@@ -2148,8 +2150,8 @@ type = [
 
 [package.metadata]
 requires-dist = [
-    { name = "ale-py" },
-    { name = "autorom", extras = ["accept-rom-license"] },
+    { name = "ale-py", marker = "extra == 'tasks'" },
+    { name = "autorom", extras = ["accept-rom-license"], marker = "extra == 'tasks'" },
     { name = "celery" },
     { name = "django", extras = ["argon2"] },
     { name = "django-allauth" },
@@ -2174,31 +2176,31 @@ requires-dist = [
     { name = "drf-yasg" },
     { name = "einops" },
     { name = "gunicorn" },
-    { name = "gymnasium", extras = ["atari", "other"] },
+    { name = "gymnasium", extras = ["atari", "other"], marker = "extra == 'tasks'" },
     { name = "ipython", marker = "extra == 'development'" },
-    { name = "pettingzoo", specifier = ">=1.24.3" },
+    { name = "pettingzoo", marker = "extra == 'tasks'", specifier = ">=1.24.3" },
     { name = "pillow" },
     { name = "psycopg", extras = ["binary"] },
-    { name = "pygame", specifier = ">=2.3.0" },
-    { name = "pymunk", specifier = "==6.11.0" },
-    { name = "ray", extras = ["default", "rllib"], specifier = "==2.34.0" },
+    { name = "pygame", marker = "extra == 'tasks'", specifier = ">=2.3.0" },
+    { name = "pymunk", marker = "extra == 'tasks'", specifier = "==6.11.0" },
+    { name = "ray", extras = ["default", "rllib"], marker = "extra == 'tasks'", specifier = "==2.34.0" },
     { name = "rich" },
     { name = "scikit-learn" },
     { name = "sentry-sdk", extras = ["celery", "django", "pure-eval"] },
-    { name = "supersuit" },
-    { name = "torch" },
+    { name = "supersuit", marker = "extra == 'tasks'" },
+    { name = "torch", marker = "extra == 'tasks'" },
     { name = "umap-learn" },
     { name = "watchdog", marker = "extra == 'development'" },
     { name = "werkzeug", marker = "extra == 'development'" },
     { name = "whitenoise", extras = ["brotli"] },
 ]
-provides-extras = ["development"]
+provides-extras = ["tasks", "development"]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "django-minio-storage" },
     { name = "django-s3-file-field", extras = ["minio"] },
-    { name = "mixtape", extras = ["development"] },
+    { name = "mixtape", extras = ["development", "tasks"] },
     { name = "tox" },
     { name = "tox-uv" },
 ]

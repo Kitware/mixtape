@@ -11,8 +11,6 @@ license-files = ["LICENSE", "NOTICE"]
 classifiers = ["Private :: Do Not Upload"]
 dependencies = [
   # Runtime dependencies, always needed
-  "ale-py",
-  "autorom[accept-rom-license]",
   "celery",
   "django[argon2]",
   "django-allauth",
@@ -29,20 +27,10 @@ dependencies = [
   "djangorestframework",
   "drf-yasg",
   "einops",
-  "gymnasium[atari, other]",
-  # PettingZoo[butterfly] extra pulls in both pymunk and pygame, but the pypi version of PettingZoo
-  # is extremely outdated and depends on a version of pymunk that does not build and has no bdist
-  # wheel for our target platforms. So we manually specify those transitive dependency versions.
-  "pymunk==6.11.0",
-  "pygame>=2.3.0",
-  "PettingZoo>=1.24.3",
   "Pillow",
   "psycopg[binary]",
-  "ray[default, rllib]==2.34.0",
   "rich",
   "scikit-learn",
-  "SuperSuit",
-  "torch",
   "umap-learn",
   "whitenoise[brotli]",
   # Production-only
@@ -53,6 +41,22 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+tasks = [
+  # Training/inference dependencies - not needed for view-only deployments
+  "ale-py",
+  "autorom[accept-rom-license]",
+  "gymnasium[atari, other]",
+  # PettingZoo[butterfly] extra pulls in both pymunk and pygame, but the pypi version of PettingZoo
+  # is extremely outdated and depends on a version of pymunk that does not build and has no bdist
+  # wheel for our target platforms. So we manually specify those transitive dependency versions.
+  "pymunk==6.11.0",
+  "pygame>=2.3.0",
+  "PettingZoo>=1.24.3",
+  "ray[default, rllib]==2.34.0",
+  "SuperSuit",
+  "torch",
+]
+
 development = [
   # Runtime dependencies, only needed with "development" settings
   "django-browser-reload",
@@ -69,8 +73,8 @@ development = [
 dev = [
   # Additional developer tools
   # The "dev" dependency group is installed by default,
-  # so use this to install "development" extras by default too
-  "mixtape[development]",
+  # so use this to install "development" and "tasks" extras by default too
+  "mixtape[development,tasks]",
   "tox",
   "tox-uv",
   "django-minio-storage",
