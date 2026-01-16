@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from io import BytesIO
+from pathlib import Path
 
 import PIL.Image
 import PIL.ImageDraw
@@ -37,6 +38,10 @@ class CheckpointFactory(factory.django.DjangoModelFactory[Checkpoint]):
 
     training = factory.SubFactory(TrainingFactory)
     last = True
+    archive = factory.django.FileField(
+        from_path=Path(__file__).parent / 'data' / 'kaz_checkpoint.tar.bz2',
+        filename='checkpoint/archive.tar.bz2',
+    )
 
 
 class InferenceFactory(factory.django.DjangoModelFactory[Inference]):

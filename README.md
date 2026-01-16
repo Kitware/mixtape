@@ -1,6 +1,6 @@
 # MIXTAPE
 
-## Develop with Docker (recommended quickstart)
+## Develop with Docker
 This is the simplest configuration for developers to start with.
 
 ### Initial Setup
@@ -25,34 +25,67 @@ To non-destructively update your development stack at any time:
 
 ## Add data
 
-### Training
-Start by training an environment of your choice. For example:
-```bash
-docker compose run --rm django \
-./manage.py training \
--e knights_archers_zombies_v10 \
--a PPO \
--p \
--g 0.0 \
--t 100 \
---immediate
+### Training - Supported environments
 
-# For a detailed breakdown of all available options, use -h|--help
-docker compose run --rm django ./manage.py training --help
-```
+- **Knights Archers Zombies** (`knights_archers_zombies_v10`, PettingZoo)
+  - Multi‑agent, discrete actions. Demonstrates combat/strategy coordination.
+  - Example:
+    ```bash
+    docker compose run --rm django \
+    ./manage.py training -e knights_archers_zombies_v10 \  # Environment
+    -a PPO \                                               # Agent
+    -p \                                                   # Parallel
+    -g 0.0 \                                               # GPUs
+    -t 100 \                                               # Iterations
+    --immediate
+    ```
+
+- **Pistonball** (`pistonball_v6`, PettingZoo)
+  - Multi‑agent with a continuous action space. Demonstrates continuous control and teamwork.
+  - Example:
+    ```bash
+    docker compose run --rm django \
+    ./manage.py training -e pistonball_v6 \  # Environment
+    -a PPO \                                 # Agent
+    -g 0.0 \                                 # GPUs
+    -t 100 \                                 # Iterations
+    --immediate
+    ```
+
+- **LunarLander** (`LunarLander-v2`, Gymnasium)
+  - Single‑agent, discrete actions. Demonstrates balancing multiple variables to achieve a safe, stable landing. Ideal candidate for decomposed rewards.
+  - Example:
+    ```bash
+    docker compose run --rm django \
+    ./manage.py training -e LunarLander-v2 \  # Environment
+    -a PPO \                                  # Agent
+    -g 0.0 \                                  # GPUs
+    -t 100 \                                  # Iterations
+    --immediate
+    ```
+
+Notes:
+- Use `-p/--parallel` only for PettingZoo environments.
+- DQN is for discrete action spaces; it is not available for Pistonball (continuous).
 
 ### Inference
 
+Review available checkpoints:
+```bash
+docker compose run --rm django ./manage.py list_checkpoints
+```
+
+You will see a list of available checkpoints, with the most recent at the top.
+```bash
+environment                 | checkpoint_pk | created             | inferences | episodes
+----------------------------+---------------+---------------------+------------+---------
+pistonball_v6               | 2             | 2026-01-03 19:29:25 | 1          | 1
+knights_archers_zombies_v10 | 1             | 2026-01-03 19:27:32 | 1          | 1
+```
+
 Select an existing checkpoint to run inference. For example:
 ```bash
-docker compose run --rm django \
-./manage.py inference \
-1 \
--p \
---immediate
-
-# For a detailed breakdown of all available options, use -h|--help
-docker compose run --rm django ./manage.py inference --help
+docker compose run --rm django ./manage.py inference 2 -p --immediate
 ```
 
 If you've already started the server with `docker compose up`, you can see all available checkpoints at <http://localhost:8000/admin/core/checkpoint/>.
@@ -68,6 +101,9 @@ When running the "Develop with Docker" configuration, all tox commands must be r
 
 ### Running Tests
 Run `uv run tox` to launch the full test suite.
+
+Note: Tests are configured to run with `--reuse-db` by default. If you change migrations or suspect the test database is out of sync, rebuild with:
+`docker compose run --rm django uv run tox -e test -- --create-db`
 
 Individual test environments may be selectively run.
 This also allows additional options to be be added.

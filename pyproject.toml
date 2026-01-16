@@ -43,14 +43,12 @@ dependencies = [
 [project.optional-dependencies]
 tasks = [
   # Training/inference dependencies - not needed for view-only deployments
-  "ale-py",
-  "autorom[accept-rom-license]",
-  "gymnasium[atari, other]",
+  "gymnasium[box2d]==0.28.1",
   # PettingZoo[butterfly] extra pulls in both pymunk and pygame, but the pypi version of PettingZoo
   # is extremely outdated and depends on a version of pymunk that does not build and has no bdist
   # wheel for our target platforms. So we manually specify those transitive dependency versions.
   "pymunk==6.11.0",
-  "pygame>=2.3.0",
+  "pygame==2.1.3",
   "PettingZoo>=1.24.3",
   "ray[default, rllib]==2.34.0",
   "SuperSuit",
@@ -158,6 +156,7 @@ addopts = [
   # Test utilities should be imported absolutely from the pythonpath,
   # so use the Pytest-recommended "importlib" mode
   "--import-mode=importlib",
+  "--reuse-db",
   "--strict-config",
   "--strict-markers",
   "--showlocals",
