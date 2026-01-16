@@ -19,7 +19,7 @@ resource "aws_route53_record" "apex_redirect" {
   type    = "A"
 
   alias {
-    name                   = aws_s3_bucket_website_configuration.apex_redirect.website_endpoint
+    name                   = aws_s3_bucket_website_configuration.apex_redirect.website_domain
     zone_id                = aws_s3_bucket.apex_redirect.hosted_zone_id
     evaluate_target_health = false
   }
