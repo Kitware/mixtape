@@ -5,18 +5,20 @@
       title: {text: 'Agent {{title}}'},
       height: 450,
       xaxis: {
-        showticklabels: false,
-        gridcolor: $store.theme.axis.gridcolor,
-        zerolinecolor: $store.theme.axis.zerolinecolor
+        gridcolor: $store.theme.gridColor,
+        linecolor: $store.theme.gridColor,
+        zeroline: false,
       },
       yaxis: {
-        showticklabels: false,
-        gridcolor: $store.theme.axis.gridcolor,
-        zerolinecolor: $store.theme.axis.zerolinecolor
+        gridcolor: $store.theme.gridColor,
+        linecolor: $store.theme.gridColor,
+        zeroline: false,
       },
-      paper_bgcolor: $store.theme.paper_bgcolor,
-      plot_bgcolor: $store.theme.plot_bgcolor,
-      font: $store.theme.font,
+      paper_bgcolor: $store.theme.backgroundColor,
+      plot_bgcolor: $store.theme.backgroundColor,
+      font: {
+        color: $store.theme.fontColor
+      },
     },
     plot: null,
     resizePlot: _.debounce(function() {
@@ -180,7 +182,7 @@
           textposition: textPosition,
           textfont: {
             size: 12,
-            color: $store.theme.font.color
+            color: $store.theme.fontColor
           },
           marker: {
             color: 'transparent',

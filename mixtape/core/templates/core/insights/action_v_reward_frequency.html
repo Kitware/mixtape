@@ -2,21 +2,25 @@
     data: [],
     layout: {
       title: {text: 'Actions VS Reward Frequency'},
-      xaxis: {title: {text: 'Action'}},
-      yaxis: {title: {text: 'Reward Frequency'}},
+      xaxis: {
+        title: {text: 'Action'},
+        gridcolor: $store.theme.gridColor,
+        linecolor: $store.theme.gridColor,
+        zeroline: false,
+      },
+      yaxis: {
+        title: {text: 'Reward Frequency'},
+        gridcolor: $store.theme.gridColor,
+        linecolor: $store.theme.gridColor,
+        zeroline: false,
+      },
       autosize: true,
       barmode: Object.keys(actionVReward).length > 1 ? 'group' : 'stack',
       showlegend: $store.settings.showPlotLegends,
-      paper_bgcolor: $store.theme.paper_bgcolor,
-      plot_bgcolor: $store.theme.plot_bgcolor,
-      font: $store.theme.font,
-      xaxis: {
-        gridcolor: $store.theme.axis.gridcolor,
-        zerolinecolor: $store.theme.axis.zerolinecolor
-      },
-      yaxis: {
-        gridcolor: $store.theme.axis.gridcolor,
-        zerolinecolor: $store.theme.axis.zerolinecolor
+      paper_bgcolor: $store.theme.backgroundColor,
+      plot_bgcolor: $store.theme.backgroundColor,
+      font: {
+        color: $store.theme.fontColor
       },
     },
     config: {

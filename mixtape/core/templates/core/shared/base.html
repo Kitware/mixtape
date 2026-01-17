@@ -7,34 +7,13 @@
     <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/lodash/lodash.min.js"></script>
+    <script src="https://colorjs.io/dist/color.global.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@alpinejs/resize/dist/cdn.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs/dist/cdn.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/plotly.js@3.0.1/dist/plotly.min.js" charset="utf-8"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css" rel="stylesheet"/>
     <script src="{% static 'mixtape/core/js/alpine_theme_store.js' %}"></script>
     <script src="{% static 'mixtape/core/js/feedback_modal.js' %}"></script>
-    <!-- Custom Tailwind Styles -->
-    <style type="text/tailwindcss">
-      @layer base {
-        body {
-          background-color: var(--color-surface);
-          color: var(--color-surface-foreground);
-        }
-        h1 {
-          @apply text-2xl font-bold;
-        }
-      }
-      @layer components {
-        .card {
-          @apply bg-white dark:bg-gray-800 rounded-lg m-1 border border-gray-200 p-1
-                  dark:border-gray-700 overflow-hidden;
-        }
-        .card-alt {
-          @apply bg-gray-200 dark:bg-gray-600 rounded-lg m-1 border border-gray-300 p-1
-                 dark:border-gray-700 overflow-hidden;
-        }
-      }
-    </style>
     <!-- Custom CSS Variables -->
     <link rel="stylesheet" href="{% static 'mixtape/core/css/theme.css' %}">
     <title>{% block title %}MIXTAPE{% endblock %}</title>
@@ -45,7 +24,7 @@
     </style>
     {% block extra_head %}{% endblock %}
   </head>
-  <body>
+  <body class="min-h-screen bg-base-200">
     <div id="content">
       {% block content %}{% endblock %}
     </div>

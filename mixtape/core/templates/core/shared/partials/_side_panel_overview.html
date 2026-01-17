@@ -1,10 +1,7 @@
 <aside x-data="{ collapsed: false, settingsOpen: false }"
        class="
-        bg-[var(--color-surface)]
-        text-[var(--color-surface-foreground)]
+        bg-base-100
         rounded-lg
-        border
-        border-[var(--color-border)]
         shadow-md
         p-3
         w-auto
@@ -17,7 +14,7 @@
     <i class="ri-menu-unfold-line"></i>
   </button>
 
-  <div x-show="!collapsed" x-cloak class="w-2xs">
+  <div x-show="!collapsed" x-cloak class="w-2xs flex flex-col gap-2">
     <header class="flex items-center justify-between">
       <button @click="collapsed = true"
               class="btn btn-primary btn-ghost"
@@ -30,9 +27,9 @@
       </a>
     </header>
 
-    <hr class="border-[var(--color-border)] my-2" />
+    <div class="divider my-0"></div>
 
-    <header class="flex items-center justify-between mb-3">
+    <header class="flex items-center justify-between">
       <h2 class="text-base font-semibold">Settings & Tools</h2>
       <button @click="settingsOpen = !settingsOpen"
               class="btn btn-primary btn-ghost"
@@ -41,26 +38,26 @@
       </button>
     </header>
 
-    <section x-show="!settingsOpen" x-cloak class="card p-3">
-      <h3 class="text-sm font-medium mb-2">Selected Episodes</h3>
-      <ul class="text-sm space-y-1">
-        <template x-for="episodeSummary in $store.insights.episodeSummaries" :key="episodeSummary.id">
-          <li class="flex items-center justify-between">
-            <span x-text="`Episode ${episodeSummary.id}`"></span>
-          </li>
-        </template>
-      </ul>
+    <section x-show="!settingsOpen" x-cloak class="card card-border border-base-300">
+      <div class="card-body">
+        <h3 class="card-title text-base">Selected Episodes</h3>
+        <ul class="list">
+          <template x-for="episodeSummary in $store.insights.episodeSummaries" :key="episodeSummary.id">
+            <li class="list-row" x-text="`Episode ${episodeSummary.id}`"></li>
+          </template>
+        </ul>
+      </div>
     </section>
 
-    <section x-show="settingsOpen" x-cloak class="card p-3">
-      <h3 class="text-sm font-medium mb-2">Playback</h3>
-      <div class="">
+    <section x-show="settingsOpen" x-cloak class="card card-border border-base-300">
+      <div class="card-body">
+        <h3 class="card-title text-base">Playback</h3>
         <label class="flex items-center gap-6 text-sm">
           Speed
           <span>
             <input type="number" min="0.1" max="10" step="0.1"
                    x-model.number="$store.settings.playbackSpeed"
-                   class="input w-15 text-right"
+                   class="input input-sm validator w-15 text-right"
             />
             <span class="text-xs">x Speed</span>
           </span>
@@ -68,123 +65,127 @@
       </div>
     </section>
 
-    <section class="card p-3" x-show="$store.insights.episodeSummaries.length > 1" x-cloak>
-      <h3 class="text-sm font-medium mb-2">Timeline</h3>
-        <div class="flex items-center gap-2 mb-2">
-          <label class="flex items-center gap-2 text-sm">
-            <input type="radio" name="timeline-mode" value="true"
-                   x-model.boolean="$store.settings.useGlobalTimeline"
-                   class="radio"
-            />
-            Use global timeline
-          </label>
-        </div>
-        <div class="flex items-center gap-2">
-          <label class="flex items-center gap-2 text-sm">
-            <input type="radio" name="timeline-mode" value="false"
-                   x-model.boolean="$store.settings.useGlobalTimeline"
-                   class="radio"
-            />
-            Use episode timeline
-          </label>
-          <select class="select w-36"
-                  :class="{ 'disabled': ! $store.settings.useGlobalTimeline }"
-                  :disabled="$store.settings.useGlobalTimeline"
-                  x-model.number="$store.settings.timelineEpisodeIdx"
-          >
-            <template x-for="(episodeSummary, idx) in $store.insights.episodeSummaries" :key="episodeSummary.id">
-              <option :value="idx" x-text="`Episode ${episodeSummary.id}`"></option>
-            </template>
-          </select>
-        </div>
+    <section x-show="settingsOpen && $store.insights.episodeSummaries.length > 1" x-cloak class="card card-border border-base-300">
+      <div class="card-body">
+        <h3 class="card-title text-base">Timeline</h3>
+          <div class="flex items-center gap-2 mb-2">
+            <label class="flex items-center gap-2 text-sm">
+              <input type="radio" name="timeline-mode" value="true"
+                     x-model.boolean="$store.settings.useGlobalTimeline"
+                     class="radio radio-sm"
+              />
+              Use global timeline
+            </label>
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="flex items-center gap-2 text-sm">
+              <input type="radio" name="timeline-mode" value="false"
+                     x-model.boolean="$store.settings.useGlobalTimeline"
+                     class="radio radio-sm"
+              />
+              Use episode timeline
+            </label>
+            <select class="select select-sm w-36"
+                    :class="{ 'disabled': ! $store.settings.useGlobalTimeline }"
+                    :disabled="$store.settings.useGlobalTimeline"
+                    x-model.number="$store.settings.timelineEpisodeIdx"
+            >
+              <template x-for="(episodeSummary, idx) in $store.insights.episodeSummaries" :key="episodeSummary.id">
+                <option :value="idx" x-text="`Episode ${episodeSummary.id}`"></option>
+              </template>
+            </select>
+          </div>
+      </div>
     </section>
 
-    <section x-show="settingsOpen" x-cloak class="card p-3 flex flex-col gap-2">
-      <h3 class="text-sm font-medium">Visibility</h3>
-      <div>
-        <h4 class="text-xs text-[var(--color-muted-foreground)] mb-1">Global</h4>
-        <div class="grid grid-cols-2 gap-2">
-          <label class="flex items-center gap-2 text-sm">
-            <input type="checkbox" x-model.boolean="$store.settings.showPlayback"
-                   class="checkbox"
-            />
-            Playback Controls
-          </label>
-          <label class="flex items-center gap-2 text-sm">
-            <input type="checkbox" x-model.boolean="$store.settings.showEpisodeInfo"
-                   class="checkbox"
-            />
-            Episode Info
-          </label>
-          <label class="flex items-center gap-2 text-sm">
-            <input type="checkbox" x-model.boolean="$store.settings.showMediaViewer"
-                   class="checkbox"
-            />
-            Media Viewer
-          </label>
-          <label class="flex items-center gap-2 text-sm">
-            <input type="checkbox" x-model.boolean="$store.settings.showTimeline"
-                   class="checkbox"
-            />
-            Timeline
-          </label>
-          <label class="flex items-center gap-2 text-sm">
-            <input type="checkbox" x-model.boolean="$store.settings.showPlotLegends"
-                   class="checkbox"
-            />
-            Plot Legends
-          </label>
+    <section x-show="settingsOpen" x-cloak class="card card-border border-base-300">
+      <div class="card-body">
+        <h3 class="card-title text-base">Visibility</h3>
+        <div class="flex flex-col gap-2">
+          <h4 class="text-xs opacity-60 mb-1">Global</h4>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" x-model.boolean="$store.settings.showPlayback"
+                     class="checkbox checkbox-sm"
+              />
+              Playback Controls
+            </label>
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" x-model.boolean="$store.settings.showEpisodeInfo"
+                     class="checkbox checkbox-sm"
+              />
+              Episode Info
+            </label>
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" x-model.boolean="$store.settings.showMediaViewer"
+                     class="checkbox checkbox-sm"
+              />
+              Media Viewer
+            </label>
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" x-model.boolean="$store.settings.showTimeline"
+                     class="checkbox checkbox-sm"
+              />
+              Timeline
+            </label>
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" x-model.boolean="$store.settings.showPlotLegends"
+                     class="checkbox checkbox-sm"
+              />
+              Plot Legends
+            </label>
+          </div>
         </div>
-      </div>
-      <div>
-        <h4 class="text-xs text-[var(--color-muted-foreground)] mb-1">Overview</h4>
-        <div class="grid grid-cols-2 gap-2">
-          <label class="flex items-center gap-2 text-sm">
-            <input type="checkbox" x-model.boolean="$store.settings.showPlotActionRewardFrequency"
-                   class="checkbox"
-            />
-            Action vs Reward
-          </label>
-          <label class="flex items-center gap-2 text-sm">
-            <input type="checkbox" x-model.boolean="$store.settings.showPlotRewardFrequency"
-                   class="checkbox"
-            />
-            Reward Frequency
-          </label>
-          <label class="flex items-center gap-2 text-sm">
-            <input type="checkbox" x-model.boolean="$store.settings.showPlotActionFrequency"
-                   class="checkbox"
-            />
-            Action Frequency
-          </label>
+        <div>
+          <h4 class="text-xs opacity-60 mb-1">Overview</h4>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" x-model.boolean="$store.settings.showPlotActionRewardFrequency"
+                     class="checkbox checkbox-sm"
+              />
+              Action vs Reward
+            </label>
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" x-model.boolean="$store.settings.showPlotRewardFrequency"
+                     class="checkbox checkbox-sm"
+              />
+              Reward Frequency
+            </label>
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" x-model.boolean="$store.settings.showPlotActionFrequency"
+                     class="checkbox checkbox-sm"
+              />
+              Action Frequency
+            </label>
+          </div>
         </div>
-      </div>
-      <div>
-        <h4 class="text-xs text-[var(--color-muted-foreground)] mb-1">Rewards</h4>
-        <div class="grid grid-cols-2 gap-2">
-          <label class="flex items-center gap-2 text-sm">
-            <input type="checkbox" x-model.boolean="$store.settings.showPlotRewardsTime"
-                   class="checkbox"
-            />
-            Rewards Over Time
-          </label>
+        <div>
+          <h4 class="text-xs opacity-60 mb-1">Rewards</h4>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" x-model.boolean="$store.settings.showPlotRewardsTime"
+                     class="checkbox checkbox-sm"
+              />
+              Rewards Over Time
+            </label>
+          </div>
         </div>
-      </div>
-      <div>
-        <h4 class="text-xs text-[var(--color-muted-foreground)] mb-1">Agents</h4>
-        <div class="grid grid-cols-2 gap-2">
-          <label class="flex items-center gap-2 text-sm">
-            <input type="checkbox" x-model.boolean="$store.settings.showPlotObservationClustering"
-                   class="checkbox"
-            />
-            Observation Clustering
-          </label>
-          <label class="flex items-center gap-2 text-sm">
-            <input type="checkbox" x-model.boolean="$store.settings.showPlotActionClustering"
-                   class="checkbox"
-            />
-            Action Clustering
-          </label>
+        <div>
+          <h4 class="text-xs opacity-60 mb-1">Agents</h4>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" x-model.boolean="$store.settings.showPlotObservationClustering"
+                     class="checkbox checkbox-sm"
+              />
+              Observation Clustering
+            </label>
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" x-model.boolean="$store.settings.showPlotActionClustering"
+                     class="checkbox checkbox-sm"
+              />
+              Action Clustering
+            </label>
+          </div>
         </div>
       </div>
     </section>

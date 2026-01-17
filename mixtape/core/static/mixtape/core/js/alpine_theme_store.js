@@ -1,24 +1,30 @@
+const colorSchemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+colorSchemeQuery.addEventListener('change', (e) => {
+  syncDaisyTheme();
+  Alpine.store('theme').syncFromCssProperties();
+});
+
+function syncDaisyTheme() {
+  const darkMode = colorSchemeQuery.matches;
+  document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+}
+syncDaisyTheme();
+
 document.addEventListener('alpine:init', () => {
   Alpine.store('theme', {
-    darkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
-    darkbg: '#111827',
-    lightbg: '#F1F2F6',
-    lightline: '#4a5565',
-    darkline: '#d1d5dc',
-    get paper_bgcolor() { return this.darkMode ? this.darkbg : this.lightbg; },
-    get plot_bgcolor() { return this.darkMode ? this.darkbg : this.lightbg; },
-    lighttext: '#D1D5DB',
-    darktext: '#000000',
-    get font() {
-      return {
-        color: this.darkMode ? this.lighttext : this.darktext
-      };
+    backgroundColor: null,
+    fontColor: null,
+    gridColor: null,
+    init() {
+      this.syncFromCssProperties();
     },
-    get axis() {
-      return {
-        gridcolor: this.darkMode ? this.lightline : this.darkline,
-        zerolinecolor: this.darkMode ? this.lightbg : this.darkbg
-      };
+    syncFromCssProperties() {
+      this.backgroundColor = this.cssPropertyAsRgb('--color-base-100');
+      this.fontColor = this.cssPropertyAsRgb('--color-base-content');
+      this.gridColor = this.cssPropertyAsRgb('--color-base-300');
+    },
+    cssPropertyAsRgb(propertyName) {
+      return new Color(window.getComputedStyle(document.body).getPropertyValue(propertyName)).to('srgb').toString();
     }
   });
 });

@@ -148,19 +148,6 @@ document.addEventListener('alpine:init', () => {
     selectTab(tab) {
       this.active = tab;
     },
-    overviewVisible() {
-      return (
-        this.$store.settings.showPlotRewardFrequency ||
-        this.$store.settings.showPlotActionFrequency ||
-        this.$store.settings.showPlotActionRewardFrequency
-      );
-    },
-    overviewGridColsClass() {
-      const c = (this.$store.settings.showPlotRewardFrequency ? 1 : 0)
-        + (this.$store.settings.showPlotActionFrequency ? 1 : 0)
-        + (this.$store.settings.showPlotActionRewardFrequency ? 1 : 0);
-      return c >= 3 ? 'lg:grid-cols-3' : (c === 2 ? 'lg:grid-cols-2' : 'lg:grid-cols-1');
-    },
     maxStepsTooltip() {
       if (this.episodeSummaries.length <= 1) {
         return `Total Steps: ${this.episodeSummaries[0].steps ?? '—'}`;

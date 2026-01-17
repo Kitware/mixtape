@@ -3,13 +3,25 @@
     data: [],
     layout: {
       title: {text: 'Rewards Over Time'},
-      xaxis: {title: {text: 'Time Step'}},
-      yaxis: {title: {text: 'Cumulative Reward'}},
+      xaxis: {
+        title: {text: 'Time Step'},
+        gridcolor: $store.theme.gridColor,
+        linecolor: $store.theme.gridColor,
+        zeroline: false,
+      },
+      yaxis: {
+        title: {text: 'Cumulative Reward'},
+        gridcolor: $store.theme.gridColor,
+        linecolor: $store.theme.gridColor,
+        zeroline: false,
+      },
       autosize: true,
       showlegend: $store.settings.showPlotLegends,
-      paper_bgcolor: $store.theme.paper_bgcolor,
-      plot_bgcolor: $store.theme.plot_bgcolor,
-      font: $store.theme.font,
+      paper_bgcolor: $store.theme.backgroundColor,
+      plot_bgcolor: $store.theme.backgroundColor,
+      font: {
+        color: $store.theme.fontColor
+      },
       annotations: [
         {
           x: currentStep,
@@ -17,14 +29,6 @@
           text: rewardsOverTime[0][currentStep].toFixed(2),
         }
       ],
-      xaxis: {
-        gridcolor: $store.theme.axis.gridcolor,
-        zerolinecolor: $store.theme.axis.zerolinecolor
-      },
-      yaxis: {
-        gridcolor: $store.theme.axis.gridcolor,
-        zerolinecolor: $store.theme.axis.zerolinecolor
-      },
     },
     config: {
       displayModeBar: false,

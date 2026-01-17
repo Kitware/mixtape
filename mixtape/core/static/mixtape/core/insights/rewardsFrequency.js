@@ -5,20 +5,24 @@ document.addEventListener('alpine:init', () => {
       title: {text: 'Rewards VS Frequency'},
       xaxis: {
         title: {text: 'Reward'},
-        gridcolor: Alpine.store('theme').axis.gridcolor,
-        zerolinecolor: Alpine.store('theme').axis.zerolinecolor
+        gridcolor: Alpine.store('theme').gridColor,
+        linecolor: Alpine.store('theme').gridColor,
+        zeroline: false,
       },
       yaxis: {
         title: {text: 'Frequency'},
-        gridcolor: Alpine.store('theme').axis.gridcolor,
-        zerolinecolor: Alpine.store('theme').axis.zerolinecolor
+        gridcolor: Alpine.store('theme').gridColor,
+        linecolor: Alpine.store('theme').gridColor,
+        zeroline: false,
       },
       autosize: true,
       barmode: 'overlay',
       showlegend: Alpine.store('settings').showPlotLegends,
-      paper_bgcolor: Alpine.store('theme').paper_bgcolor,
-      plot_bgcolor: Alpine.store('theme').plot_bgcolor,
-      font: Alpine.store('theme').font,
+      paper_bgcolor: Alpine.store('theme').backgroundColor,
+      plot_bgcolor: Alpine.store('theme').backgroundColor,
+      font: {
+        color: Alpine.store('theme').fontColor
+      },
     },
     config: {
       displayModeBar: false,

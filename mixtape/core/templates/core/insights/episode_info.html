@@ -1,4 +1,4 @@
-<div class="space-y-2">
+<section class="border border-base-300 rounded-lg p-3 h-full">
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead>
@@ -10,10 +10,10 @@
         </tr>
         <tr>
           <template x-for="pair in episodePairs" :key="`h2-${pair.epIdx}-${pair.kind}`">
-            <th class="py-1 px-2 text-[var(--color-muted-foreground)] min-w-[6rem]"
+            <th class="py-1 px-2 min-w-[6rem]"
                 :class="[
                   pair.kind==='action' ? 'text-right' : 'text-left',
-                  (pair.kind==='action' && pair.epIdx>0) ? 'border-l border-[var(--color-border)]' : ''
+                  (pair.kind==='action' && pair.epIdx>0) ? 'border-l' : ''
                 ].join(' ')"
                 x-text="pair.kind==='action' ? 'Action' : 'Reward'">
             </th>
@@ -22,13 +22,13 @@
       </thead>
       <tbody>
         <template x-for="agent in uniqueAgents" :key="agent">
-          <tr class="border-t border-[var(--color-border)]">
+          <tr class="border-t">
             <td class="py-2 px-2 font-medium" x-text="agent"></td>
             <template x-for="pair in episodePairs" :key="`r-${agent}-${pair.epIdx}-${pair.kind}`">
               <td class="py-2 px-2 whitespace-nowrap min-w-[6rem] tabular-nums"
                   :class="[
                     pair.kind==='action' ? 'text-right' : 'text-left',
-                    (pair.kind==='action' && pair.epIdx>0) ? 'border-l border-[var(--color-border)]' : ''
+                    (pair.kind==='action' && pair.epIdx>0) ? 'border-l' : ''
                   ].join(' ')"
                   x-text="pair.kind==='action' ? $data.getAgentAction(pair.epIdx, agent) : $data.getAgentRewardStr(pair.epIdx, agent)">
               </td>
@@ -38,4 +38,4 @@
       </tbody>
     </table>
   </div>
-</div>
+</section>

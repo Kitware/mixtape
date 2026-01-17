@@ -4,9 +4,11 @@
     layout: {
       title: {text: 'Agent {{title}} Timeline'},
       height: 300,
-      paper_bgcolor: $store.theme.paper_bgcolor,
-      plot_bgcolor: $store.theme.plot_bgcolor,
-      font: $store.theme.font,
+      paper_bgcolor: $store.theme.backgroundColor,
+      plot_bgcolor: $store.theme.backgroundColor,
+      font: {
+        color: $store.theme.fontColor
+      },
     },
     plot: null,
     resizePlot: _.debounce(function() {

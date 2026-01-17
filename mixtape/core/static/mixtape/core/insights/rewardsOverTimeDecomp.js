@@ -3,23 +3,27 @@ document.addEventListener('alpine:init', () => {
     data: [],
     layout: {
       title: {text: 'Rewards Over Time (Decomposed)'},
-      xaxis: {title: {text: 'Time Step'}},
-      yaxis: {title: {text: 'Cumulative Reward'}},
-      autosize: true,
-      showlegend: Alpine.store('settings').showPlotLegends,
-      paper_bgcolor: Alpine.store('theme').paper_bgcolor,
-      plot_bgcolor: Alpine.store('theme').plot_bgcolor,
-      font: Alpine.store('theme').font,
-      annotations: [],
-      shapes: [],
       xaxis: {
-        gridcolor: Alpine.store('theme').axis.gridcolor,
-        zerolinecolor: Alpine.store('theme').axis.zerolinecolor
+        title: {text: 'Time Step'},
+        gridcolor: Alpine.store('theme').gridColor,
+        linecolor: Alpine.store('theme').gridColor,
+        zeroline: false,
       },
       yaxis: {
-        gridcolor: Alpine.store('theme').axis.gridcolor,
-        zerolinecolor: Alpine.store('theme').axis.zerolinecolor
+        title: {text: 'Cumulative Reward'},
+        gridcolor: Alpine.store('theme').gridColor,
+        linecolor: Alpine.store('theme').gridColor,
+        zeroline: false,
       },
+      autosize: true,
+      showlegend: Alpine.store('settings').showPlotLegends,
+      paper_bgcolor: Alpine.store('theme').backgroundColor,
+      plot_bgcolor: Alpine.store('theme').backgroundColor,
+      font: {
+        color: Alpine.store('theme').fontColor
+      },
+      annotations: [],
+      shapes: [],
     },
     config: {
       displayModeBar: false,
