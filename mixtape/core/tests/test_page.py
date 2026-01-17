@@ -24,7 +24,7 @@ def test_page_insights(subtests, page: Page) -> None:
     episode = EpisodeFactory.create()
     page.goto(reverse('insights', query={'episode_id': episode.id}))
 
-    for tab_name in ['Overview', 'Actions', 'Rewards', 'Agents']:
+    for tab_name in ['Overview', 'Rewards', 'Agents']:
         with subtests.test(msg='select tab', tab_name=tab_name):
             tab = page.get_by_role('tab', name=tab_name)
             tab.click()

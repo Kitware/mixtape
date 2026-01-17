@@ -33,15 +33,6 @@
         :class="{ 'tab-active': active === 'Overview' }"
       >Overview</button>
       <button
-        id="tab-actions"
-        role="tab"
-        :aria-selected="active==='Actions'"
-        aria-controls="panel-actions"
-        @click="selectTab('Actions')"
-        class="tab px-3 py-2"
-        :class="{ 'tab-active': active === 'Actions' }"
-      >Actions</button>
-      <button
         id="tab-rewards"
         role="tab"
         :aria-selected="active==='Rewards'"
@@ -123,28 +114,6 @@
         <section
           class="card p-3 lg:col-span-1"
           x-show="$store.settings.showPlotActionRewardFrequency"
-        >
-          <div class="min-h-[18rem]">
-            {% include "core/insights/action_v_reward_frequency.html" %}
-          </div>
-        </section>
-      </div>
-    </div>
-    <div x-show="active==='Actions'" x-cloak id="panel-actions" role="tabpanel" aria-labelledby="tab-actions" class="space-y-4">
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-2">
-        <section
-          class="card p-3"
-          x-show="$store.settings.showPlotActionFrequency"
-          :class="$store.settings.showPlotActionRewardFrequency ? 'lg:col-span-2' : ''"
-        >
-          <div class="min-h-[18rem]">
-            {% include "core/insights/action_v_frequency.html" %}
-          </div>
-        </section>
-        <section
-          class="card p-3"
-          x-show="$store.settings.showPlotActionRewardFrequency"
-          :class="$store.settings.showPlotActionFrequency ? 'lg:col-span-2' : ''"
         >
           <div class="min-h-[18rem]">
             {% include "core/insights/action_v_reward_frequency.html" %}
