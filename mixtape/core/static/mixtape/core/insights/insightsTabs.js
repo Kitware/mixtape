@@ -22,30 +22,11 @@ document.addEventListener('alpine:init', () => {
     maxSteps: 0,
     maxStepsGlobal: 0,
     episodeSummaries: [],
-    selectedEpisodeIdx: 0,
-    timelineEpisodeIdx: 0,
     mediaEpisodeIdx: 0,
     linkMediaToEpisode: true,
-    mediaFitMode: 'contain',
     limitToEpisode: false,
     debug: false,
     playing: false,
-    useGlobalTimeline: true,
-    playbackSpeed: 1,
-    visOptions: [
-      'actionRewardFrequency',
-      'rewardFrequency',
-      'actionFrequency',
-      'rewardsOverTime',
-      'obsClustering',
-      'actionClustering',
-      'plotLegends',
-      'showPlayback',
-      'showEpisodeInfo',
-      'showMediaViewer',
-      'showTimeline',
-    ],
-    resizeQueued: false,
     multiKey: '',
     clusteringAvailable: false,
     pollTimer: null,
@@ -109,9 +90,9 @@ document.addEventListener('alpine:init', () => {
       // Build watchers
       this.updateMaxSteps();
       this.$watch('limitToEpisode', () => this.updateMaxSteps());
-      this.$watch('selectedEpisodeIdx', () => {
+      this.$watch('$store.settings.timelineEpisodeIdx', () => {
         this.updateMaxSteps();
-        if (this.linkMediaToEpisode) this.mediaEpisodeIdx = this.selectedEpisodeIdx;
+        if (this.linkMediaToEpisode) this.mediaEpisodeIdx = this.$store.settings.timelineEpisodeIdx;
       });
       this.$watch('episodeSummaries', () => {
         if (!Array.isArray(this.episodeSummaries) || this.episodeSummaries.length === 0) {
@@ -120,20 +101,14 @@ document.addEventListener('alpine:init', () => {
           this.mediaEpisodeIdx = 0;
         }
       });
-      this.$watch('linkMediaToEpisode', (v) => { if (v) { this.mediaEpisodeIdx = this.selectedEpisodeIdx; } });
+      this.$watch('linkMediaToEpisode', (v) => { if (v) { this.mediaEpisodeIdx = this.$store.settings.timelineEpisodeIdx; } });
       // Ensure timeline mode changes recompute limits
-      this.$watch('useGlobalTimeline', () => { this.updateMaxSteps(); });
+      this.$watch('$store.settings.useGlobalTimeline', this.updateMaxSteps);
 
       // Store
       const store = (window.Alpine && Alpine.store('insights')) || null;
       if (store) {
-        // Pull settings
-        if (typeof store.playbackSpeed === 'number') this.playbackSpeed = store.playbackSpeed;
-        if (typeof store.useGlobalTimeline === 'boolean') this.useGlobalTimeline = store.useGlobalTimeline;
-        if (typeof store.timelineEpisodeIdx === 'number') this.timelineEpisodeIdx = store.timelineEpisodeIdx;
-        if (Array.isArray(store.visOptions)) this.visOptions = store.visOptions;
         // Push derived values
-        store.maxStepsGlobal = this.maxStepsGlobal;
         store.currentStep = this.currentStep;
         store.episodeSummaries = this.episodeSummaries;
         store.multiKey = this.multiKey;
@@ -141,29 +116,12 @@ document.addEventListener('alpine:init', () => {
         store.clustering = this.clustering;
       }
       // push changes
-      this.$watch('useGlobalTimeline', v => { Alpine.store('insights').useGlobalTimeline = v; });
-      this.$watch('timelineEpisodeIdx', v => { Alpine.store('insights').timelineEpisodeIdx = v; });
       this.$watch('episodeSummaries', v => { Alpine.store('insights').episodeSummaries = v; });
-      this.$watch('playbackSpeed', v => { Alpine.store('insights').playbackSpeed = v; });
-      this.$watch('visOptions', v => { Alpine.store('insights').visOptions = v; });
-      this.$watch('maxStepsGlobal', v => { Alpine.store('insights').maxStepsGlobal = v; });
       this.$watch('currentStep', v => { Alpine.store('insights').currentStep = v; });
       this.$watch('clustering', (v) => {
         const store = (window.Alpine && Alpine.store('insights')) || null;
         if (store) store.clustering = v;
       });
-      // pull changes
-      this.$watch('$store.insights.useGlobalTimeline', v => { this.useGlobalTimeline = v; this.updateMaxSteps(); });
-      this.$watch('$store.insights.timelineEpisodeIdx', v => { this.timelineEpisodeIdx = v; });
-      this.$watch('$store.insights.playbackSpeed', v => { this.playbackSpeed = v; });
-      this.$watch('$store.insights.visOptions', v => {
-        this.visOptions = Array.isArray(v) ? v : this.visOptions;
-        this.queuePlotResize();
-      });
-      // side panel collapse/expand can change available width
-      this.$watch('$store.insights.sidePanelCollapsed', () => { this.queuePlotResize(); });
-      // Observe once on init for plots that become visible later
-      this.$nextTick(() => { this.observeResizeOnVisible(); });
 
       // Polling: multi-episode artifact or single-episode partials
       const isMulti = Array.isArray(this.episodeIds) && this.episodeIds.length > 1;
@@ -177,36 +135,30 @@ document.addEventListener('alpine:init', () => {
     stepForward() {
       if (!this.playing) return;
       if (this.currentStep < this.maxSteps) {
-        const delay = Math.max(50, Math.round(500 / (this.playbackSpeed || 1)));
+        const delay = Math.max(50, Math.round(500 / (this.$store.settings.playbackSpeed || 1)));
         setTimeout(() => { this.currentStep++; this.stepForward(); }, delay);
       } else { this.playing = false; this.currentStep = 0; }
     },
     updateMaxSteps() {
       if (this.limitToEpisode) {
-        const steps = this.episodeSummaries[this.selectedEpisodeIdx]?.steps ?? null;
+        const steps = this.episodeSummaries[this.$store.settings.timelineEpisodeIdx]?.steps ?? null;
         this.maxSteps = (typeof steps === 'number' && steps > 0) ? steps - 1 : this.maxStepsGlobal;
       } else { this.maxSteps = this.maxStepsGlobal; }
     },
-
-    tabClass(tab) {
-      return this.active === tab ? 'tab-active' : 'tab-inactive';
-    },
     selectTab(tab) {
       this.active = tab;
-      this.queuePlotResize();
     },
     overviewVisible() {
-      const o = Array.isArray(this.visOptions) ? this.visOptions : [];
-      const c = (o.includes('rewardFrequency') ? 1 : 0)
-        + (o.includes('actionFrequency') ? 1 : 0)
-        + (o.includes('actionRewardFrequency') ? 1 : 0);
-      return c > 0;
+      return (
+        this.$store.settings.showPlotRewardFrequency ||
+        this.$store.settings.showPlotActionFrequency ||
+        this.$store.settings.showPlotActionRewardFrequency
+      );
     },
     overviewGridColsClass() {
-      const o = Array.isArray(this.visOptions) ? this.visOptions : [];
-      const c = (o.includes('rewardFrequency') ? 1 : 0)
-        + (o.includes('actionFrequency') ? 1 : 0)
-        + (o.includes('actionRewardFrequency') ? 1 : 0);
+      const c = (this.$store.settings.showPlotRewardFrequency ? 1 : 0)
+        + (this.$store.settings.showPlotActionFrequency ? 1 : 0)
+        + (this.$store.settings.showPlotActionRewardFrequency ? 1 : 0);
       return c >= 3 ? 'lg:grid-cols-3' : (c === 2 ? 'lg:grid-cols-2' : 'lg:grid-cols-1');
     },
     maxStepsTooltip() {
@@ -255,7 +207,7 @@ document.addEventListener('alpine:init', () => {
     },
     // Compatibility alias used by some templates
     getStep(step) {
-      return this.getEpisodeStepData(this.selectedEpisodeIdx);
+      return this.getEpisodeStepData(this.$store.settings.timelineEpisodeIdx);
     },
     getAgentStep(epIdx, agent) {
       const epStepData = this.getEpisodeStepData(epIdx);
@@ -282,48 +234,6 @@ document.addEventListener('alpine:init', () => {
         pairs.push({ epIdx: i, kind: 'action' }); pairs.push({ epIdx: i, kind: 'reward' });
       }
       return pairs;
-    },
-    resizePlots(panelId) {
-      if (!window.Plotly) return;
-      const root = this.$el;
-      const scope = panelId ? root.querySelector(`#${panelId}`) : root;
-      if (!scope) return;
-      const nodes = scope.querySelectorAll('.js-plotly-plot, [data-plotly]');
-      nodes.forEach((el) => {
-        Plotly.Plots.resize(el);
-        Plotly.relayout(el, { autosize: true });
-      });
-    },
-    queuePlotResize() {
-      // Debounce resize to prevent Plotly "jumpiness"
-      if (this.resizeQueued) return;
-      this.resizeQueued = true;
-      this.$nextTick(() => {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            this.resizePlots();
-            this.observeResizeOnVisible();
-            this.resizeQueued = false;
-          });
-        });
-      });
-    },
-    observeResizeOnVisible(panelId) {
-      // Make sure resize runs when plots become visible
-      if (!window.Plotly || !window.IntersectionObserver) return;
-      const root = this.$el;
-      const scope = panelId ? root.querySelector(`#${panelId}`) : root;
-      if (!scope) return;
-      const nodes = scope.querySelectorAll('.js-plotly-plot, [data-plotly]');
-      const io = new IntersectionObserver((entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            Plotly.Plots.resize(e.target);
-            io.unobserve(e.target);
-          }
-        });
-      }, { root: null, threshold: 0 });
-      nodes.forEach((el) => { io.observe(el); });
     },
     totalFromSeries(yTrace) {
       const rewards = Array.isArray(yTrace) ? yTrace.filter(reward => typeof reward === 'number') : [];
@@ -457,7 +367,6 @@ document.addEventListener('alpine:init', () => {
       this.clustering = obj;
       const store = (window.Alpine && Alpine.store('insights')) || null;
       if (store) store.clustering = obj;
-      this.queuePlotResize();
       if (this.clustering && ((this.clustering.obs && this.clustering.agent_outs) || isMulti)) {
         this.toastText = 'Clustering computation completed';
         this.showToast = true;

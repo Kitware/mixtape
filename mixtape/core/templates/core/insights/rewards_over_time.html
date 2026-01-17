@@ -6,7 +6,7 @@
       xaxis: {title: {text: 'Time Step'}},
       yaxis: {title: {text: 'Cumulative Reward'}},
       autosize: true,
-      showlegend: visOptions.includes('plotLegends'),
+      showlegend: $store.settings.showPlotLegends,
       paper_bgcolor: $store.theme.paper_bgcolor,
       plot_bgcolor: $store.theme.plot_bgcolor,
       font: $store.theme.font,
@@ -31,6 +31,10 @@
       responsive: true
     },
     plot: null,
+    resizePlot: _.debounce(function() {
+      if (!this.$refs.rewardsOverTime.querySelector('.plotly')) return;
+      Plotly.Plots.resize(this.$refs.rewardsOverTime);
+    }, 200, {leading: true}),
     getStep(episode) {
       if (this.currentStep < Object.keys(episode).length) {
         return this.currentStep;
@@ -65,24 +69,15 @@
       name: 'Current Step'
     });
     this.plot = Plotly.newPlot($refs.rewardsOverTime, data, layout, config);
-    // Ensure plot stretches to container width
-    $nextTick(() => { Plotly.Plots.resize($refs.rewardsOverTime); });
-    window.addEventListener('resize', () => { Plotly.Plots.resize($refs.rewardsOverTime); });
-    $watch('visOptions', () => {
+    $watch('$store.settings.showPlotLegends', () => {
       $nextTick(() => {
         Plotly.relayout(
           $refs.rewardsOverTime,
           {
             autosize: true,
-            showlegend: visOptions.includes('plotLegends')
+            showlegend: $store.settings.showPlotLegends
           })
       });
-    });
-    // When the Rewards tab becomes visible, ensure we resize once it's painted
-    $watch('active', (val) => {
-      if (val === 'Rewards') {
-        $nextTick(() => { Plotly.Plots.resize($refs.rewardsOverTime); });
-      }
     });
     "
   x-effect="
@@ -100,6 +95,7 @@
         })
       }, [rewardsOverTime.length]);
     }"
+  x-resize="resizePlot"
 >
   <div x-ref="rewardsOverTime" class="w-full"></div>
 </div>

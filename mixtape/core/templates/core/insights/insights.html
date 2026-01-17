@@ -6,7 +6,7 @@
 {% block extra_head %}
   {{ block.super }}
   <script src="{% static 'mixtape/core/js/alpine_insights_store.js' %}"></script>
-  <script src="{% static 'mixtape/core/js/alpine_sidepanel.js' %}"></script>
+  <script src="{% static 'mixtape/core/insights/settingsStore.js' %}"></script>
 {% endblock %}
 
 {% block content %}
@@ -14,11 +14,8 @@
 {{ clustering|json_script:"clustering_json" }}
 {{ multi_key|json_script:"clustering_multi_key" }}
 {{ clustering_available|json_script:"clustering_available_json" }}
-<div class="bg-[var(--color-surface)] min-h-screen p-4">
-  <div x-data="{}" class="grid grid-cols-1 gap-4"
-       :class="($store.insights && $store.insights.sidePanelCollapsed) ? 'lg:grid-cols-[48px_1fr]' : 'lg:grid-cols-[285px_1fr]'">
-    {% include "core/shared/partials/_side_panel_overview.html" %}
-    {% include "core/insights/partials/_tabs_overview.html" %}
-  </div>
+<div class="flex flex-row gap-4 bg-[var(--color-surface)] min-h-screen p-4">
+  {% include "core/shared/partials/_side_panel_overview.html" %}
+  {% include "core/insights/partials/_tabs_overview.html" %}
 </div>
 {% endblock %}

@@ -6,7 +6,7 @@
       yaxis: {title: {text: 'Reward Frequency'}},
       autosize: true,
       barmode: Object.keys(actionVReward).length > 1 ? 'group' : 'stack',
-      showlegend: visOptions.includes('plotLegends'),
+      showlegend: $store.settings.showPlotLegends,
       paper_bgcolor: $store.theme.paper_bgcolor,
       plot_bgcolor: $store.theme.plot_bgcolor,
       font: $store.theme.font,
@@ -21,10 +21,13 @@
     },
     config: {
       displayModeBar: false,
-      responsive: true
     },
     plot: null,
     actionVReward: Object.keys(actionVReward).length > 1 ? actionVReward : Object.values(actionVReward)[0],
+    resizePlot: _.debounce(function() {
+      if (!this.$refs.actionsRewards.querySelector('.plotly')) return;
+      Plotly.Plots.resize(this.$refs.actionsRewards);
+    }, 200, {leading: true}),
   }"
   x-init="
     data = Object.entries(actionVReward).map(([grouping, values]) => ({
@@ -39,17 +42,16 @@
       }
     }));
     this.plot = Plotly.react($refs.actionsRewards, data, layout, config);
-    $nextTick(() => { Plotly.Plots.resize($refs.actionsRewards); });
-    window.addEventListener('resize', () => { Plotly.Plots.resize($refs.actionsRewards); });
-    $watch('visOptions', () => {
+    $watch('$store.settings.showPlotLegends', () => {
       $nextTick(() => {
         Plotly.relayout(
           $refs.actionsRewards, {
             autosize: true,
-            showlegend: visOptions.includes('plotLegends')
+            showlegend: $store.settings.showPlotLegends
           })
       });
     });"
+  x-resize="resizePlot"
 >
   <div x-ref="actionsRewards" class="w-full"></div>
 </div>

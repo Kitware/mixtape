@@ -4,7 +4,7 @@
       title: {text: 'Actions VS Frequency'},
       autosize: true,
       barmode: Object.keys(actionVFrequency).length > 1 ? 'group' : 'stack',
-      showlegend: visOptions.includes('plotLegends'),
+      showlegend: $store.settings.showPlotLegends,
       paper_bgcolor: $store.theme.paper_bgcolor,
       plot_bgcolor: $store.theme.plot_bgcolor,
       font: $store.theme.font,
@@ -19,10 +19,13 @@
     },
     config: {
       displayModeBar: false,
-      responsive: true
     },
     plot: null,
-    actionVFrequency: Object.keys(actionVFrequency).length > 1 ? actionVFrequency : Object.values(actionVFrequency)[0]
+    actionVFrequency: Object.keys(actionVFrequency).length > 1 ? actionVFrequency : Object.values(actionVFrequency)[0],
+    resizePlot: _.debounce(function() {
+      if (!this.$refs.actionsFrequency.querySelector('.plotly')) return;
+      Plotly.Plots.resize(this.$refs.actionsFrequency);
+    }, 200, {leading: true}),
   }"
   x-init="
     Object.entries(actionVFrequency).forEach(([grouping, values]) => {
@@ -39,18 +42,17 @@
       });
     });
     this.plot = Plotly.react($refs.actionsFrequency, data, layout, config);
-    $nextTick(() => { Plotly.Plots.resize($refs.actionsFrequency); });
-    window.addEventListener('resize', () => { Plotly.Plots.resize($refs.actionsFrequency); });
-    $watch('visOptions', () => {
+    $watch('$store.settings.showPlotLegends', () => {
       $nextTick(() => {
         Plotly.relayout(
           $refs.actionsFrequency,
           {
             autosize: true,
-            showlegend: visOptions.includes('plotLegends')
+            showlegend: $store.settings.showPlotLegends
           })
       });
     });"
+  x-resize="resizePlot"
 >
   <div x-ref="actionsFrequency" class="w-full"></div>
 </div>

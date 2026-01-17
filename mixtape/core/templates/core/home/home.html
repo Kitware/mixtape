@@ -33,7 +33,7 @@
   <ol>
     {% for episode in episodes %}
     <li
-      class="card raised m-2"
+      class="card shadow-md m-2"
       x-show="!allowedEnvironment || allowedEnvironment === '{{ episode.inference.checkpoint.training.environment }}'"
     >
       <div class="flex justify-between">
@@ -56,7 +56,7 @@
             </span>
           </a>
         </div>
-        <a href="{% url 'insights' %}?episode_id={{ episode.pk }}" target="_blank" class="btn btn-icon btn-accent rounded-lg">
+        <a href="{% url 'insights' %}?episode_id={{ episode.pk }}" target="_blank" class="btn btn-primary btn-ghost rounded-lg">
           <i class="ri-external-link-line"></i>
         </a>
       </div>
@@ -78,7 +78,7 @@
             <a
               href="data:text/json;charset=utf-8,{{ episode.inference.checkpoint.training.config|pretty_json:2|safe|urlencode }}"
               download="training_{{ episode.inference.checkpoint.training.pk }}_config.json"
-              class="btn btn-accent px-2 py-1 rounded-lg"
+              class="btn btn-primary btn-ghost px-2 py-1 rounded-lg"
             >
               <i class="ri-download-line"></i>
             </a>
@@ -97,7 +97,7 @@
             <a
               href="data:text/json;charset=utf-8,{{ episode.inference.config|pretty_json:2|safe|urlencode }}"
               download="episode_{{ episode.pk }}_config.json"
-              class="btn btn-accent px-2 py-1 rounded-lg"
+              class="btn btn-primary btn-ghost px-2 py-1 rounded-lg"
             >
               <i class="ri-download-line"></i>
             </a>

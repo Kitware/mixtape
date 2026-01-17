@@ -2,7 +2,7 @@
   <div class="flex items-center justify-between">
     <h3 class="text-sm font-medium">Media Viewer</h3>
     <div class="flex items-center gap-2">
-      <select x-show="episodeSummaries?.length > 1" x-cloak x-model="mediaEpisodeIdx" class="form-select">
+      <select x-show="episodeSummaries?.length > 1" x-cloak x-model="mediaEpisodeIdx" class="select">
         <template x-for="(ep, idx) in episodeSummaries" :key="idx">
           <option :value="idx" x-text="`Episode ${ep.id}`"></option>
         </template>
@@ -13,7 +13,8 @@
     <div class="flex items-center justify-center h-full">
       <template x-if="$data.getEpisodeImageUrl(mediaEpisodeIdx)">
         <img :src="$data.getEpisodeImageUrl(mediaEpisodeIdx)" alt="Episode image"
-             :class="mediaFitMode==='contain' ? 'h-full max-h-full w-auto object-contain rounded' : 'h-full max-h-full w-full object-cover rounded'" />
+             class="h-full max-h-full w-auto object-contain rounded"
+        />
       </template>
       <template x-if="!$data.getEpisodeImageUrl(mediaEpisodeIdx)">
         <div class="text-sm text-[var(--color-muted-foreground)]">No image available</div>

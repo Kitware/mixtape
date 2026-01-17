@@ -19,6 +19,10 @@
       font: $store.theme.font,
     },
     plot: null,
+    resizePlot: _.debounce(function() {
+      if (!this.$refs.allManifolds.querySelector('.plotly')) return;
+      Plotly.Plots.resize(this.$refs.allManifolds);
+    }, 200, {leading: true}),
     buildPlot() {
       this.data = [];
       let agents = [];
@@ -76,21 +80,11 @@
         this.layout,
         { displayModeBar: false, responsive: true }
       );
-      this.$nextTick(() => {
-        Plotly.Plots.resize($refs.allManifolds);
-      });
-      window.addEventListener('resize', () => {
-        Plotly.Plots.resize($refs.allManifolds);
-      });
-      this.$watch('visOptions', () => {
+      this.$watch('$store.settings.showPlotLegends', () => {
         this.$nextTick(() => {
-          let showLegend = false;
-          if ($store.insights && Array.isArray($store.insights.visOptions)) {
-            showLegend = $store.insights.visOptions.includes('plotLegends')
-          };
           Plotly.relayout($refs.allManifolds, {
             autosize: true,
-            showlegend: showLegend,
+            showlegend: this.$store.settings.showPlotLegends,
           })
         });
       });
@@ -200,6 +194,7 @@
       }
     }
   }"
+  x-resize="resizePlot"
   >
   <div
     class="skeleton h-[450px] w-full"

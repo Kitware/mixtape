@@ -2,38 +2,9 @@ document.addEventListener('alpine:init', () => {
   Alpine.store('insights',
     {
       // User-configurable flags
-      useGlobalTimeline: true,
-      timelineEpisodeIdx: 0,
       episodeSummaries: [],
-      playbackSpeed: 1,
-      visOptions: [
-        'actionRewardFrequency',
-        'rewardFrequency',
-        'actionFrequency',
-        'rewardsOverTime',
-        'obsClustering',
-        'actionClustering',
-        'plotLegends',
-        'showPlayback',
-        'showEpisodeInfo',
-        'showMediaViewer',
-        'showTimeline',
-      ],
       // Runtime values
-      maxStepsGlobal: 0,
       currentStep: 0,
-      sidePanelCollapsed: false,
-      multiKey: '',
-      clusteringAvailable: false,
-      // Helpers
-      get(k) { return this[k]; },
-      set(k, v) { this[k] = v; },
-      toggleVis(key) {
-        const list = Array.isArray(this.visOptions) ? this.visOptions : [];
-        this.visOptions = list.includes(key)
-          ? list.filter((v) => v !== key)
-          : [...list, key];
-      },
     }
   );
 });

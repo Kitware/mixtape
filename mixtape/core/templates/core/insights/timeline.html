@@ -1,10 +1,10 @@
 <div x-cloak class="flex">
   <ol class="items-center flex p-1 w-full">
     <li class="relative flex items-center"><div class="flex w-1 bg-[var(--color-accent)] h-6 ml-2"></div></li>
-    <template x-for="ts in (((useGlobalTimeline === true) && Array.isArray(timelineKeyStepsGlobal) && timelineKeyStepsGlobal.length)
+    <template x-for="ts in (($store.settings.useGlobalTimeline && timelineKeyStepsGlobal.length)
                               ? timelineKeyStepsGlobal
-                              : ((timelineKeySteps && timelineKeySteps[timelineEpisodeIdx])
-                                  ? timelineKeySteps[timelineEpisodeIdx]
+                              : ((timelineKeySteps && timelineKeySteps[$store.settings.timelineEpisodeIdx])
+                                  ? timelineKeySteps[$store.settings.timelineEpisodeIdx]
                                   : ((timelineKeySteps && timelineKeySteps[0]) ? timelineKeySteps[0] : [])))">
       <li class="relative w-full flex even:flex-col odd:flex-col-reverse even:mb-5 odd:mt-5" :key="ts.number">
         <p class="text-sm text-center" x-text="Number((ts.peak_total_rewards ?? ts.total_rewards) ?? 0).toFixed(2)"></p>
