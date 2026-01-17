@@ -41,7 +41,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-tasks = [
+analysis = [
   # Training/inference dependencies - not needed for view-only deployments
   "gymnasium[box2d]==0.28.1",
   # PettingZoo[butterfly] extra pulls in both pymunk and pygame, but the pypi version of PettingZoo
@@ -54,7 +54,6 @@ tasks = [
   "SuperSuit",
   "torch",
 ]
-
 development = [
   # Runtime dependencies, only needed with "development" settings
   "django-browser-reload",
@@ -71,8 +70,8 @@ development = [
 dev = [
   # Additional developer tools
   # The "dev" dependency group is installed by default,
-  # so use this to install "development" and "tasks" extras by default too
-  "mixtape[development,tasks]",
+  # so use this to install "development" extras by default too
+  "mixtape[development]",
   "tox",
   "tox-uv",
   "django-minio-storage",
@@ -120,6 +119,9 @@ constraint-dependencies = [
   # its compatability with "numpy", which led to incorrect versions of "numpy" and "umap-learn".
   "numba >= 0.61.0",
 ]
+
+[tool.uv.extra-build-dependencies]
+"box2d-py" = [{ requirement = "swig", match-runtime = true }]
 
 [tool.black]
 line-length = 100
