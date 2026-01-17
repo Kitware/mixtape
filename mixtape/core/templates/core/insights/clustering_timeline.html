@@ -4,11 +4,17 @@
     layout: {
       title: {text: 'Agent {{title}} Timeline'},
       height: 300,
-      paper_bgcolor: $store.theme.paper_bgcolor,
-      plot_bgcolor: $store.theme.plot_bgcolor,
-      font: $store.theme.font,
+      paper_bgcolor: $store.theme.backgroundColor,
+      plot_bgcolor: $store.theme.backgroundColor,
+      font: {
+        color: $store.theme.fontColor
+      },
     },
     plot: null,
+    resizePlot: _.debounce(function() {
+      if (!this.$refs.allManifolds.querySelector('.plotly')) return;
+      Plotly.Plots.resize(this.$refs.allManifolds);
+    }, 200, {leading: true}),
     buildPlot() {
       let clustering = null;
       if ($store.insights && $store.insights.clustering) {
@@ -16,10 +22,7 @@
       }
       if (!clustering || !clustering[{{key}}]) return;
       const epClusters = clustering[{{key}}].episode_clusters;
-      let epIdx = 0;
-      if (typeof $store.insights?.timelineEpisodeIdx === 'number') {
-        epIdx = $store.insights.timelineEpisodeIdx;
-      }
+      const epIdx = $store.settings.timelineEpisodeIdx;
       // If multi-episode shape [episodes][agents][steps], pick selected episode; else assume [agents][steps]
       let agentStepClusters = Array.isArray(epClusters?.[0]?.[0])
         ? (epClusters?.[epIdx] || epClusters?.[0] || [])
@@ -69,15 +72,13 @@
           responsive: true
         }
       );
-      this.$nextTick(() => { Plotly.Plots.resize($refs.allManifolds); });
-      window.addEventListener('resize', () => { Plotly.Plots.resize($refs.allManifolds); });
-      this.$watch('visOptions', () => {
+      this.$watch('$store.settings.showPlotLegends', () => {
         this.$nextTick(() => {
           Plotly.relayout(
             $refs.allManifolds,
             {
               autosize: true,
-              showlegend: visOptions.includes('plotLegends')
+              showlegend: $store.settings.showPlotLegends
             }
           );
         });
@@ -89,7 +90,7 @@
       buildPlot();
     }
     $watch(
-      '$store.insights.timelineEpisodeIdx',
+      '$store.settings.timelineEpisodeIdx',
       () => {
         if ($store.insights && $store.insights.clustering && $store.insights.clustering[{{key}}]) {
           buildPlot();
@@ -122,10 +123,7 @@
       if (!clustering) return;
       const epClusters = clustering[{{key}}]?.episode_clusters;
       if (!epClusters) return;
-      let epIdx = 0;
-      if (typeof $store.insights?.timelineEpisodeIdx === 'number') {
-        epIdx = $store.insights.timelineEpisodeIdx;
-      }
+      const epIdx = $store.settings.timelineEpisodeIdx;
       const zNow = Array.isArray(epClusters?.[0]?.[0])
         ? (epClusters?.[epIdx] || epClusters?.[0] || [])
         : epClusters;
@@ -142,6 +140,7 @@
       Plotly.restyle($refs.allManifolds, { x: [xLine], y: [yLine] }, [1]);
     }
   }"
+  x-resize="resizePlot"
 >
   <div
     class="skeleton h-[300px] w-full"

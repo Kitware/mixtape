@@ -4,99 +4,16 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
-    <script src="//unpkg.com/alpinejs" defer></script>
-    <script src="//unpkg.com/plotly.js@3.0.1/dist/plotly.min.js" charset="utf-8"></script>
-    <link href="https://unpkg.com/remixicon/fonts/remixicon.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lodash/lodash.min.js"></script>
+    <script src="https://colorjs.io/dist/color.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@alpinejs/resize/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/plotly.js@3.0.1/dist/plotly.min.js" charset="utf-8"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css" rel="stylesheet"/>
     <script src="{% static 'mixtape/core/js/alpine_theme_store.js' %}"></script>
     <script src="{% static 'mixtape/core/js/feedback_modal.js' %}"></script>
-    <!-- Custom Tailwind Styles -->
-    <style type="text/tailwindcss">
-      @layer base {
-        body {
-          background-color: var(--color-surface);
-          color: var(--color-surface-foreground);
-        }
-        h1 {
-          @apply text-2xl font-bold;
-        }
-      }
-      @layer components {
-        .btn {
-          @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
-                  disabled:pointer-events-none disabled:opacity-50;
-        }
-        .btn-icon {
-          @apply text-2xl p-2;
-        }
-        .btn-accent {
-          color: var(--color-accent);
-        }
-        .btn-accent:hover {
-          background: color-mix(in oklab, var(--color-accent) 10%, transparent);
-        }
-        .btn-primary {
-          color: var(--color-accent-foreground);
-          background: var(--color-accent);
-        }
-        .btn-primary:hover {
-          background: color-mix(in oklab, var(--color-accent) 85%, black);
-        }
-        .card {
-          @apply bg-white dark:bg-gray-800 rounded-lg m-1 border border-gray-200 p-1
-                  dark:border-gray-700 overflow-hidden;
-        }
-        .card-alt {
-          @apply bg-gray-200 dark:bg-gray-600 rounded-lg m-1 border border-gray-300 p-1
-                 dark:border-gray-700 overflow-hidden;
-        }
-        .raised {
-          @apply shadow-[1px_1px_1px_1px_rgba(0,0,0,0.25)] dark:shadow-[1px_1px_1px_1px_rgba(255,255,255,0.25)];
-        }
-        .header {
-          @apply bg-white dark:bg-gray-800 p-3 w-full flex justify-between items-center z-10
-                 shadow-[1px_1px_2px_1px_rgba(0,0,0,0.25)] dark:shadow-[0px_1px_2px_1px_rgba(255,255,255,0.25)];
-        }
-        .menu {
-          @apply absolute right-0 top-12 mt-2 z-10 w-auto bg-white dark:bg-gray-600 divide-y
-                 divide-gray-100 rounded-lg;
-        }
-        .checkbox {
-          @apply w-4 h-4 rounded-sm;
-          accent-color: var(--color-accent);
-          background: var(--color-surface);
-          border-color: var(--color-border);
-        }
-        .form-input {
-          @apply rounded-md border px-2 py-1 text-sm;
-          border-color: var(--color-border);
-          background: var(--color-surface);
-          color: var(--color-surface-foreground);
-        }
-        .form-select {
-          @apply rounded-md border px-2 py-1 text-sm;
-          border-color: var(--color-border);
-          background: var(--color-surface);
-          color: var(--color-surface-foreground);
-        }
-        .chip {
-          @apply inline-flex items-center gap-1 rounded-full border border-transparent px-2 py-1 text-xs;
-          color: var(--color-accent);
-          background: color-mix(in oklab, var(--color-accent) 15%, transparent);
-        }
-        .tab-active {
-          @apply border-b-2 rounded-t-md;
-          color: var(--color-accent);
-          border-color: var(--color-accent);
-          background: var(--color-muted);
-        }
-        .tab-inactive {
-          @apply border-b-2 border-transparent rounded-t-md hover:bg-[var(--color-muted)];
-          color: var(--color-muted-foreground);
-        }
-      }
-    </style>
     <!-- Custom CSS Variables -->
     <link rel="stylesheet" href="{% static 'mixtape/core/css/theme.css' %}">
     <title>{% block title %}MIXTAPE{% endblock %}</title>
@@ -107,7 +24,7 @@
     </style>
     {% block extra_head %}{% endblock %}
   </head>
-  <body>
+  <body class="min-h-screen bg-base-200">
     <div id="content">
       {% block content %}{% endblock %}
     </div>

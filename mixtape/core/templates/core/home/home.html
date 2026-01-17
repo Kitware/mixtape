@@ -1,10 +1,10 @@
 {% extends "core/shared/base.html" %}
 {% load resonant_utils %}
 
-{% block title %}MIXTAPE Home - FIGMA{% endblock %}
+{% block title %}MIXTAPE Home{% endblock %}
 
 {% block content %}
-<h1 class="text-center">Explore Results</h1>
+<h1 class="text-2xl font-bold text-center px-4 pt-4">Explore Results</h1>
 <div
   x-data="{
     selectedEpisodes: [],
@@ -21,19 +21,19 @@
     }
   }"
 >
-  <div class="w-full flex justify-end">
+  <div class="w-full flex justify-end p-4">
     <button
-      class="btn btn-primary rounded-lg px-5 py-2.5 me-2 mb-2 disabled:opacity-50"
+      class="btn btn-primary"
       :disabled="selectedEpisodes.length === 0"
       @click="viewSelectedEpisodes"
     >
       View Selected Episodes
     </button>
   </div>
-  <ol>
+  <ol class="px-4 flex flex-col gap-4">
     {% for episode in episodes %}
     <li
-      class="card raised m-2"
+      class="card card-border bg-base-100 border-base-300 shadow-md p-2"
       x-show="!allowedEnvironment || allowedEnvironment === '{{ episode.inference.checkpoint.training.environment }}'"
     >
       <div class="flex justify-between">
@@ -56,7 +56,7 @@
             </span>
           </a>
         </div>
-        <a href="{% url 'insights' %}?episode_id={{ episode.pk }}" target="_blank" class="btn btn-icon btn-accent rounded-lg">
+        <a href="{% url 'insights' %}?episode_id={{ episode.pk }}" target="_blank" class="btn btn-primary btn-ghost rounded-lg">
           <i class="ri-external-link-line"></i>
         </a>
       </div>
@@ -67,7 +67,7 @@
           <span>Parallel</span>
         {% endif %}
       </div>
-      <div x-data="{ open: false }" class="card mt-2">
+      <div x-data="{ open: false }" class="card bg-base-300 mt-2">
         <button @click="open = !open" class="flex items-center justify-between w-full p-3 gap-3">
           <span>Training Details</span>
           <i x-show="!open" class="ri-arrow-down-s-line"></i>
@@ -78,7 +78,7 @@
             <a
               href="data:text/json;charset=utf-8,{{ episode.inference.checkpoint.training.config|pretty_json:2|safe|urlencode }}"
               download="training_{{ episode.inference.checkpoint.training.pk }}_config.json"
-              class="btn btn-accent px-2 py-1 rounded-lg"
+              class="btn btn-primary btn-ghost px-2 py-1 rounded-lg"
             >
               <i class="ri-download-line"></i>
             </a>
@@ -86,7 +86,7 @@
           <pre>{{ episode.inference.checkpoint.training.config|pretty_json:2 }}</pre>
         </div>
       </div>
-      <div x-show="Object.keys({{ episode.inference.config }}).length" x-data="{ open: false }" class="card mt-2">
+      <div x-show="Object.keys({{ episode.inference.config }}).length" x-data="{ open: false }" class="card bg-base-300 mt-2">
         <button @click="open = !open" class="flex items-center justify-between w-full p-3 gap-3">
           <span>Episode Details</span>
           <i x-show="!open" class="ri-arrow-down-s-line"></i>
@@ -97,7 +97,7 @@
             <a
               href="data:text/json;charset=utf-8,{{ episode.inference.config|pretty_json:2|safe|urlencode }}"
               download="episode_{{ episode.pk }}_config.json"
-              class="btn btn-accent px-2 py-1 rounded-lg"
+              class="btn btn-primary btn-ghost px-2 py-1 rounded-lg"
             >
               <i class="ri-download-line"></i>
             </a>

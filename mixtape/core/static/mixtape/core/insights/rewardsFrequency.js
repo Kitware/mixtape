@@ -5,24 +5,27 @@ document.addEventListener('alpine:init', () => {
       title: {text: 'Rewards VS Frequency'},
       xaxis: {
         title: {text: 'Reward'},
-        gridcolor: Alpine.store('theme').axis.gridcolor,
-        zerolinecolor: Alpine.store('theme').axis.zerolinecolor
+        gridcolor: Alpine.store('theme').gridColor,
+        linecolor: Alpine.store('theme').gridColor,
+        zeroline: false,
       },
       yaxis: {
         title: {text: 'Frequency'},
-        gridcolor: Alpine.store('theme').axis.gridcolor,
-        zerolinecolor: Alpine.store('theme').axis.zerolinecolor
+        gridcolor: Alpine.store('theme').gridColor,
+        linecolor: Alpine.store('theme').gridColor,
+        zeroline: false,
       },
       autosize: true,
       barmode: 'overlay',
-      showlegend: Alpine.store('insights').visOptions.includes('plotLegends'),
-      paper_bgcolor: Alpine.store('theme').paper_bgcolor,
-      plot_bgcolor: Alpine.store('theme').plot_bgcolor,
-      font: Alpine.store('theme').font,
+      showlegend: Alpine.store('settings').showPlotLegends,
+      paper_bgcolor: Alpine.store('theme').backgroundColor,
+      plot_bgcolor: Alpine.store('theme').backgroundColor,
+      font: {
+        color: Alpine.store('theme').fontColor
+      },
     },
     config: {
       displayModeBar: false,
-      responsive: true
     },
     plot: null,
     init() {
@@ -39,19 +42,20 @@ document.addEventListener('alpine:init', () => {
         });
       });
       this.plot = Plotly.newPlot(this.$refs.rewardsFrequency, this.data, this.layout, this.config);
-      this.$nextTick(() => { Plotly.Plots.resize(this.$refs.rewardsFrequency); });
-      window.addEventListener('resize', () => { Plotly.Plots.resize(this.$refs.rewardsFrequency); });
-      this.$watch('$store.insights.visOptions', () => {
+      this.$watch('$store.settings.showPlotLegends', () => {
         this.$nextTick(() => {
           Plotly.relayout(
             this.$refs.rewardsFrequency,
             {
               autosize: true,
-              showlegend: this.$store.insights.visOptions.includes('plotLegends')
+              showlegend: this.$store.settings.showPlotLegends
             })
         });
       });
-
     },
+    resizePlot: _.debounce(function() {
+      if (!this.$refs.rewardsFrequency.querySelector('.plotly')) return;
+      Plotly.Plots.resize(this.$refs.rewardsFrequency);
+    }, 200, {leading: true}),
   }));
 });

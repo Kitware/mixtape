@@ -5,20 +5,26 @@
       title: {text: 'Agent {{title}}'},
       height: 450,
       xaxis: {
-        showticklabels: false,
-        gridcolor: $store.theme.axis.gridcolor,
-        zerolinecolor: $store.theme.axis.zerolinecolor
+        gridcolor: $store.theme.gridColor,
+        linecolor: $store.theme.gridColor,
+        zeroline: false,
       },
       yaxis: {
-        showticklabels: false,
-        gridcolor: $store.theme.axis.gridcolor,
-        zerolinecolor: $store.theme.axis.zerolinecolor
+        gridcolor: $store.theme.gridColor,
+        linecolor: $store.theme.gridColor,
+        zeroline: false,
       },
-      paper_bgcolor: $store.theme.paper_bgcolor,
-      plot_bgcolor: $store.theme.plot_bgcolor,
-      font: $store.theme.font,
+      paper_bgcolor: $store.theme.backgroundColor,
+      plot_bgcolor: $store.theme.backgroundColor,
+      font: {
+        color: $store.theme.fontColor
+      },
     },
     plot: null,
+    resizePlot: _.debounce(function() {
+      if (!this.$refs.allManifolds.querySelector('.plotly')) return;
+      Plotly.Plots.resize(this.$refs.allManifolds);
+    }, 200, {leading: true}),
     buildPlot() {
       this.data = [];
       let agents = [];
@@ -76,21 +82,11 @@
         this.layout,
         { displayModeBar: false, responsive: true }
       );
-      this.$nextTick(() => {
-        Plotly.Plots.resize($refs.allManifolds);
-      });
-      window.addEventListener('resize', () => {
-        Plotly.Plots.resize($refs.allManifolds);
-      });
-      this.$watch('visOptions', () => {
+      this.$watch('$store.settings.showPlotLegends', () => {
         this.$nextTick(() => {
-          let showLegend = false;
-          if ($store.insights && Array.isArray($store.insights.visOptions)) {
-            showLegend = $store.insights.visOptions.includes('plotLegends')
-          };
           Plotly.relayout($refs.allManifolds, {
             autosize: true,
-            showlegend: showLegend,
+            showlegend: this.$store.settings.showPlotLegends,
           })
         });
       });
@@ -186,7 +182,7 @@
           textposition: textPosition,
           textfont: {
             size: 12,
-            color: $store.theme.font.color
+            color: $store.theme.fontColor
           },
           marker: {
             color: 'transparent',
@@ -200,6 +196,7 @@
       }
     }
   }"
+  x-resize="resizePlot"
   >
   <div
     class="skeleton h-[450px] w-full"

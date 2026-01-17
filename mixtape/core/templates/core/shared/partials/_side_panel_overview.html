@@ -1,174 +1,188 @@
-<aside x-data="insightsSidePanel()"
-       class="bg-[var(--color-surface)] text-[var(--color-surface-foreground)] rounded-lg p-3 w-full lg:w-auto lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-auto transition-all"
-       :class="collapsed ? 'px-1 py-2 w-12 overflow-hidden' : ''">
-  <div x-show="!collapsed" x-cloak>
-    <div class="flex items-center justify-between mb-2">
-      <span class="text-sm font-semibold tracking-wide">MIXTAPE</span>
-      <a href="/" class="btn btn-icon btn-accent" title="Home">
+<aside x-data="{ collapsed: false, settingsOpen: false }"
+       class="
+        bg-base-100
+        rounded-lg
+        shadow-md
+        p-3
+        w-auto
+        transition-all
+      "
+>
+  <button x-show="collapsed" x-cloak @click="collapsed = false"
+          class="btn btn-primary btn-ghost"
+          title="Expand" aria-expanded="false">
+    <i class="ri-menu-unfold-line"></i>
+  </button>
+
+  <div x-show="!collapsed" x-cloak class="w-2xs flex flex-col gap-2">
+    <header class="flex items-center justify-between">
+      <button @click="collapsed = true"
+              class="btn btn-primary btn-ghost"
+              title="Collapse" aria-expanded="true">
+        <i class="ri-menu-fold-line"></i>
+      </button>
+      <a href="{% url 'home' %}" class="btn btn-primary btn-ghost" title="Home">
         <i class="ri-home-4-line"></i>
+        <h2 class="text-sm font-semibold tracking-wide">MIXTAPE</h2>
       </a>
-    </div>
-    <hr class="border-[var(--color-border)] mb-2" />
-  </div>
-  <header class="flex items-center justify-between mb-3"
-          x-init="init()">
-    <h3 class="text-base font-semibold" x-show="!collapsed">Settings & Tools</h2>
-    <div class="flex items-end gap-2">
-      <button class="btn btn-icon btn-accent" x-show="!collapsed" x-cloak title="Settings" @click="toggleSettings()" :aria-expanded="settingsOpen">
-        <i class="ri-settings-3-line"></i>
-      </button>
-      <button class="btn btn-icon" :class="collapsed ? 'text-[var(--color-muted-foreground)]' : 'btn-accent'" title="Collapse"
-              @click="toggleCollapsed()" :aria-expanded="!collapsed">
-        <i class="ri-menu-fold-line" :class="collapsed ? 'rotate-180' : 'rotate-0'"></i>
-      </button>
-    </div>
-  </header>
+    </header>
 
-  <div x-show="!settingsOpen && !collapsed" x-cloak class="space-y-2">
-    <section class="card p-3">
-      <h3 class="text-sm font-medium mb-2">Selected Episodes</h3>
-      <ul class="text-sm space-y-1">
-        <template x-if="$store.insights && Array.isArray($store.insights.episodeSummaries) && $store.insights.episodeSummaries.length">
-          <template x-for="(ep, idx) in $store.insights.episodeSummaries" :key="idx">
-            <li class="flex items-center justify-between">
-              <span x-text="'Episode ' + (ep?.id ?? idx)"></span>
-            </li>
+    <div class="divider my-0"></div>
+
+    <header class="flex items-center justify-between">
+      <h2 class="text-base font-semibold">Settings & Tools</h2>
+      <button @click="settingsOpen = !settingsOpen"
+              class="btn btn-primary btn-ghost"
+              title="Settings" :aria-expanded="settingsOpen">
+        <i :class="settingsOpen ? 'ri-settings-3-fill' : 'ri-settings-3-line'"></i>
+      </button>
+    </header>
+
+    <section x-show="!settingsOpen" x-cloak class="card card-border border-base-300">
+      <div class="card-body">
+        <h3 class="card-title text-base">Selected Episodes</h3>
+        <ul class="list">
+          <template x-for="episodeSummary in $store.insights.episodeSummaries" :key="episodeSummary.id">
+            <li class="list-row" x-text="`Episode ${episodeSummary.id}`"></li>
           </template>
-        </template>
-      </ul>
-    </section>
-  </div>
-
-  <div class="space-y-3" x-show="!collapsed" x-cloak>
-    <section class="card p-3" x-show="settingsOpen" x-cloak>
-      <h3 class="text-sm font-medium mb-2">Playback</h3>
-      <div class="flex items-center gap-2">
-        <label class="text-sm w-24">Speed</label>
-        <input type="number" min="0.1" max="10" step="0.1"
-               class="form-input w-15 text-right"
-               :value="($store.insights && typeof $store.insights.playbackSpeed === 'number' ? $store.insights.playbackSpeed.toFixed(1) : '1.0')"
-               @change="updatePlaybackOnChange($event)"
-               @input="updatePlaybackOnInput($event)" />
-        <span class="text-sm">x Speed</span>
+        </ul>
       </div>
     </section>
 
-    <section class="card p-3" x-show="settingsOpen && $store.insights && Array.isArray($store.insights.episodeSummaries) && $store.insights.episodeSummaries.length > 1" x-cloak>
-      <h3 class="text-sm font-medium mb-2">Timeline</h3>
-        <div class="flex items-center gap-2 mb-2">
-          <label class="flex items-center gap-2 text-sm">
-            <input type="radio" name="timeline-mode" class="radio"
-                   :checked="$store.insights ? ($store.insights.useGlobalTimeline === true) : true"
-                   @change="setGlobalTimeline(true)" />
-            Use global timeline
-          </label>
-        </div>
-        <div class="flex items-center gap-2">
-          <label class="flex items-center gap-2 text-sm">
-            <input type="radio" name="timeline-mode" class="radio"
-                   :checked="$store.insights ? ($store.insights.useGlobalTimeline === false) : false"
-                   @change="setGlobalTimeline(false)" />
-            Use episode timeline
-          </label>
-          <select class="form-select"
-                  :class="(($store.insights && $store.insights.useGlobalTimeline !== false)
-                            ? 'opacity-50 cursor-not-allowed bg-[var(--color-muted)]'
-                            : '' )"
-                  :disabled="(!$store.insights) || ($store.insights.useGlobalTimeline !== false)"
-                  :value="$store.insights ? $store.insights.timelineEpisodeIdx : 0"
-                  @change="setTimelineEpisodeIdx($event)">
-            <template x-for="(ep, idx) in ($store.insights && Array.isArray($store.insights.episodeSummaries) ? $store.insights.episodeSummaries : [])" :key="idx">
-              <option :value="idx" x-text="'Episode ' + (ep?.id ?? idx)"></option>
-            </template>
-          </select>
-        </div>
+    <section x-show="settingsOpen" x-cloak class="card card-border border-base-300">
+      <div class="card-body">
+        <h3 class="card-title text-base">Playback</h3>
+        <label class="flex items-center gap-6 text-sm">
+          Speed
+          <span>
+            <input type="number" min="0.1" max="10" step="0.1"
+                   x-model.number="$store.settings.playbackSpeed"
+                   class="input input-sm validator w-15 text-right"
+            />
+            <span class="text-xs">x Speed</span>
+          </span>
+        </label>
+      </div>
     </section>
 
-    <section class="card p-3" x-show="settingsOpen" x-cloak>
-      <h3 class="text-sm font-medium mb-2">Visibility</h3>
-      <div class="space-y-3">
-        <div>
-          <h4 class="text-xs text-[var(--color-muted-foreground)] mb-1">Global</h4>
+    <section x-show="settingsOpen && $store.insights.episodeSummaries.length > 1" x-cloak class="card card-border border-base-300">
+      <div class="card-body">
+        <h3 class="card-title text-base">Timeline</h3>
+          <div class="flex items-center gap-2 mb-2">
+            <label class="flex items-center gap-2 text-sm">
+              <input type="radio" name="timeline-mode" value="true"
+                     x-model.boolean="$store.settings.useGlobalTimeline"
+                     class="radio radio-sm"
+              />
+              Use global timeline
+            </label>
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="flex items-center gap-2 text-sm">
+              <input type="radio" name="timeline-mode" value="false"
+                     x-model.boolean="$store.settings.useGlobalTimeline"
+                     class="radio radio-sm"
+              />
+              Use episode timeline
+            </label>
+            <select class="select select-sm w-36"
+                    :class="{ 'disabled': ! $store.settings.useGlobalTimeline }"
+                    :disabled="$store.settings.useGlobalTimeline"
+                    x-model.number="$store.settings.timelineEpisodeIdx"
+            >
+              <template x-for="(episodeSummary, idx) in $store.insights.episodeSummaries" :key="episodeSummary.id">
+                <option :value="idx" x-text="`Episode ${episodeSummary.id}`"></option>
+              </template>
+            </select>
+          </div>
+      </div>
+    </section>
+
+    <section x-show="settingsOpen" x-cloak class="card card-border border-base-300">
+      <div class="card-body">
+        <h3 class="card-title text-base">Visibility</h3>
+        <div class="flex flex-col gap-2">
+          <h4 class="text-xs opacity-60 mb-1">Global</h4>
           <div class="grid grid-cols-2 gap-2">
             <label class="flex items-center gap-2 text-sm">
-              <input type="checkbox" class="checkbox"
-                     :checked="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('showPlayback')"
-                     @change="$store.insights && $store.insights.toggleVis('showPlayback')" />
+              <input type="checkbox" x-model.boolean="$store.settings.showPlayback"
+                     class="checkbox checkbox-sm"
+              />
               Playback Controls
             </label>
             <label class="flex items-center gap-2 text-sm">
-              <input type="checkbox" class="checkbox"
-                     :checked="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('showEpisodeInfo')"
-                     @change="$store.insights && $store.insights.toggleVis('showEpisodeInfo')" />
+              <input type="checkbox" x-model.boolean="$store.settings.showEpisodeInfo"
+                     class="checkbox checkbox-sm"
+              />
               Episode Info
             </label>
             <label class="flex items-center gap-2 text-sm">
-              <input type="checkbox" class="checkbox"
-                     :checked="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('showMediaViewer')"
-                     @change="$store.insights && $store.insights.toggleVis('showMediaViewer')" />
+              <input type="checkbox" x-model.boolean="$store.settings.showMediaViewer"
+                     class="checkbox checkbox-sm"
+              />
               Media Viewer
             </label>
             <label class="flex items-center gap-2 text-sm">
-              <input type="checkbox" class="checkbox"
-                     :checked="$store.insights && Array.isArray($store.insights.visOptions) && $store.insights.visOptions.includes('showTimeline')"
-                     @change="$store.insights && $store.insights.toggleVis('showTimeline')" />
+              <input type="checkbox" x-model.boolean="$store.settings.showTimeline"
+                     class="checkbox checkbox-sm"
+              />
               Timeline
             </label>
             <label class="flex items-center gap-2 text-sm">
-              <input type="checkbox" class="checkbox"
-                     :checked="$store.insights && $store.insights.get('visOptions')?.includes('plotLegends')"
-                     @change="$store.insights.toggleVis('plotLegends')" />
+              <input type="checkbox" x-model.boolean="$store.settings.showPlotLegends"
+                     class="checkbox checkbox-sm"
+              />
               Plot Legends
             </label>
           </div>
         </div>
         <div>
-          <h4 class="text-xs text-[var(--color-muted-foreground)] mb-1">Overview</h4>
+          <h4 class="text-xs opacity-60 mb-1">Overview</h4>
           <div class="grid grid-cols-2 gap-2">
             <label class="flex items-center gap-2 text-sm">
-              <input type="checkbox" class="checkbox"
-                     :checked="$store.insights && $store.insights.get('visOptions')?.includes('actionRewardFrequency')"
-                     @change="$store.insights.toggleVis('actionRewardFrequency')" />
+              <input type="checkbox" x-model.boolean="$store.settings.showPlotActionRewardFrequency"
+                     class="checkbox checkbox-sm"
+              />
               Action vs Reward
             </label>
             <label class="flex items-center gap-2 text-sm">
-              <input type="checkbox" class="checkbox"
-                     :checked="$store.insights && $store.insights.get('visOptions')?.includes('rewardFrequency')"
-                     @change="$store.insights.toggleVis('rewardFrequency')" />
+              <input type="checkbox" x-model.boolean="$store.settings.showPlotRewardFrequency"
+                     class="checkbox checkbox-sm"
+              />
               Reward Frequency
             </label>
             <label class="flex items-center gap-2 text-sm">
-              <input type="checkbox" class="checkbox"
-                     :checked="$store.insights && $store.insights.get('visOptions')?.includes('actionFrequency')"
-                     @change="$store.insights.toggleVis('actionFrequency')" />
+              <input type="checkbox" x-model.boolean="$store.settings.showPlotActionFrequency"
+                     class="checkbox checkbox-sm"
+              />
               Action Frequency
             </label>
           </div>
         </div>
         <div>
-          <h4 class="text-xs text-[var(--color-muted-foreground)] mb-1">Rewards</h4>
+          <h4 class="text-xs opacity-60 mb-1">Rewards</h4>
           <div class="grid grid-cols-2 gap-2">
             <label class="flex items-center gap-2 text-sm">
-              <input type="checkbox" class="checkbox"
-                     :checked="$store.insights && $store.insights.get('visOptions')?.includes('rewardsOverTime')"
-                     @change="$store.insights.toggleVis('rewardsOverTime')" />
+              <input type="checkbox" x-model.boolean="$store.settings.showPlotRewardsTime"
+                     class="checkbox checkbox-sm"
+              />
               Rewards Over Time
             </label>
           </div>
         </div>
         <div>
-          <h4 class="text-xs text-[var(--color-muted-foreground)] mb-1">Agents</h4>
+          <h4 class="text-xs opacity-60 mb-1">Agents</h4>
           <div class="grid grid-cols-2 gap-2">
             <label class="flex items-center gap-2 text-sm">
-              <input type="checkbox" class="checkbox"
-                     :checked="$store.insights && $store.insights.get('visOptions')?.includes('obsClustering')"
-                     @change="$store.insights.toggleVis('obsClustering')" />
+              <input type="checkbox" x-model.boolean="$store.settings.showPlotObservationClustering"
+                     class="checkbox checkbox-sm"
+              />
               Observation Clustering
             </label>
             <label class="flex items-center gap-2 text-sm">
-              <input type="checkbox" class="checkbox"
-                     :checked="$store.insights && $store.insights.get('visOptions')?.includes('actionClustering')"
-                     @change="$store.insights.toggleVis('actionClustering')" />
+              <input type="checkbox" x-model.boolean="$store.settings.showPlotActionClustering"
+                     class="checkbox checkbox-sm"
+              />
               Action Clustering
             </label>
           </div>

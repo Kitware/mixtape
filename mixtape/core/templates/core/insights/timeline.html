@@ -1,27 +1,27 @@
-<div x-cloak class="flex">
+<section x-cloak class="border border-base-300 rounded-lg flex">
   <ol class="items-center flex p-1 w-full">
-    <li class="relative flex items-center"><div class="flex w-1 bg-[var(--color-accent)] h-6 ml-2"></div></li>
-    <template x-for="ts in (((useGlobalTimeline === true) && Array.isArray(timelineKeyStepsGlobal) && timelineKeyStepsGlobal.length)
+    <li class="relative flex items-center"><div class="flex w-1 bg-primary h-6 ml-2"></div></li>
+    <template x-for="ts in (($store.settings.useGlobalTimeline && timelineKeyStepsGlobal.length)
                               ? timelineKeyStepsGlobal
-                              : ((timelineKeySteps && timelineKeySteps[timelineEpisodeIdx])
-                                  ? timelineKeySteps[timelineEpisodeIdx]
+                              : ((timelineKeySteps && timelineKeySteps[$store.settings.timelineEpisodeIdx])
+                                  ? timelineKeySteps[$store.settings.timelineEpisodeIdx]
                                   : ((timelineKeySteps && timelineKeySteps[0]) ? timelineKeySteps[0] : [])))">
       <li class="relative w-full flex even:flex-col odd:flex-col-reverse even:mb-5 odd:mt-5" :key="ts.number">
         <p class="text-sm text-center" x-text="Number((ts.peak_total_rewards ?? ts.total_rewards) ?? 0).toFixed(2)"></p>
         <div class="flex items-center">
-            <div class="flex w-full bg-[var(--color-accent)] h-0.5"></div>
+            <div class="flex w-full bg-primary h-0.5"></div>
             <button
               class="cursor-pointer z-10 flex items-center justify-center w-2 h-2 rounded-full ring-4 shrink-0"
-              :class="currentStep === ts.number ? 'ring-[color-mix(in_oklab,var(--color-accent)_30%,white)] bg-[var(--color-accent)]' : 'ring-[var(--color-accent)]'"
+              :class="currentStep === ts.number ? 'ring-[var(--color-primary-content)] bg-primary' : 'ring-[var(--color-primary)]'"
               @click="currentStep = ts.number"
               :title="timelineTitle(ts)"
               :aria-label="timelineAria(ts)"
             >
             </button>
-            <div class="flex w-full bg-[var(--color-accent)] h-0.5"></div>
+            <div class="flex w-full bg-primary h-0.5"></div>
         </div>
       </li>
     </template>
-    <li class="relative flex items-center"><div class="flex w-1 bg-[var(--color-accent)] h-6 mr-2"></div></li>
+    <li class="relative flex items-center"><div class="flex w-1 bg-primary h-6 mr-2"></div></li>
   </ol>
-</div>
+</section>
