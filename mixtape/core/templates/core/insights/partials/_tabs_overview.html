@@ -233,21 +233,15 @@
     </div>
     <!-- Toast notification -->
     <div
-      class="fixed bottom-4 right-4 z-50"
+      class="toast"
       x-show="showToast"
       x-transition
       x-cloak
       role="status"
       aria-live="polite"
     >
-      <div
-        class="
-          flex items-center gap-2 px-3 py-2
-          bg-[var(--color-surface)] text-[var(--color-surface-foreground)]
-          border border-[var(--color-border)] rounded-md shadow-lg
-        "
-      >
-        <i class="ri-check-line text-[var(--color-accent)]"></i>
+      <div role="alertdialog" class="alert alert-info alert-soft">
+        <i class="ri-check-line"></i>
         <span x-text="toastText"></span>
         <button
           type="button"
