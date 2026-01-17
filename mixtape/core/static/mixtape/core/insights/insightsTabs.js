@@ -162,17 +162,14 @@ document.addEventListener('alpine:init', () => {
       return c >= 3 ? 'lg:grid-cols-3' : (c === 2 ? 'lg:grid-cols-2' : 'lg:grid-cols-1');
     },
     maxStepsTooltip() {
-      const numEpSummaries = Array.isArray(this.episodeSummaries) ? this.episodeSummaries.length : 0;
-      if (numEpSummaries <= 1) {
-        const steps = this.episodeSummaries?.[0]?.steps ?? null;
-        return `Total Steps: ${steps ?? '—'}`;
+      if (this.episodeSummaries.length <= 1) {
+        return `Total Steps: ${this.episodeSummaries[0].steps ?? '—'}`;
       }
-      const lines = [`Max Steps: ${this.maxStepsCount ?? '—'}`];
-      for (let i = 0; i < numEpSummaries; i++) {
-        const steps = this.episodeSummaries?.[i]?.steps ?? '—';
-        lines.push(`Ep ${i + 1}: ${steps}`);
-      }
-      return lines.join('\n');
+      return [
+        `Max Steps: ${this.maxStepsCount ?? '—'}`,
+        ...this.episodeSummaries
+          .map((episodeSummary) => `Ep ${episodeSummary.id}: ${episodeSummary.steps ?? '-'}`)
+      ].join('\n');
     },
     timelineTitle(ts) {
       if (Array.isArray(ts?.episodes)) {
