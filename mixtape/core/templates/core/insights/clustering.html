@@ -27,21 +27,15 @@
     }, 200, {leading: true}),
     buildPlot() {
       this.data = [];
-      let agents = [];
-      if ($store.insights && Array.isArray($store.insights.uniqueAgents)) {
-        agents = $store.insights.uniqueAgents
-      };
-      let episodes = [];
-      if ($store.insights && Array.isArray($store.insights.episodeIds)) {
-        episodes = $store.insights.episodeIds
-      };
+      let agents = $store.insights.uniqueAgents;
+      let episodes = $store.insights.episodeIds;
       let clustering = null;
-      if ($store.insights && $store.insights.clustering) {
+      if ($store.insights.clustering) {
         clustering = $store.insights.clustering
       };
       if (!clustering || !clustering[{{key}}]) return;
       for (let agentIdx = 0; agentIdx < agents.length; agentIdx++) {
-        clustering[{{key}}].episodeManifolds.forEach((episodeManifold, episodeIdx) => {
+        clustering[{{key}}].episode_manifolds.forEach((episodeManifold, episodeIdx) => {
           const xCoords = [];
           const yCoords = [];
           episodeManifold.forEach(row => {
@@ -93,32 +87,22 @@
     },
   }"
   x-init="
-    if ($store.insights && $store.insights.clustering && $store.insights.clustering[{{key}}]) {
+    if ($store.insights.clustering && $store.insights.clustering[{{key}}]) {
       buildPlot();
     };
     $watch(
-      () => $store.insights && $store.insights.clustering && $store.insights.clustering[{{key}}],
+      () => $store.insights.clustering && $store.insights.clustering[{{key}}],
       (v) => { if (v) { buildPlot(); } }
     );
   "
   x-effect="() => {
-    if (!this.plot
-        && $store.insights
-        && $store.insights.clustering && $store.insights.clustering[{{key}}]
-      ) { buildPlot(); }
+    if (!this.plot && $store.insights.clustering && $store.insights.clustering[{{key}}]) {
+      buildPlot();
+    }
     if (this.plot) {
-      let numAgents = 0;
-      if ($store.insights && Array.isArray($store.insights.uniqueAgents)) {
-        numAgents = $store.insights.uniqueAgents.length;
-      }
-      let numEpisodes = 0;
-      if ($store.insights && Array.isArray($store.insights.episodeIds)) {
-        numEpisodes = $store.insights.episodeIds.length;
-      }
-      let currentStep = 0;
-      if ($store.insights && typeof $store.insights.currentStep === 'number') {
-        currentStep = $store.insights.currentStep;
-      }
+      let numAgents = $store.insights.uniqueAgents.length;
+      let numEpisodes = $store.insights.episodeIds.length;
+      let currentStep = $store.insights.currentStep;
 
       // Get the current plot data
       const plotElement = $refs.allManifolds;
@@ -145,14 +129,8 @@
           ) {
             highlightX.push(agentTrace.x[currentStep]);
             highlightY.push(agentTrace.y[currentStep]);
-            let agents = [];
-            if ($store.insights && Array.isArray($store.insights.uniqueAgents)) {
-              agents = $store.insights.uniqueAgents;
-            }
-            let episodes = [];
-            if ($store.insights && Array.isArray($store.insights.episodeIds)) {
-              episodes = $store.insights.episodeIds;
-            }
+            let agents = $store.insights.uniqueAgents;
+            let episodes = $store.insights.episodeIds;
             highlightText.push(`${agents[agentIdx]} Episode ${episodes[episodeIdx]}`);
           }
         }
@@ -200,13 +178,13 @@
   >
   <div
     class="skeleton h-[450px] w-full"
-    x-show="!($store.insights && $store.insights.clustering && $store.insights.clustering[{{key}}])"
+    x-show="!($store.insights.clustering && $store.insights.clustering[{{key}}])"
     x-cloak
   ></div>
   <div
     x-ref="allManifolds"
     class="w-full"
-    x-show="$store.insights && $store.insights.clustering && $store.insights.clustering[{{key}}]"
+    x-show="$store.insights.clustering && $store.insights.clustering[{{key}}]"
     x-cloak
   ></div>
 </div>

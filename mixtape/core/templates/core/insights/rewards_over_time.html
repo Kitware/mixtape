@@ -25,8 +25,8 @@
       annotations: [
         {
           x: currentStep,
-          y: rewardsOverTime[0][currentStep],
-          text: rewardsOverTime[0][currentStep].toFixed(2),
+          y: $store.insights.rewardsOverTime[0][currentStep],
+          text: $store.insights.rewardsOverTime[0][currentStep].toFixed(2),
         }
       ],
     },
@@ -47,12 +47,12 @@
     },
   }"
   x-init="
-    rewardsOverTime.forEach((episode, idx) => {
+    $store.insights.rewardsOverTime.forEach((episode, idx) => {
       data.push({
         x: Array.from({length: episode.length}, (_, i) => i),
         y: episode,
         type: 'scatter',
-        name: `Episode ${episodeIds[idx]}`,
+        name: `Episode ${$store.insights.episodeIds[idx]}`,
         marker: {
           line: {
             width: 2
@@ -62,7 +62,7 @@
     });
     data.push({
       x: [currentStep, currentStep],
-      y: [0, Math.max(...rewardsOverTime.flat())],
+      y: [0, Math.max(...$store.insights.rewardsOverTime.flat())],
       type: 'scatter',
       mode: 'lines',
       line: {
@@ -88,16 +88,16 @@
     if (this.plot) {
       Plotly.update($refs.rewardsOverTime, {
         x: [[currentStep, currentStep]],
-        y: [[Math.min(...rewardsOverTime.flat()), Math.max(...rewardsOverTime.flat())]]
+        y: [[Math.min(...$store.insights.rewardsOverTime.flat()), Math.max(...$store.insights.rewardsOverTime.flat())]]
       }, {
-        annotations: rewardsOverTime.map((episode, idx) => {
+        annotations: $store.insights.rewardsOverTime.map((episode, idx) => {
           return {
             x: getStep(episode),
             y: episode[getStep(episode)],
             text: episode[getStep(episode)].toFixed(2),
           }
         })
-      }, [rewardsOverTime.length]);
+      }, [$store.insights.rewardsOverTime.length]);
     }"
   x-resize="resizePlot"
 >

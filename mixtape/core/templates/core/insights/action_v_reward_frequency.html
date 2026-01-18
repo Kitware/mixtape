@@ -15,7 +15,7 @@
         zeroline: false,
       },
       autosize: true,
-      barmode: Object.keys(actionVReward).length > 1 ? 'group' : 'stack',
+      barmode: Object.keys($store.insights.actionVReward).length > 1 ? 'group' : 'stack',
       showlegend: $store.settings.showPlotLegends,
       paper_bgcolor: $store.theme.backgroundColor,
       plot_bgcolor: $store.theme.backgroundColor,
@@ -27,14 +27,14 @@
       displayModeBar: false,
     },
     plot: null,
-    actionVReward: Object.keys(actionVReward).length > 1 ? actionVReward : Object.values(actionVReward)[0],
+    actionVReward: Object.keys($store.insights.actionVReward).length > 1 ? $store.insights.actionVReward : Object.values($store.insights.actionVReward)[0],
     resizePlot: _.debounce(function() {
       if (!this.$refs.actionsRewards.querySelector('.plotly')) return;
       Plotly.Plots.resize(this.$refs.actionsRewards);
     }, 200, {leading: true}),
   }"
   x-init="
-    data = Object.entries(actionVReward).map(([grouping, values]) => ({
+    data = Object.entries($store.insights.actionVReward).map(([grouping, values]) => ({
       x: Object.keys(values),
       y: Object.values(values),
       type: 'bar',

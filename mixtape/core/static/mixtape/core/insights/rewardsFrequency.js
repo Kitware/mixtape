@@ -29,11 +29,11 @@ document.addEventListener('alpine:init', () => {
     },
     plot: null,
     init() {
-      this.rewardHistogram.forEach((episode, idx) => {
+      this.$store.insights.rewardHistogram.forEach((episode, idx) => {
         this.data.push({
           x: episode,
           type: 'histogram',
-          name: `Episode ${this.episodeIds[idx]}`,
+          name: `Episode ${this.$store.insights.episodeIds[idx]}`,
           marker: {
             line: {
               width: 2

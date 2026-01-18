@@ -46,7 +46,7 @@ document.addEventListener('alpine:init', () => {
     },
     initPlot() {
       // Plot decomposed rewards for each episode
-      this.decomposedRewards.forEach((episodeRewards, episodeIdx) => {
+      this.$store.insights.decomposedRewards.forEach((episodeRewards, episodeIdx) => {
         Object.keys(episodeRewards).forEach((rewardType, rewardIdx) => {
           const rewardData = episodeRewards[rewardType];
           this.data.push({
@@ -54,13 +54,13 @@ document.addEventListener('alpine:init', () => {
             y: rewardData,
             type: 'scatter',
             mode: 'lines',
-            name: `Episode ${this.episodeIds[episodeIdx]} - ${rewardType}`,
+            name: `Episode ${this.$store.insights.episodeIds[episodeIdx]} - ${rewardType}`,
           });
         });
       });
 
       // Calculate overall min and max Y values from all data
-      const allYValues = this.decomposedRewards.flatMap(episodeRewards =>
+      const allYValues = this.$store.insights.decomposedRewards.flatMap(episodeRewards =>
         Object.values(episodeRewards).flatMap(rewardData => rewardData)
       );
 
@@ -94,8 +94,8 @@ document.addEventListener('alpine:init', () => {
       }];
     },
     createAnnotations() {
-      const episodeCount = Object.keys(this.decomposedRewards).length;
-      const annotations = this.decomposedRewards.flatMap((episodeRewards, episodeIdx) => {
+      const episodeCount = Object.keys(this.$store.insights.decomposedRewards).length;
+      const annotations = this.$store.insights.decomposedRewards.flatMap((episodeRewards, episodeIdx) => {
         const componentCount = Object.keys(episodeRewards).length;
         const offset = 40 / (componentCount * episodeCount);
         return Object.entries(episodeRewards).map(([rewardType, rewardData]) => {
@@ -124,7 +124,7 @@ document.addEventListener('alpine:init', () => {
         // Calculate overall min and max Y values from all data
         let allYValues = [];
         // Get all Y values from decomposed rewards
-        this.decomposedRewards.forEach(episodeRewards => {
+        this.$store.insights.decomposedRewards.forEach(episodeRewards => {
           Object.values(episodeRewards).forEach(rewardData => {
             allYValues = allYValues.concat(rewardData);
           });

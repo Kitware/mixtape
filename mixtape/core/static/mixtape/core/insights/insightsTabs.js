@@ -2,22 +2,8 @@ document.addEventListener('alpine:init', () => {
   Alpine.data('insightsTabs', () => ({
     // initial state
     active: 'Overview',
-    parsedData: null,
-    clustering: null,
-    episodesCount: null,
-    agentsCount: null,
     maxStepsCount: null,
     avgRewardDisplay: null,
-    actionVReward: {},
-    rewardHistogram: [],
-    actionVFrequency: {},
-    rewardsOverTime: [],
-    decomposedRewards: [],
-    uniqueAgents: [],
-    episodeIds: [],
-    stepData: [],
-    timelineKeySteps: [],
-    timelineKeyStepsGlobal: [],
     currentStep: 0,
     maxSteps: 0,
     maxStepsGlobal: 0,
@@ -27,8 +13,6 @@ document.addEventListener('alpine:init', () => {
     limitToEpisode: false,
     debug: false,
     playing: false,
-    multiKey: '',
-    clusteringAvailable: false,
     pollTimer: null,
     showToast: false,
     toastText: '',
@@ -42,41 +26,15 @@ document.addEventListener('alpine:init', () => {
     pollBeforeUnloadHandler: null,
 
     init() {
-      // Parse JSON data
-      this.parsedData = JSON.parse(
-        document.getElementById('parsed_data_json')?.textContent || 'null'
-      );
-      this.clustering = JSON.parse(
-        document.getElementById('clustering_json')?.textContent || 'null'
-      );
-      this.multiKey = JSON.parse(
-        document.getElementById('clustering_multi_key')?.textContent || '""'
-      );
-      this.clusteringAvailable = JSON.parse(
-        document.getElementById('clustering_available_json')?.textContent || 'false'
-      );
-      this.episodeIds = this.parsedData?.episode_ids ?? [];
-      this.uniqueAgents = this.parsedData?.unique_agents ?? [];
-      this.rewardsOverTime = this.parsedData?.rewards_over_time ?? [];
-      this.decomposedRewards = this.parsedData?.decomposed_rewards ?? [];
-      this.actionVReward = this.parsedData?.action_v_reward ?? {};
-      this.rewardHistogram = this.parsedData?.reward_histogram ?? [];
-      this.actionVFrequency = this.parsedData?.action_v_frequency ?? {};
-      this.stepData = this.parsedData?.step_data ?? [];
-      this.timelineKeySteps = this.parsedData?.timeline_key_steps ?? [];
-      this.timelineKeyStepsGlobal = this.parsedData?.timeline_key_steps_global ?? [];
-      this.episodesCount = Array.isArray(this.episodeIds) ? this.episodeIds.length : null;
-      this.agentsCount = Array.isArray(this.uniqueAgents) ? this.uniqueAgents.length : null;
-      this.maxStepsGlobal = (this.parsedData?.max_steps ?? 1) - 1;
+      this.maxStepsGlobal = (this.$store.insights.parsedData?.max_steps ?? 1) - 1;
       this.maxSteps = this.maxStepsGlobal;
 
       // Average reward
-      const avgReward = this.computeAverageReward(this.parsedData);
+      const avgReward = this.computeAverageReward(this.$store.insights.parsedData);
       this.avgRewardDisplay = (avgReward ?? null) !== null ? Number(avgReward).toFixed(2) : null;
 
       // Episode summary
-      this.episodeSummaries = (Array.isArray(this.episodeIds) ? this.episodeIds : [])
-        .map((id, idx) => this.summarizeEpisode(idx, id));
+      this.episodeSummaries = this.$store.insights.episodeIds.map((id, idx) => this.summarizeEpisode(idx, id));
 
       // Max steps count (for multi-episode mode)
       this.maxStepsCount = (() => {
@@ -111,23 +69,16 @@ document.addEventListener('alpine:init', () => {
         // Push derived values
         store.currentStep = this.currentStep;
         store.episodeSummaries = this.episodeSummaries;
-        store.multiKey = this.multiKey;
-        store.clusteringAvailable = this.clusteringAvailable;
-        store.clustering = this.clustering;
       }
       // push changes
       this.$watch('episodeSummaries', v => { Alpine.store('insights').episodeSummaries = v; });
       this.$watch('currentStep', v => { Alpine.store('insights').currentStep = v; });
-      this.$watch('clustering', (v) => {
-        const store = (window.Alpine && Alpine.store('insights')) || null;
-        if (store) store.clustering = v;
-      });
 
       // Polling: multi-episode artifact or single-episode partials
-      const isMulti = Array.isArray(this.episodeIds) && this.episodeIds.length > 1;
-      const isSingle = Array.isArray(this.episodeIds) && this.episodeIds.length === 1;
-      if ((isMulti && !this.clustering && this.multiKey)
-          || (isSingle && (!this.clustering || !this.clustering?.obs || !this.clustering?.agent_outs))) {
+      const isMulti = this.$store.insights.episodeIds.length > 1;
+      const isSingle = this.$store.insights.episodeIds.length === 1;
+      if ((isMulti && !this.$store.insights.clustering && this.$store.insights.multiKey)
+          || (isSingle && (!this.$store.insights.clustering || !this.$store.insights.clustering?.obs || !this.$store.insights.clustering?.agent_outs))) {
         this.startClusteringPolling();
       }
     },
@@ -175,7 +126,7 @@ document.addEventListener('alpine:init', () => {
 
     // helpers for templates
     getEpisodeStepIndex(epIdx) {
-      const steps = this.stepData?.[epIdx] || {};
+      const steps = this.$store.insights.stepData?.[epIdx] || {};
       const keys = Object.keys(steps);
       if (!keys.length) return null;
       const nums = keys.map(k => +k).sort((a,b) => a - b);
@@ -186,7 +137,7 @@ document.addEventListener('alpine:init', () => {
     getEpisodeStepData(epIdx) {
       const idx = this.getEpisodeStepIndex(epIdx);
       if (idx === null) return null;
-      const steps = this.stepData?.[epIdx] || {};
+      const steps = this.$store.insights.stepData?.[epIdx] || {};
       return steps[idx] ?? steps[String(idx)] ?? null;
     },
     // Compatibility alias used by some templates
@@ -251,13 +202,10 @@ document.addEventListener('alpine:init', () => {
       return null;
     },
     summarizeEpisode(idx, id) {
-      const allRewards = Array.isArray(this.rewardsOverTime[idx]) ? this.rewardsOverTime[idx] : [];
+      const allRewards = this.$store.insights.rewardsOverTime[idx];
       const steps = allRewards.length || null;
       const perStep = allRewards.filter(rewards => typeof rewards === 'number');
-      let totalReward = null;
-      if (Array.isArray(this.parsedData?.episode_total_rewards)) {
-        totalReward = typeof this.parsedData.episode_total_rewards[idx] === 'number' ? this.parsedData.episode_total_rewards[idx] : null;
-      }
+      let totalReward = this.$store.insights.parsedData.episode_total_rewards[idx];
       if (totalReward === null && allRewards.length) {
         totalReward = this.totalFromSeries(allRewards);
       }
@@ -297,24 +245,24 @@ document.addEventListener('alpine:init', () => {
       if (this.pollBeforeUnloadHandler) { window.removeEventListener('beforeunload', this.pollBeforeUnloadHandler); this.pollBeforeUnloadHandler = null; }
     },
     async checkClusteringStatus() {
-      const isMulti = !!this.multiKey && Array.isArray(this.episodeIds) && this.episodeIds.length > 1;
+      const isMulti = !!this.$store.insights.multiKey && this.$store.insights.episodeIds.length > 1;
       if (isMulti) {
         const resp = await fetch(
-          `/api/v1/clustering/status/?multi_key=${encodeURIComponent(this.multiKey)}`,
+          `/api/v1/clustering/status/?multi_key=${encodeURIComponent(this.$store.insights.multiKey)}`,
           { credentials: 'same-origin' }
         );
         if (!resp.ok) return;
         const data = await resp.json();
         if (data && data.available) {
-          this.clusteringAvailable = true;
+          this.$store.insights.clusteringAvailable = true;
           await this.fetchClusteringResult();
           this.stopClusteringPolling();
         }
         return;
       }
-      const isSingle = Array.isArray(this.episodeIds) && this.episodeIds.length === 1;
+      const isSingle = this.$store.insights.episodeIds.length === 1;
       if (isSingle) {
-        const eid = this.episodeIds[0];
+        const eid = this.$store.insights.episodeIds[0];
         const resp = await fetch(
           `/api/v1/clustering/status/?episode_id=${encodeURIComponent(eid)}`,
           { credentials: 'same-origin' }
@@ -326,21 +274,21 @@ document.addEventListener('alpine:init', () => {
           await this.fetchClusteringResult();
         }
         if (data.available) {
-          this.clusteringAvailable = true;
+          this.$store.insights.clusteringAvailable = true;
           this.stopClusteringPolling();
         }
       }
     },
     async fetchClusteringResult() {
       let resp = null;
-      const isMulti = !!this.multiKey && Array.isArray(this.episodeIds) && this.episodeIds.length > 1;
+      const isMulti = !!this.$store.insights.multiKey && this.$store.insights.episodeIds.length > 1;
       if (isMulti) {
         resp = await fetch(
-          `/api/v1/clustering/result/?multi_key=${encodeURIComponent(this.multiKey)}`,
+          `/api/v1/clustering/result/?multi_key=${encodeURIComponent(this.$store.insights.multiKey)}`,
           { credentials: 'same-origin' }
         );
-      } else if (Array.isArray(this.episodeIds) && this.episodeIds.length === 1) {
-        const eid = this.episodeIds[0];
+      } else if (this.$store.insights.episodeIds.length === 1) {
+        const eid = this.$store.insights.episodeIds[0];
         resp = await fetch(
           `/api/v1/clustering/result/?episode_id=${encodeURIComponent(eid)}`,
           { credentials: 'same-origin' }
@@ -348,10 +296,10 @@ document.addEventListener('alpine:init', () => {
       }
       if (!resp || !resp.ok) return;
       const obj = await resp.json();
-      this.clustering = obj;
+      this.$store.insights.clustering = obj;
       const store = (window.Alpine && Alpine.store('insights')) || null;
       if (store) store.clustering = obj;
-      if (this.clustering && ((this.clustering.obs && this.clustering.agent_outs) || isMulti)) {
+      if (this.$store.insights.clustering && ((this.$store.insights.clustering.obs && this.$store.insights.clustering.agent_outs) || isMulti)) {
         this.toastText = 'Clustering computation completed';
         this.showToast = true;
         if (this.toastTimer) { clearTimeout(this.toastTimer); }

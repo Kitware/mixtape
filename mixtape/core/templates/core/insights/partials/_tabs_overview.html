@@ -50,24 +50,21 @@
         <span
           class="ml-2 loading loading-spinner loading-xs text-primary"
           x-show="
-            Array.isArray(episodeIds)
-            && (
-              (episodeIds.length > 1 && !clustering)
-              || (episodeIds.length === 1 && (!clustering || !clustering?.obs || !clustering?.agent_outs))
-            )
+            ($store.insights.episodeIds.length > 1 && !$store.insights.clustering)
+            || ($store.insights.episodeIds.length === 1 && (!$store.insights.clustering || !$store.insights.clustering?.obs || !$store.insights.clustering?.agent_outs))
           "
           x-cloak
         ></span>
       </button>
     </div>
     <div class="flex items-center gap-2 flex-wrap">
-      <span class="badge badge-soft badge-primary" :title="`${episodesCount ?? '—'} Episodes`">
+      <span class="badge badge-soft badge-primary" :title="`${$store.insights.episodeIds.length} Episodes`">
         <i class="ri-checkbox-multiple-blank-line"></i>
-        <span class="font-semibold" x-text="episodesCount ?? '—'"></span>
+        <span class="font-semibold" x-text="$store.insights.episodeIds.length"></span>
       </span>
-      <span class="badge badge-soft badge-primary" :title="`${agentsCount ?? '—'} Agents`">
+      <span class="badge badge-soft badge-primary" :title="`${$store.insights.uniqueAgents.length} Agents`">
         <i class="ri-robot-2-line"></i>
-        <span class="font-semibold" x-text="agentsCount ?? '—'"></span>
+        <span class="font-semibold" x-text="$store.insights.uniqueAgents.length"></span>
       </span>
       <span class="badge badge-soft badge-primary" :title="`Avg Reward: ${avgRewardDisplay ?? '—'}`">
         <i class="ri-trophy-line"></i>
@@ -144,8 +141,7 @@
             class="flex justify-center"
             style="height: calc(100% - 20px);"
             x-show="
-              Array.isArray(episodeIds)
-              && ((episodeIds.length > 1 && !clustering) || (episodeIds.length === 1 && !(clustering && clustering.obs)))
+              ($store.insights.episodeIds.length > 1 && !$store.insights.clustering) || ($store.insights.episodeIds.length === 1 && !($store.insights.clustering && $store.insights.clustering.obs))
             "
             x-cloak
           >
@@ -165,8 +161,7 @@
             class="flex justify-center"
             style="height: calc(100% - 20px);"
             x-show="
-              Array.isArray(episodeIds)
-              && ((episodeIds.length > 1 && !clustering) || (episodeIds.length === 1 && !(clustering && clustering.agent_outs)))
+              ($store.insights.episodeIds.length > 1 && !$store.insights.clustering) || ($store.insights.episodeIds.length === 1 && !($store.insights.clustering && $store.insights.clustering.agent_outs))
             "
             x-cloak
           >

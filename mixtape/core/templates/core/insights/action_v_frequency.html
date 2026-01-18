@@ -3,7 +3,7 @@
     layout: {
       title: {text: 'Actions VS Frequency'},
       autosize: true,
-      barmode: Object.keys(actionVFrequency).length > 1 ? 'group' : 'stack',
+      barmode: Object.keys($store.insights.actionVFrequency).length > 1 ? 'group' : 'stack',
       showlegend: $store.settings.showPlotLegends,
       paper_bgcolor: $store.theme.backgroundColor,
       plot_bgcolor: $store.theme.backgroundColor,
@@ -25,14 +25,14 @@
       displayModeBar: false,
     },
     plot: null,
-    actionVFrequency: Object.keys(actionVFrequency).length > 1 ? actionVFrequency : Object.values(actionVFrequency)[0],
+    actionVFrequency: Object.keys($store.insights.actionVFrequency).length > 1 ? $store.insights.actionVFrequency : Object.values($store.insights.actionVFrequency)[0],
     resizePlot: _.debounce(function() {
       if (!this.$refs.actionsFrequency.querySelector('.plotly')) return;
       Plotly.Plots.resize(this.$refs.actionsFrequency);
     }, 200, {leading: true}),
   }"
   x-init="
-    Object.entries(actionVFrequency).forEach(([grouping, values]) => {
+    Object.entries($store.insights.actionVFrequency).forEach(([grouping, values]) => {
       data.push({
         x: Object.keys(values),
         y: Object.values(values),
