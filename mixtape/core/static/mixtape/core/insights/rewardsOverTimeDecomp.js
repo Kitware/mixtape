@@ -82,8 +82,8 @@ document.addEventListener('alpine:init', () => {
 
       return [{
         type: 'line',
-        x0: this.currentStep,
-        x1: this.currentStep,
+        x0: this.$store.insights.currentStep,
+        x1: this.$store.insights.currentStep,
         y0: minY,
         y1: maxY,
         line: {
@@ -99,10 +99,10 @@ document.addEventListener('alpine:init', () => {
         const componentCount = Object.keys(episodeRewards).length;
         const offset = 40 / (componentCount * episodeCount);
         return Object.entries(episodeRewards).map(([rewardType, rewardData]) => {
-          const currentValue = rewardData[this.currentStep] || rewardData[rewardData.length - 1];
+          const currentValue = rewardData[this.$store.insights.currentStep] || rewardData[rewardData.length - 1];
 
           return {
-            x: this.currentStep,
+            x: this.$store.insights.currentStep,
             y: currentValue,
             text: currentValue.toFixed(2),
             showarrow: true,

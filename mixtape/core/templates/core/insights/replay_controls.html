@@ -1,15 +1,15 @@
 <section class="flex items-center justify-center w-full gap-2 px-2 py-1 border border-base-300 rounded-lg">
   <button
     class="btn btn-ghost btn-sm"
-    :disabled="currentStep === 0"
-    @click="currentStep = 0"
+    :disabled="$store.insights.currentStep === 0"
+    @click="$store.insights.currentStep = 0"
   >
     <i class="ri-rewind-start-line"></i>
   </button>
   <button
     class="btn btn-ghost btn-sm"
-    :disabled="currentStep === 0"
-    @click="currentStep--"
+    :disabled="$store.insights.currentStep === 0"
+    @click="$store.insights.currentStep--"
   >
     <i class="ri-rewind-line"></i>
   </button>
@@ -22,15 +22,15 @@
   </button>
   <button
     class="btn btn-ghost btn-sm"
-    :disabled="currentStep === maxSteps"
-    @click="currentStep++"
+    :disabled="$store.insights.currentStep === maxSteps"
+    @click="$store.insights.currentStep++"
   >
     <i class="ri-speed-line"></i>
   </button>
   <button
     class="btn btn-ghost btn-sm"
-    :disabled="currentStep === maxSteps"
-    @click="currentStep = maxSteps"
+    :disabled="$store.insights.currentStep === maxSteps"
+    @click="$store.insights.currentStep = maxSteps"
   >
     <i class="ri-forward-end-line"></i>
   </button>
@@ -41,7 +41,7 @@
       class="input input-sm validator w-16 text-center"
       min="0"
       :max="maxStepsGlobal"
-      x-model.number="currentStep"
+      x-model.number="$store.insights.currentStep"
     />
     <span class="text-xs">/ <span x-text="maxStepsGlobal"></span></span>
   </div>

@@ -40,10 +40,7 @@
             return row;
           })
         : agentStepClusters;
-      let currentStepVal = 0;
-      if ($store.insights && typeof $store.insights.currentStep === 'number') {
-        currentStepVal = $store.insights.currentStep;
-      }
+      let currentStepVal = $store.insights.currentStep;
       const yVal = Array.isArray(agentStepClusters)
         ? agentStepClusters.length - 1
         : 1;
@@ -131,9 +128,7 @@
       const agentsNow = zNow.length;
       const yMin = 0;
       const yMax = Math.max(0, (agentsNow || 1) - 1);
-      const step = (
-        $store.insights && typeof $store.insights.currentStep === 'number'
-      ) ? $store.insights.currentStep : currentStep;
+      const step = $store.insights.currentStep;
       const xLine = [step, step];
       const yLine = [yMin - 0.5, yMax + 0.5];
       // Use restyle: arguments must be arrays-of-arrays per selected trace

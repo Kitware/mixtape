@@ -4,7 +4,6 @@ document.addEventListener('alpine:init', () => {
     active: 'Overview',
     maxStepsCount: null,
     avgRewardDisplay: null,
-    currentStep: 0,
     maxSteps: 0,
     maxStepsGlobal: 0,
     episodeSummaries: [],
@@ -67,12 +66,10 @@ document.addEventListener('alpine:init', () => {
       const store = (window.Alpine && Alpine.store('insights')) || null;
       if (store) {
         // Push derived values
-        store.currentStep = this.currentStep;
         store.episodeSummaries = this.episodeSummaries;
       }
       // push changes
       this.$watch('episodeSummaries', v => { Alpine.store('insights').episodeSummaries = v; });
-      this.$watch('currentStep', v => { Alpine.store('insights').currentStep = v; });
 
       // Polling: multi-episode artifact or single-episode partials
       const isMulti = this.$store.insights.episodeIds.length > 1;
@@ -85,10 +82,10 @@ document.addEventListener('alpine:init', () => {
 
     stepForward() {
       if (!this.playing) return;
-      if (this.currentStep < this.maxSteps) {
+      if (this.$store.insights.currentStep < this.maxSteps) {
         const delay = Math.max(50, Math.round(500 / (this.$store.settings.playbackSpeed || 1)));
-        setTimeout(() => { this.currentStep++; this.stepForward(); }, delay);
-      } else { this.playing = false; this.currentStep = 0; }
+        setTimeout(() => { this.$store.insights.currentStep++; this.stepForward(); }, delay);
+      } else { this.playing = false; this.$store.insights.currentStep = 0; }
     },
     updateMaxSteps() {
       if (this.limitToEpisode) {
@@ -131,7 +128,7 @@ document.addEventListener('alpine:init', () => {
       if (!keys.length) return null;
       const nums = keys.map(k => +k).sort((a,b) => a - b);
       let chosen = nums[0];
-      for (let i = 0; i < nums.length; i++) { if (nums[i] <= this.currentStep) chosen = nums[i]; else break; }
+      for (let i = 0; i < nums.length; i++) { if (nums[i] <= this.$store.insights.currentStep) chosen = nums[i]; else break; }
       return chosen;
     },
     getEpisodeStepData(epIdx) {

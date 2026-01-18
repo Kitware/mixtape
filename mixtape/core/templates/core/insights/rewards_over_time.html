@@ -24,9 +24,9 @@
       },
       annotations: [
         {
-          x: currentStep,
-          y: $store.insights.rewardsOverTime[0][currentStep],
-          text: $store.insights.rewardsOverTime[0][currentStep].toFixed(2),
+          x: $store.insights.currentStep,
+          y: $store.insights.rewardsOverTime[0][$store.insights.currentStep],
+          text: $store.insights.rewardsOverTime[0][$store.insights.currentStep].toFixed(2),
         }
       ],
     },
@@ -40,8 +40,8 @@
       Plotly.Plots.resize(this.$refs.rewardsOverTime);
     }, 200, {leading: true}),
     getStep(episode) {
-      if (this.currentStep < Object.keys(episode).length) {
-        return this.currentStep;
+      if (this.$store.insights.currentStep < Object.keys(episode).length) {
+        return this.$store.insights.currentStep;
       }
       return Object.keys(episode).length - 1;
     },
@@ -61,7 +61,7 @@
       });
     });
     data.push({
-      x: [currentStep, currentStep],
+      x: [$store.insights.currentStep, $store.insights.currentStep],
       y: [0, Math.max(...$store.insights.rewardsOverTime.flat())],
       type: 'scatter',
       mode: 'lines',
@@ -87,7 +87,7 @@
   x-effect="
     if (this.plot) {
       Plotly.update($refs.rewardsOverTime, {
-        x: [[currentStep, currentStep]],
+        x: [[$store.insights.currentStep, $store.insights.currentStep]],
         y: [[Math.min(...$store.insights.rewardsOverTime.flat()), Math.max(...$store.insights.rewardsOverTime.flat())]]
       }, {
         annotations: $store.insights.rewardsOverTime.map((episode, idx) => {
