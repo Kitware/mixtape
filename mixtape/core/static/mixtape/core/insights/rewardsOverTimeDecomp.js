@@ -35,7 +35,7 @@ document.addEventListener('alpine:init', () => {
       this.$watch('$store.settings.showPlotLegends', () => {
         this.$nextTick(() => {
           Plotly.relayout(
-            this.$refs.rewardsOverTime,
+            this.$el,
             {
               autosize: true,
               showlegend: this.$store.settings.showPlotLegends
@@ -46,7 +46,7 @@ document.addEventListener('alpine:init', () => {
     },
     initPlot() {
       // Plot decomposed rewards for each episode
-      this.decomposedRewards.forEach((episodeRewards, episodeIdx) => {
+      this.$store.insights.decomposedRewards.forEach((episodeRewards, episodeIdx) => {
         Object.keys(episodeRewards).forEach((rewardType, rewardIdx) => {
           const rewardData = episodeRewards[rewardType];
           this.data.push({
@@ -54,13 +54,13 @@ document.addEventListener('alpine:init', () => {
             y: rewardData,
             type: 'scatter',
             mode: 'lines',
-            name: `Episode ${this.episodeIds[episodeIdx]} - ${rewardType}`,
+            name: `Episode ${this.$store.insights.episodeIds[episodeIdx]} - ${rewardType}`,
           });
         });
       });
 
       // Calculate overall min and max Y values from all data
-      const allYValues = this.decomposedRewards.flatMap(episodeRewards =>
+      const allYValues = this.$store.insights.decomposedRewards.flatMap(episodeRewards =>
         Object.values(episodeRewards).flatMap(rewardData => rewardData)
       );
 
@@ -70,11 +70,11 @@ document.addEventListener('alpine:init', () => {
       // Add annotations for current step values
       this.layout.annotations = this.createAnnotations();
 
-      this.plot = Plotly.newPlot(this.$refs.rewardsOverTime, this.data, this.layout, {displayModeBar: false});
+      this.plot = Plotly.newPlot(this.$el, this.data, this.layout, {displayModeBar: false});
     },
     resizePlot: _.debounce(function() {
-      if (!this.$refs.rewardsOverTime.querySelector('.plotly')) return;
-      Plotly.Plots.resize(this.$refs.rewardsOverTime);
+      if (!this.$el.querySelector('.plotly')) return;
+      Plotly.Plots.resize(this.$el);
     }, 200, {leading: true}),
     createShapes(allYValues) {
       const maxY = Math.max(...allYValues);
@@ -82,8 +82,8 @@ document.addEventListener('alpine:init', () => {
 
       return [{
         type: 'line',
-        x0: this.currentStep,
-        x1: this.currentStep,
+        x0: this.$store.insights.currentStep,
+        x1: this.$store.insights.currentStep,
         y0: minY,
         y1: maxY,
         line: {
@@ -94,15 +94,15 @@ document.addEventListener('alpine:init', () => {
       }];
     },
     createAnnotations() {
-      const episodeCount = Object.keys(this.decomposedRewards).length;
-      const annotations = this.decomposedRewards.flatMap((episodeRewards, episodeIdx) => {
+      const episodeCount = Object.keys(this.$store.insights.decomposedRewards).length;
+      const annotations = this.$store.insights.decomposedRewards.flatMap((episodeRewards, episodeIdx) => {
         const componentCount = Object.keys(episodeRewards).length;
         const offset = 40 / (componentCount * episodeCount);
         return Object.entries(episodeRewards).map(([rewardType, rewardData]) => {
-          const currentValue = rewardData[this.currentStep] || rewardData[rewardData.length - 1];
+          const currentValue = rewardData[this.$store.insights.currentStep] || rewardData[rewardData.length - 1];
 
           return {
-            x: this.currentStep,
+            x: this.$store.insights.currentStep,
             y: currentValue,
             text: currentValue.toFixed(2),
             showarrow: true,
@@ -124,13 +124,13 @@ document.addEventListener('alpine:init', () => {
         // Calculate overall min and max Y values from all data
         let allYValues = [];
         // Get all Y values from decomposed rewards
-        this.decomposedRewards.forEach(episodeRewards => {
+        this.$store.insights.decomposedRewards.forEach(episodeRewards => {
           Object.values(episodeRewards).forEach(rewardData => {
             allYValues = allYValues.concat(rewardData);
           });
         });
 
-        Plotly.relayout(this.$refs.rewardsOverTime, {
+        Plotly.relayout(this.$el, {
           shapes: this.createShapes(allYValues),
           annotations: this.createAnnotations()
         });

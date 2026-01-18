@@ -1,22 +1,22 @@
 document.addEventListener('alpine:init', () => {
-  Alpine.data('rewardsFrequency', () => ({
+  Alpine.data('actionsRewards', () => ({
     data: [],
     layout: {
-      title: {text: 'Rewards VS Frequency'},
+      title: {text: 'Actions VS Reward Frequency'},
       xaxis: {
-        title: {text: 'Reward'},
+        title: {text: 'Action'},
         gridcolor: Alpine.store('theme').gridColor,
         linecolor: Alpine.store('theme').gridColor,
         zeroline: false,
       },
       yaxis: {
-        title: {text: 'Frequency'},
+        title: {text: 'Reward Frequency'},
         gridcolor: Alpine.store('theme').gridColor,
         linecolor: Alpine.store('theme').gridColor,
         zeroline: false,
       },
       autosize: true,
-      barmode: 'overlay',
+      barmode: Object.keys(Alpine.store('insights').actionVReward).length > 1 ? 'group' : 'stack',
       showlegend: Alpine.store('settings').showPlotLegends,
       paper_bgcolor: Alpine.store('theme').backgroundColor,
       plot_bgcolor: Alpine.store('theme').backgroundColor,
@@ -28,25 +28,24 @@ document.addEventListener('alpine:init', () => {
       displayModeBar: false,
     },
     plot: null,
+    actionVReward: Object.keys(Alpine.store('insights').actionVReward).length > 1 ? Alpine.store('insights').actionVReward : Object.values(Alpine.store('insights').actionVReward)[0],
     init() {
-      this.$store.insights.rewardHistogram.forEach((episode, idx) => {
-        this.data.push({
-          x: episode,
-          type: 'histogram',
-          name: `Episode ${this.$store.insights.episodeIds[idx]}`,
-          marker: {
-            line: {
-              width: 2
-            }
+      this.data = Object.entries(this.$store.insights.actionVReward).map(([grouping, values]) => ({
+        x: Object.keys(values),
+        y: Object.values(values),
+        type: 'bar',
+        name: grouping,
+        marker: {
+          line: {
+            width: 2
           }
-        });
-      });
-      this.plot = Plotly.newPlot(this.$el, this.data, this.layout, this.config);
+        }
+      }));
+      this.plot = Plotly.react(this.$el, this.data, this.layout, this.config);
       this.$watch('$store.settings.showPlotLegends', () => {
         this.$nextTick(() => {
           Plotly.relayout(
-            this.$el,
-            {
+            this.$el, {
               autosize: true,
               showlegend: this.$store.settings.showPlotLegends
             })

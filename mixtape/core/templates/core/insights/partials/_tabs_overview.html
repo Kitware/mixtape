@@ -1,7 +1,3 @@
-{% load static %}
-<script src="{% static 'mixtape/core/insights/insightsTabs.js' %}"></script>
-<script src="{% static 'mixtape/core/insights/rewardsOverTimeDecomp.js' %}"></script>
-<script src="{% static 'mixtape/core/insights/rewardsFrequency.js' %}"></script>
 <div
   x-data="insightsTabs"
   x-cloak
@@ -50,24 +46,21 @@
         <span
           class="ml-2 loading loading-spinner loading-xs text-primary"
           x-show="
-            Array.isArray(episodeIds)
-            && (
-              (episodeIds.length > 1 && !clustering)
-              || (episodeIds.length === 1 && (!clustering || !clustering?.obs || !clustering?.agent_outs))
-            )
+            ($store.insights.episodeIds.length > 1 && !$store.insights.clustering)
+            || ($store.insights.episodeIds.length === 1 && (!$store.insights.clustering || !$store.insights.clustering?.obs || !$store.insights.clustering?.agent_outs))
           "
           x-cloak
         ></span>
       </button>
     </div>
     <div class="flex items-center gap-2 flex-wrap">
-      <span class="badge badge-soft badge-primary" :title="`${episodesCount ?? '—'} Episodes`">
+      <span class="badge badge-soft badge-primary" :title="`${$store.insights.episodeIds.length} Episodes`">
         <i class="ri-checkbox-multiple-blank-line"></i>
-        <span class="font-semibold" x-text="episodesCount ?? '—'"></span>
+        <span class="font-semibold" x-text="$store.insights.episodeIds.length"></span>
       </span>
-      <span class="badge badge-soft badge-primary" :title="`${agentsCount ?? '—'} Agents`">
+      <span class="badge badge-soft badge-primary" :title="`${$store.insights.uniqueAgents.length} Agents`">
         <i class="ri-robot-2-line"></i>
-        <span class="font-semibold" x-text="agentsCount ?? '—'"></span>
+        <span class="font-semibold" x-text="$store.insights.uniqueAgents.length"></span>
       </span>
       <span class="badge badge-soft badge-primary" :title="`Avg Reward: ${avgRewardDisplay ?? '—'}`">
         <i class="ri-trophy-line"></i>
@@ -88,7 +81,7 @@
           x-show="$store.settings.showPlotRewardFrequency"
         >
           <div class="min-h-[18rem]">
-            <div x-data="rewardsFrequency" x-ref="rewardsFrequency" x-resize="resizePlot" class="w-full"></div>
+            <div x-data="rewardsFrequency" x-resize="resizePlot" class="w-full"></div>
           </div>
         </section>
         <section
@@ -96,7 +89,7 @@
           x-show="$store.settings.showPlotActionFrequency"
         >
           <div class="min-h-[18rem]">
-            {% include "core/insights/action_v_frequency.html" %}
+            <div x-data="actionsFrequency" x-resize="resizePlot" class="w-full"></div>
           </div>
         </section>
         <section
@@ -104,7 +97,7 @@
           x-show="$store.settings.showPlotActionRewardFrequency"
         >
           <div class="min-h-[18rem]">
-            {% include "core/insights/action_v_reward_frequency.html" %}
+            <div x-data="actionsRewards" x-resize="resizePlot" class="w-full"></div>
           </div>
         </section>
       </div>
@@ -117,7 +110,7 @@
           x-show="$store.settings.showPlotRewardsTime"
         >
           <div class="min-h-[18rem]">
-            {% include "core/insights/rewards_over_time.html" %}
+            <div x-data="rewardsOverTime" x-resize="resizePlot" class="w-full"></div>
           </div>
         </section>
         {% if has_reward_mapping %}
@@ -126,7 +119,7 @@
           x-show="$store.settings.showPlotRewardsTime"
         >
           <div class="min-h-[18rem]">
-            <div x-data="rewardsOverTime" x-ref="rewardsOverTime" x-resize="resizePlot"></div>
+            <div x-data="rewardsOverTimeDecomp" x-resize="resizePlot"></div>
           </div>
         </section>
         {% endif %}
@@ -144,16 +137,39 @@
             class="flex justify-center"
             style="height: calc(100% - 20px);"
             x-show="
-              Array.isArray(episodeIds)
-              && ((episodeIds.length > 1 && !clustering) || (episodeIds.length === 1 && !(clustering && clustering.obs)))
+              ($store.insights.episodeIds.length > 1 && !$store.insights.clustering) || ($store.insights.episodeIds.length === 1 && !($store.insights.clustering && $store.insights.clustering.obs))
             "
             x-cloak
           >
             <div class="loading loading-spinner loading-xl text-primary" aria-hidden="true"></div>
           </div>
           <div class="space-y-3">
-            {% include "core/insights/clustering.html" with key="'obs'" title="Observations" %}
-            {% include "core/insights/clustering_timeline.html" with key="'obs'" title="Observations" %}
+            <div>
+              <div
+                class="skeleton h-[450px] w-full"
+                x-show="!($store.insights.clustering && $store.insights.clustering.obs)"
+                x-cloak
+              ></div>
+              <div
+                x-data="clustering('obs', 'Observations')" x-resize="resizePlot"
+                x-show="$store.insights.clustering && $store.insights.clustering.obs"
+                class="w-full"
+                x-cloak
+              ></div>
+            </div>
+            <div>
+              <div
+                class="skeleton h-[300px] w-full"
+                x-show="!($store.insights && $store.insights.clustering && $store.insights.clustering.obs)"
+                x-cloak
+              ></div>
+              <div
+                x-data="clusteringTimeline('obs', 'Observations')" x-resize="resizePlot"
+                x-show="$store.insights && $store.insights.clustering && $store.insights.clustering.obs"
+                class="w-full"
+                x-cloak
+              ></div>
+            </div>
           </div>
         </section>
         <section
@@ -165,16 +181,39 @@
             class="flex justify-center"
             style="height: calc(100% - 20px);"
             x-show="
-              Array.isArray(episodeIds)
-              && ((episodeIds.length > 1 && !clustering) || (episodeIds.length === 1 && !(clustering && clustering.agent_outs)))
+              ($store.insights.episodeIds.length > 1 && !$store.insights.clustering) || ($store.insights.episodeIds.length === 1 && !($store.insights.clustering && $store.insights.clustering.agent_outs))
             "
             x-cloak
           >
             <div class="loading loading-spinner loading-xl text-primary" aria-hidden="true"></div>
           </div>
           <div class="space-y-3">
-            {% include "core/insights/clustering.html" with key="'agent_outs'" title="Actions" %}
-            {% include "core/insights/clustering_timeline.html" with key="'agent_outs'" title="Actions" %}
+            <div>
+              <div
+                class="skeleton h-[450px] w-full"
+                x-show="!($store.insights.clustering && $store.insights.clustering.agent_outs)"
+                x-cloak
+              ></div>
+              <div
+                x-data="clustering('agent_outs', 'Actions')" x-resize="resizePlot"
+                x-show="$store.insights.clustering && $store.insights.clustering.agent_outs"
+                class="w-full"
+                x-cloak
+              ></div>
+            </div>
+            <div>
+              <div
+                class="skeleton h-[300px] w-full"
+                x-show="!($store.insights && $store.insights.clustering && $store.insights.clustering.agent_outs)"
+                x-cloak
+              ></div>
+              <div
+                x-data="clusteringTimeline('agent_outs', 'Actions')" x-resize="resizePlot"
+                x-show="$store.insights && $store.insights.clustering && $store.insights.clustering.agent_outs"
+                class="w-full"
+                x-cloak
+              ></div>
+            </div>
           </div>
         </section>
       </div>

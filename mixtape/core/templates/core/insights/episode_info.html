@@ -21,7 +21,7 @@
         </tr>
       </thead>
       <tbody>
-        <template x-for="agent in uniqueAgents" :key="agent">
+        <template x-for="agent in $store.insights.uniqueAgents" :key="agent">
           <tr class="border-t">
             <td class="py-2 px-2 font-medium" x-text="agent"></td>
             <template x-for="pair in episodePairs" :key="`r-${agent}-${pair.epIdx}-${pair.kind}`">

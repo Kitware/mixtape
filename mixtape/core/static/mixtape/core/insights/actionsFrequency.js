@@ -1,39 +1,39 @@
 document.addEventListener('alpine:init', () => {
-  Alpine.data('rewardsFrequency', () => ({
+  Alpine.data('actionsFrequency', () => ({
     data: [],
     layout: {
-      title: {text: 'Rewards VS Frequency'},
-      xaxis: {
-        title: {text: 'Reward'},
-        gridcolor: Alpine.store('theme').gridColor,
-        linecolor: Alpine.store('theme').gridColor,
-        zeroline: false,
-      },
-      yaxis: {
-        title: {text: 'Frequency'},
-        gridcolor: Alpine.store('theme').gridColor,
-        linecolor: Alpine.store('theme').gridColor,
-        zeroline: false,
-      },
+      title: {text: 'Actions VS Frequency'},
       autosize: true,
-      barmode: 'overlay',
+      barmode: Object.keys(Alpine.store('insights').actionVFrequency).length > 1 ? 'group' : 'stack',
       showlegend: Alpine.store('settings').showPlotLegends,
       paper_bgcolor: Alpine.store('theme').backgroundColor,
       plot_bgcolor: Alpine.store('theme').backgroundColor,
       font: {
         color: Alpine.store('theme').fontColor
       },
+      xaxis: {
+        gridcolor: Alpine.store('theme').gridColor,
+        linecolor: Alpine.store('theme').gridColor,
+        zeroline: false,
+      },
+      yaxis: {
+        gridcolor: Alpine.store('theme').gridColor,
+        linecolor: Alpine.store('theme').gridColor,
+        zeroline: false,
+      },
     },
     config: {
       displayModeBar: false,
     },
     plot: null,
+    actionVFrequency: Object.keys(Alpine.store('insights').actionVFrequency).length > 1 ? Alpine.store('insights').actionVFrequency : Object.values(Alpine.store('insights').actionVFrequency)[0],
     init() {
-      this.$store.insights.rewardHistogram.forEach((episode, idx) => {
+      Object.entries(this.$store.insights.actionVFrequency).forEach(([grouping, values]) => {
         this.data.push({
-          x: episode,
-          type: 'histogram',
-          name: `Episode ${this.$store.insights.episodeIds[idx]}`,
+          x: Object.keys(values),
+          y: Object.values(values),
+          type: 'bar',
+          name: grouping,
           marker: {
             line: {
               width: 2
@@ -41,7 +41,7 @@ document.addEventListener('alpine:init', () => {
           }
         });
       });
-      this.plot = Plotly.newPlot(this.$el, this.data, this.layout, this.config);
+      this.plot = Plotly.react(this.$el, this.data, this.layout, this.config);
       this.$watch('$store.settings.showPlotLegends', () => {
         this.$nextTick(() => {
           Plotly.relayout(
@@ -53,7 +53,7 @@ document.addEventListener('alpine:init', () => {
         });
       });
     },
-    resizePlot: _.debounce(function() {
+    resizePlot: _.debounce(function () {
       if (!this.$el.querySelector('.plotly')) return;
       Plotly.Plots.resize(this.$el);
     }, 200, {leading: true}),
