@@ -144,7 +144,19 @@
             <div class="loading loading-spinner loading-xl text-primary" aria-hidden="true"></div>
           </div>
           <div class="space-y-3">
-            {% include "core/insights/clustering.html" with key="'obs'" title="Observations" %}
+            <div>
+              <div
+                class="skeleton h-[450px] w-full"
+                x-show="!($store.insights.clustering && $store.insights.clustering.obs)"
+                x-cloak
+              ></div>
+              <div
+                x-data="clustering('obs', 'Observations')" x-resize="resizePlot" x-ref="allManifolds"
+                x-show="$store.insights.clustering && $store.insights.clustering.obs"
+                class="w-full"
+                x-cloak
+              ></div>
+            </div>
             {% include "core/insights/clustering_timeline.html" with key="'obs'" title="Observations" %}
           </div>
         </section>
@@ -164,7 +176,19 @@
             <div class="loading loading-spinner loading-xl text-primary" aria-hidden="true"></div>
           </div>
           <div class="space-y-3">
-            {% include "core/insights/clustering.html" with key="'agent_outs'" title="Actions" %}
+            <div>
+              <div
+                class="skeleton h-[450px] w-full"
+                x-show="!($store.insights.clustering && $store.insights.clustering.agent_outs)"
+                x-cloak
+              ></div>
+              <div
+                x-data="clustering('agent_outs', 'Actions')" x-resize="resizePlot" x-ref="allManifolds"
+                x-show="$store.insights.clustering && $store.insights.clustering.agent_outs"
+                class="w-full"
+                x-cloak
+              ></div>
+            </div>
             {% include "core/insights/clustering_timeline.html" with key="'agent_outs'" title="Actions" %}
           </div>
         </section>
