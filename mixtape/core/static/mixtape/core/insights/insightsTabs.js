@@ -79,21 +79,6 @@ document.addEventListener('alpine:init', () => {
           .map((episodeSummary) => `Ep ${episodeSummary.id}: ${episodeSummary.steps ?? '-'}`)
       ].join('\n');
     },
-    timelineTitle(ts) {
-      if (Array.isArray(ts?.episodes)) {
-        const parts = ts.episodes.map(e => `Episode ${e.episode_id}: ${Number(e.total_rewards ?? 0).toFixed(2)}`);
-        return `Step ${ts.number}\n${parts.join('\n')}`;
-      }
-      return `Step ${ts?.number} — Reward: ${Number((ts && ts.total_rewards) ?? 0).toFixed(2)}`;
-    },
-    timelineAria(ts) {
-      if (Array.isArray(ts?.episodes)) {
-        const parts = ts.episodes.map(e => `Episode ${e.episode_id}: ${Number(e.total_rewards ?? 0).toFixed(2)}`);
-        return `Step ${ts.number} ${parts.join(', ')}`;
-      }
-      return `Step ${ts?.number} Reward ${Number((ts && ts.total_rewards) ?? 0).toFixed(2)}`;
-    },
-
     // helpers for templates
     getEpisodeStepIndex(epIdx) {
       const steps = this.$store.insights.stepData?.[epIdx] || {};

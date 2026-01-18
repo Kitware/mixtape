@@ -15,7 +15,6 @@ document.addEventListener('alpine:init', () => {
     actionVFrequency: {},
     stepData: [],
     timelineKeySteps: [],
-    timelineKeyStepsGlobal: [],
 
     // User-configurable flags
     episodeSummaries: [],
@@ -40,13 +39,12 @@ document.addEventListener('alpine:init', () => {
       this.episodeIds = this.parsedData.episode_ids;
       this.uniqueAgents = this.parsedData.unique_agents;
       this.rewardsOverTime = this.parsedData.rewards_over_time;
-      this.decomposedRewards = this.parsedData?.decomposed_rewards ?? [];
-      this.actionVReward = this.parsedData?.action_v_reward ?? {};
-      this.rewardHistogram = this.parsedData?.reward_histogram ?? [];
-      this.actionVFrequency = this.parsedData?.action_v_frequency ?? {};
-      this.stepData = this.parsedData?.step_data ?? [];
-      this.timelineKeySteps = this.parsedData?.timeline_key_steps ?? [];
-      this.timelineKeyStepsGlobal = this.parsedData?.timeline_key_steps_global ?? [];
+      this.decomposedRewards = this.parsedData.decomposed_rewards;
+      this.actionVReward = this.parsedData.action_v_reward;
+      this.rewardHistogram = this.parsedData.reward_histogram;
+      this.actionVFrequency = this.parsedData.action_v_frequency;
+      this.stepData = this.parsedData.step_data;
+      this.timelineKeySteps = this.parsedData.timeline_key_steps;
     },
   });
 });
