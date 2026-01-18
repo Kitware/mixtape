@@ -3,6 +3,7 @@
 <script src="{% static 'mixtape/core/insights/rewardsOverTimeDecomp.js' %}"></script>
 <script src="{% static 'mixtape/core/insights/rewardsFrequency.js' %}"></script>
 <script src="{% static 'mixtape/core/insights/actionsFrequency.js' %}"></script>
+<script src="{% static 'mixtape/core/insights/rewardsOverTime.js' %}"></script>
 <div
   x-data="insightsTabs"
   x-cloak
@@ -115,7 +116,7 @@
           x-show="$store.settings.showPlotRewardsTime"
         >
           <div class="min-h-[18rem]">
-            {% include "core/insights/rewards_over_time.html" %}
+            <div x-data="rewardsOverTime" x-ref="rewardsOverTime" x-resize="resizePlot" class="w-full"></div>
           </div>
         </section>
         {% if has_reward_mapping %}
@@ -124,7 +125,7 @@
           x-show="$store.settings.showPlotRewardsTime"
         >
           <div class="min-h-[18rem]">
-            <div x-data="rewardsOverTime" x-ref="rewardsOverTime" x-resize="resizePlot"></div>
+            <div x-data="rewardsOverTimeDecomp" x-ref="rewardsOverTime" x-resize="resizePlot"></div>
           </div>
         </section>
         {% endif %}
