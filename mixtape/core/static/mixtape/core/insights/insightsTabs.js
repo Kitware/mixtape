@@ -4,14 +4,9 @@ document.addEventListener('alpine:init', () => {
     active: 'Overview',
     maxStepsCount: null,
     avgRewardDisplay: null,
-    maxSteps: 0,
-    maxStepsGlobal: 0,
     episodeSummaries: [],
     mediaEpisodeIdx: 0,
     linkMediaToEpisode: true,
-    limitToEpisode: false,
-    debug: false,
-    playing: false,
     pollTimer: null,
     showToast: false,
     toastText: '',
@@ -25,9 +20,6 @@ document.addEventListener('alpine:init', () => {
     pollBeforeUnloadHandler: null,
 
     init() {
-      this.maxStepsGlobal = (this.$store.insights.parsedData?.max_steps ?? 1) - 1;
-      this.maxSteps = this.maxStepsGlobal;
-
       // Average reward
       const avgReward = this.computeAverageReward(this.$store.insights.parsedData);
       this.avgRewardDisplay = (avgReward ?? null) !== null ? Number(avgReward).toFixed(2) : null;
@@ -45,10 +37,7 @@ document.addEventListener('alpine:init', () => {
       })();
 
       // Build watchers
-      this.updateMaxSteps();
-      this.$watch('limitToEpisode', () => this.updateMaxSteps());
       this.$watch('$store.settings.timelineEpisodeIdx', () => {
-        this.updateMaxSteps();
         if (this.linkMediaToEpisode) this.mediaEpisodeIdx = this.$store.settings.timelineEpisodeIdx;
       });
       this.$watch('episodeSummaries', () => {
@@ -59,8 +48,6 @@ document.addEventListener('alpine:init', () => {
         }
       });
       this.$watch('linkMediaToEpisode', (v) => { if (v) { this.mediaEpisodeIdx = this.$store.settings.timelineEpisodeIdx; } });
-      // Ensure timeline mode changes recompute limits
-      this.$watch('$store.settings.useGlobalTimeline', this.updateMaxSteps);
 
       // Store
       const store = (window.Alpine && Alpine.store('insights')) || null;
@@ -78,20 +65,6 @@ document.addEventListener('alpine:init', () => {
           || (isSingle && (!this.$store.insights.clustering || !this.$store.insights.clustering?.obs || !this.$store.insights.clustering?.agent_outs))) {
         this.startClusteringPolling();
       }
-    },
-
-    stepForward() {
-      if (!this.playing) return;
-      if (this.$store.insights.currentStep < this.maxSteps) {
-        const delay = Math.max(50, Math.round(500 / (this.$store.settings.playbackSpeed || 1)));
-        setTimeout(() => { this.$store.insights.currentStep++; this.stepForward(); }, delay);
-      } else { this.playing = false; this.$store.insights.currentStep = 0; }
-    },
-    updateMaxSteps() {
-      if (this.limitToEpisode) {
-        const steps = this.episodeSummaries[this.$store.settings.timelineEpisodeIdx]?.steps ?? null;
-        this.maxSteps = (typeof steps === 'number' && steps > 0) ? steps - 1 : this.maxStepsGlobal;
-      } else { this.maxSteps = this.maxStepsGlobal; }
     },
     selectTab(tab) {
       this.active = tab;
