@@ -61,11 +61,11 @@ document.addEventListener('alpine:init', () => {
         },
         name: 'Current Step'
       });
-      this.plot = Plotly.newPlot(this.$refs.rewardsOverTime, this.data, this.layout, this.config);
+      this.plot = Plotly.newPlot(this.$el, this.data, this.layout, this.config);
       this.$watch('$store.settings.showPlotLegends', () => {
         this.$nextTick(() => {
           Plotly.relayout(
-            this.$refs.rewardsOverTime,
+            this.$el,
             {
               autosize: true,
               showlegend: this.$store.settings.showPlotLegends
@@ -74,7 +74,7 @@ document.addEventListener('alpine:init', () => {
       });
       Alpine.effect(() => {
         if (this.plot) {
-          Plotly.update(this.$refs.rewardsOverTime, {
+          Plotly.update(this.$el, {
             x: [[this.$store.insights.currentStep, this.$store.insights.currentStep]],
             y: [[Math.min(...this.$store.insights.rewardsOverTime.flat()), Math.max(...this.$store.insights.rewardsOverTime.flat())]]
           }, {
@@ -90,8 +90,8 @@ document.addEventListener('alpine:init', () => {
       });
     },
     resizePlot: _.debounce(function() {
-      if (!this.$refs.rewardsOverTime.querySelector('.plotly')) return;
-      Plotly.Plots.resize(this.$refs.rewardsOverTime);
+      if (!this.$el.querySelector('.plotly')) return;
+      Plotly.Plots.resize(this.$el);
     }, 200, {leading: true}),
     getStep(episode) {
       if (this.$store.insights.currentStep < Object.keys(episode).length) {

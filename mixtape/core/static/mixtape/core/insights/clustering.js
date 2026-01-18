@@ -39,12 +39,12 @@ document.addEventListener('alpine:init', () => {
           const currentStep = this.$store.insights.currentStep;
 
           // Get the current plot data
-          const plotElement = this.$refs.allManifolds;
+          const plotElement = this.$el;
           const currentData = plotElement.data;
 
           // Remove the highlight trace if it exists (it will be last, at numEpisodes * numAgents + 1)
           if (currentData && currentData.length > (numEpisodes * numAgents + 1)) {
-            Plotly.deleteTraces(this.$refs.allManifolds, [numEpisodes * numAgents + 1]);
+            Plotly.deleteTraces(this.$el, [numEpisodes * numAgents + 1]);
           }
 
           // Create arrays for the highlighted points
@@ -84,7 +84,7 @@ document.addEventListener('alpine:init', () => {
               'middle right',
               'bottom right'
             ];
-            Plotly.addTraces(this.$refs.allManifolds, [{
+            Plotly.addTraces(this.$el, [{
               x: highlightX,
               y: highlightY,
               text: highlightText,
@@ -110,8 +110,8 @@ document.addEventListener('alpine:init', () => {
       });
     },
     resizePlot: _.debounce(function() {
-      if (!this.$refs.allManifolds.querySelector('.plotly')) return;
-      Plotly.Plots.resize(this.$refs.allManifolds);
+      if (!this.$el.querySelector('.plotly')) return;
+      Plotly.Plots.resize(this.$el);
     }, 200, {leading: true}),
     buildPlot() {
       this.data = [];
@@ -159,14 +159,14 @@ document.addEventListener('alpine:init', () => {
         name: 'All Episodes'
       });
       this.plot = Plotly.newPlot(
-        this.$refs.allManifolds,
+        this.$el,
         this.data,
         this.layout,
         { displayModeBar: false, responsive: true }
       );
       this.$watch('$store.settings.showPlotLegends', () => {
         this.$nextTick(() => {
-          Plotly.relayout(this.$refs.allManifolds, {
+          Plotly.relayout(this.$el, {
             autosize: true,
             showlegend: this.$store.settings.showPlotLegends,
           })

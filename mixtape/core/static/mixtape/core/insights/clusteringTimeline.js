@@ -38,7 +38,7 @@ document.addEventListener('alpine:init', () => {
           && this.$store.insights.clustering && this.$store.insights.clustering[key]
         ) { this.buildPlot(); }
         if (this.plot) {
-          const plotElement = this.$refs.allManifolds;
+          const plotElement = this.$el;
           const traces = plotElement && plotElement.data ? plotElement.data : null;
           if (!traces || traces.length < 2) return;
           let clustering = null;
@@ -60,13 +60,13 @@ document.addEventListener('alpine:init', () => {
           const xLine = [step, step];
           const yLine = [yMin - 0.5, yMax + 0.5];
           // Use restyle: arguments must be arrays-of-arrays per selected trace
-          Plotly.restyle(this.$refs.allManifolds, { x: [xLine], y: [yLine] }, [1]);
+          Plotly.restyle(this.$el, { x: [xLine], y: [yLine] }, [1]);
         }
       });
     },
     resizePlot: _.debounce(function() {
-      if (!this.$refs.allManifolds.querySelector('.plotly')) return;
-      Plotly.Plots.resize(this.$refs.allManifolds);
+      if (!this.$el.querySelector('.plotly')) return;
+      Plotly.Plots.resize(this.$el);
     }, 200, {leading: true}),
     buildPlot() {
       let clustering = null;
@@ -114,7 +114,7 @@ document.addEventListener('alpine:init', () => {
         }
       ];
       this.plot = Plotly.newPlot(
-        this.$refs.allManifolds,
+        this.$el,
         this.data,
         this.layout,
         {
@@ -125,7 +125,7 @@ document.addEventListener('alpine:init', () => {
       this.$watch('$store.settings.showPlotLegends', () => {
         this.$nextTick(() => {
           Plotly.relayout(
-            this.$refs.allManifolds,
+            this.$el,
             {
               autosize: true,
               showlegend: this.$store.settings.showPlotLegends

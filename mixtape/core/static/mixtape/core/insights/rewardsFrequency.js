@@ -41,11 +41,11 @@ document.addEventListener('alpine:init', () => {
           }
         });
       });
-      this.plot = Plotly.newPlot(this.$refs.rewardsFrequency, this.data, this.layout, this.config);
+      this.plot = Plotly.newPlot(this.$el, this.data, this.layout, this.config);
       this.$watch('$store.settings.showPlotLegends', () => {
         this.$nextTick(() => {
           Plotly.relayout(
-            this.$refs.rewardsFrequency,
+            this.$el,
             {
               autosize: true,
               showlegend: this.$store.settings.showPlotLegends
@@ -54,8 +54,8 @@ document.addEventListener('alpine:init', () => {
       });
     },
     resizePlot: _.debounce(function() {
-      if (!this.$refs.rewardsFrequency.querySelector('.plotly')) return;
-      Plotly.Plots.resize(this.$refs.rewardsFrequency);
+      if (!this.$el.querySelector('.plotly')) return;
+      Plotly.Plots.resize(this.$el);
     }, 200, {leading: true}),
   }));
 });

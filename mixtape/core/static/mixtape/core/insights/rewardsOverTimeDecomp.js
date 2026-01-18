@@ -35,7 +35,7 @@ document.addEventListener('alpine:init', () => {
       this.$watch('$store.settings.showPlotLegends', () => {
         this.$nextTick(() => {
           Plotly.relayout(
-            this.$refs.rewardsOverTime,
+            this.$el,
             {
               autosize: true,
               showlegend: this.$store.settings.showPlotLegends
@@ -70,11 +70,11 @@ document.addEventListener('alpine:init', () => {
       // Add annotations for current step values
       this.layout.annotations = this.createAnnotations();
 
-      this.plot = Plotly.newPlot(this.$refs.rewardsOverTime, this.data, this.layout, {displayModeBar: false});
+      this.plot = Plotly.newPlot(this.$el, this.data, this.layout, {displayModeBar: false});
     },
     resizePlot: _.debounce(function() {
-      if (!this.$refs.rewardsOverTime.querySelector('.plotly')) return;
-      Plotly.Plots.resize(this.$refs.rewardsOverTime);
+      if (!this.$el.querySelector('.plotly')) return;
+      Plotly.Plots.resize(this.$el);
     }, 200, {leading: true}),
     createShapes(allYValues) {
       const maxY = Math.max(...allYValues);
@@ -130,7 +130,7 @@ document.addEventListener('alpine:init', () => {
           });
         });
 
-        Plotly.relayout(this.$refs.rewardsOverTime, {
+        Plotly.relayout(this.$el, {
           shapes: this.createShapes(allYValues),
           annotations: this.createAnnotations()
         });
