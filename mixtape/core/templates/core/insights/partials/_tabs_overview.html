@@ -4,6 +4,7 @@
 <script src="{% static 'mixtape/core/insights/rewardsFrequency.js' %}"></script>
 <script src="{% static 'mixtape/core/insights/actionsFrequency.js' %}"></script>
 <script src="{% static 'mixtape/core/insights/rewardsOverTime.js' %}"></script>
+<script src="{% static 'mixtape/core/insights/actionsRewards.js' %}"></script>
 <div
   x-data="insightsTabs"
   x-cloak
@@ -103,7 +104,7 @@
           x-show="$store.settings.showPlotActionRewardFrequency"
         >
           <div class="min-h-[18rem]">
-            {% include "core/insights/action_v_reward_frequency.html" %}
+            <div x-data="actionsRewards" x-ref="actionsRewards" x-resize="resizePlot" class="w-full"></div>
           </div>
         </section>
       </div>
