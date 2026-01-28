@@ -16,7 +16,7 @@
         document.addEventListener('click', (e) => {
           const el = e.target.closest(selector);
           if (!el) return;
-          const id = idOverride || el.id || selector;
+          const id = idOverride || el.getAttribute('data-ga-id') || el.id || selector;
           const now = (performance && performance.now) ? Math.round(performance.now()) : null;
           const delta = sinceLast(lastClick, id, now ?? 0);
           window.GA.event('button_click', {
@@ -29,7 +29,7 @@
         document.addEventListener('change', (e) => {
           const el = e.target.closest(selector);
           if (!el || el.type !== 'checkbox') return;
-          const id = el.id || selector;
+          const id = el.getAttribute('data-ga-id') || el.id || selector;
           const now = (performance && performance.now) ? Math.round(performance.now()) : null;
 
           const prev = lastCheckbox.get(id);

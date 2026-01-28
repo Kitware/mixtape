@@ -15,7 +15,6 @@ class Checkpoint(models.Model):
     class Meta:
         constraints = [
             # TODO: What if best / last is False? Should it be excluded from the constraint?
-            models.UniqueConstraint(fields=['training', 'best'], name='unique_checkpoint_best'),
             models.UniqueConstraint(fields=['training', 'last'], name='unique_checkpoint_last'),
         ]
 

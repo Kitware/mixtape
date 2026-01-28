@@ -293,11 +293,12 @@
       });
     }
 
-    let movingAnnotations = shapesAndAnnotationsByStep[0]?.filter(item => item.annotations).map(item => item.annotations);
+    let movingAnnotations = shapesAndAnnotationsByStep[0]?.filter(item => item.annotations).map(item => item.annotations) || [];
+    const terminalAnn = createTerminalAnnotation();
     plot = Plotly.react($refs.overallNavCombatPlot, data, {
       ...layout,
       shapes: shapesAndAnnotationsByStep[0]?.filter(item => item.shapes).map(item => item.shapes) || [],
-      annotations: [...movingAnnotations, createTerminalAnnotation()] || [],
+      annotations: terminalAnn ? [...movingAnnotations, terminalAnn] : movingAnnotations,
     }, basePlotConfig);
     $watch('$store.visOptions', () => {
       $nextTick(() => {
@@ -314,10 +315,11 @@
   x-effect="
     if (plot) {
       // Update the plot with current timestep annotations and shapes
-      let movingAnnotations = shapesAndAnnotationsByStep[0]?.filter(item => item.annotations).map(item => item.annotations);
+      let movingAnnotations = shapesAndAnnotationsByStep[currentStep]?.filter(item => item.annotations).map(item => item.annotations) || [];
+      const terminalAnn = createTerminalAnnotation();
       Plotly.relayout($refs.overallNavCombatPlot, {
         shapes: shapesAndAnnotationsByStep[currentStep]?.filter(item => item.shapes).map(item => item.shapes) || [],
-        annotations: [...movingAnnotations, createTerminalAnnotation()] || [],
+        annotations: terminalAnn ? [...movingAnnotations, terminalAnn] : movingAnnotations,
         ...basePlotStyling()
       });
 

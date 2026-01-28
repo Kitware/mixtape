@@ -1,39 +1,45 @@
-<div id="replayControls" class="card raised flex justify-center justify-self-stretch flex-row! ml-3 mr-4 items-center">
+<div id="replayControls" class="card raised flex justify-center justify-self-stretch flex-row! ml-3 mr-4 items-center" data-ga-id="replay-controls">
   <button
     class="btn btn-square btn-neutral btn-sm mx-3"
-    @click="currentStep = 0"
+    data-ga-id="replay-skip-to-start"
+    @click="currentStep = 0; window.GAState?.trackStepChange(0, maxSteps, 'start')"
   >
     <i class="ri-rewind-start-line"></i>
   </button>
   <button
     class="btn btn-square btn-neutral btn-sm mx-3"
-    @click="currentStep--"
+    data-ga-id="replay-step-back"
+    @click="currentStep--; window.GAState?.trackStepChange(currentStep - 1, maxSteps, 'back')"
   >
     <i class="ri-rewind-line"></i>
   </button>
   <button
     class="btn btn-square btn-neutral mx-3"
-    @click="playing = !playing; if (playing) stepForward()"
+    data-ga-id="replay-play-pause"
+    @click="playing = !playing; if (playing) stepForward(); window.GAState?.trackPlaybackState(playing, currentStep, maxSteps, playbackSpeed)"
   >
     <i x-show="!playing" class="ri-play-line"></i>
     <i x-show="playing" class="ri-pause-line"></i>
   </button>
   <button
     class="btn btn-square btn-neutral btn-sm mx-3"
-    @click="currentStep++"
+    data-ga-id="replay-step-forward"
+    @click="currentStep++; window.GAState?.trackStepChange(currentStep + 1, maxSteps, 'forward')"
   >
     <i class="ri-speed-line"></i>
   </button>
   <button
     class="btn btn-square btn-neutral btn-sm mx-3"
-    @click="currentStep = maxSteps"
+    data-ga-id="replay-skip-to-end"
+    @click="currentStep = maxSteps; window.GAState?.trackStepChange(maxSteps, maxSteps, 'end')"
   >
     <i class="ri-forward-end-line"></i>
   </button>
   <!-- Playback Speed Dropdown -->
-  <div class="dropdown dropdown-end mx-2">
+  <div class="dropdown dropdown-end mx-2" data-ga-id="playback-speed-dropdown">
     <button
       class="btn btn-sm btn-neutral"
+      data-ga-id="playback-speed-button"
       tabindex="0"
       :title="'Playback Speed (' + playbackSpeed.toFixed(1) + 'x, ' + (fps * playbackSpeed).toFixed(1) + ' steps/s)'"
     >
@@ -42,19 +48,19 @@
     </button>
     <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-24">
       <li>
-        <a @click="setPlaybackSpeed(1); $event.target.closest('ul')?.blur?.();">1x</a>
+        <a data-ga-id="playback-speed-1x" @click="setPlaybackSpeed(1); window.GAState?.trackPlaybackSpeed(1, currentStep, maxSteps); $event.target.closest('ul')?.blur?.();">1x</a>
       </li>
       <li>
-        <a @click="setPlaybackSpeed(1.5); $event.target.closest('ul')?.blur?.();">1.5x</a>
+        <a data-ga-id="playback-speed-1.5x" @click="setPlaybackSpeed(1.5); window.GAState?.trackPlaybackSpeed(1.5, currentStep, maxSteps); $event.target.closest('ul')?.blur?.();">1.5x</a>
       </li>
       <li>
-        <a @click="setPlaybackSpeed(2); $event.target.closest('ul')?.blur?.();">2x</a>
+        <a data-ga-id="playback-speed-2x" @click="setPlaybackSpeed(2); window.GAState?.trackPlaybackSpeed(2, currentStep, maxSteps); $event.target.closest('ul')?.blur?.();">2x</a>
       </li>
       <li>
-        <a @click="setPlaybackSpeed(3); $event.target.closest('ul')?.blur?.();">3x</a>
+        <a data-ga-id="playback-speed-3x" @click="setPlaybackSpeed(3); window.GAState?.trackPlaybackSpeed(3, currentStep, maxSteps); $event.target.closest('ul')?.blur?.();">3x</a>
       </li>
       <li>
-        <a @click="setPlaybackSpeed(5); $event.target.closest('ul')?.blur?.();">5x</a>
+        <a data-ga-id="playback-speed-5x" @click="setPlaybackSpeed(5); window.GAState?.trackPlaybackSpeed(5, currentStep, maxSteps); $event.target.closest('ul')?.blur?.();">5x</a>
       </li>
     </ul>
   </div>

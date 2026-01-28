@@ -133,7 +133,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("episode", nargs="?", default=None, help="Episode name (e.g., 'Combat_Loss'). Auto-constructs paths if --csv/--video/--out not provided.")
     p.add_argument("--csv", default=None, help="Path to decomposed episode CSV (default: 'Unified CSVs/{episode}.csv')")
-    p.add_argument("--video", default=None, help="Path to replay video file (default: 'Replay Files/{episode}.mov')")
+    p.add_argument("--video", default=None, help="Path to replay video file (optional; default: 'Replay Files/{episode}.mov' if episode provided)")
     p.add_argument("--out", default=None, help="Output Mixtape JSON path (default: 'JSON Ingest Files/{episode}_FINAL.json')")
     p.add_argument("--env", default="SC2 Two Bridge", help="training.environment")
     p.add_argument("--algo", default="Masked PPO", help="training.algorithm")
@@ -152,9 +152,9 @@ def main():
     p.add_argument("--image-format", choices=["png", "jpg", "jpeg"], default="jpeg", help="Image format for embedded frames (default: jpeg)")
     p.add_argument("--jpeg-quality", type=int, default=85, help="JPEG quality 1-100 when --image-format is jpg/jpeg (default: 85)")
     p.add_argument("--stretch-to-video", action="store_true", default=True, help="Linearly map rows across video duration (default: enabled)")
-    p.add_argument("--per-unit-tags", action="store_true", default=True, help="Use per-unit tag columns (default: enabled)")
+    p.add_argument("--per-unit-tags", action="store_false", default=False, help="Use per-unit tag columns (default: enabled)")
     args = p.parse_args()
-    
+
     # Auto-construct paths from episode name if not provided
     if args.episode:
         if args.csv is None:
@@ -163,10 +163,11 @@ def main():
             args.video = f"Replay Files/{args.episode}.mov"
         if args.out is None:
             args.out = f"JSON Ingest Files/{args.episode}_FINAL.json"
-    
-    # Validate required paths
-    if not args.csv or not args.video or not args.out:
-        print("ERROR: Either provide 'episode' name or specify --csv, --video, and --out explicitly.", file=sys.stderr)
+
+    # Validate required paths (video is now optional)
+    if not args.csv or not args.out:
+        print("ERROR: Either provide 'episode' name or specify --csv and --out explicitly.", file=sys.stderr)
+        print("       Video file (--video) is optional.", file=sys.stderr)
         sys.exit(2)
 
     # Validate frame/time options unless using --row-as-frame
@@ -215,17 +216,24 @@ def main():
         if enemy_unit_tags:
             print(f"Detected {len(enemy_unit_tags['tag_ids'])} enemy per-unit tags: {enemy_unit_tags['tag_ids']}")
 
-    # Prepare video
-    if cv2 is None:
-        print("ERROR: OpenCV (cv2) is required. Install with: pip install opencv-python", file=sys.stderr)
-        sys.exit(2)
-    cap = cv2.VideoCapture(args.video)
-    if not cap.isOpened():
-        print(f"ERROR: failed to open video: {args.video}", file=sys.stderr)
-        sys.exit(2)
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    video_fps = cap.get(cv2.CAP_PROP_FPS) or 0.0
-    print(f"Video opened: {args.video}, {total_frames} frames at {video_fps:.2f} FPS")
+    # Prepare video (optional)
+    cap = None
+    total_frames = 0
+    video_fps = 0.0
+
+    if args.video:
+        if cv2 is None:
+            print("ERROR: OpenCV (cv2) is required for video processing. Install with: pip install opencv-python", file=sys.stderr)
+            sys.exit(2)
+        cap = cv2.VideoCapture(args.video)
+        if not cap.isOpened():
+            print(f"ERROR: failed to open video: {args.video}", file=sys.stderr)
+            sys.exit(2)
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        video_fps = cap.get(cv2.CAP_PROP_FPS) or 0.0
+        print(f"Video opened: {args.video}, {total_frames} frames at {video_fps:.2f} FPS")
+    else:
+        print("No video file provided - episodes will be created without images")
 
     # Action remap
     action_map = None
@@ -258,7 +266,7 @@ def main():
     # Track which units are alive across the entire episode (stateful death tracking)
     num_units = 5
     alive_units = set(range(1, num_units + 1))  # Start with all units alive: {1,2,3,4,5}
-    
+
     for idx, row in df.iterrows():
         # Step index
         number = int(idx)
@@ -291,15 +299,16 @@ def main():
         if frame_idx >= total_frames:
             frame_idx = total_frames - 1 if total_frames > 0 else 0
 
-        # Grab frame, optionally resize, and encode
-        frame = read_frame(cap, frame_idx)
-        if frame is None:
-            print(f"WARNING: could not read frame {frame_idx} at row {idx}; image omitted")
-            image_b64 = None
-        else:
-            # downscale if requested to reduce JSON size / ingest memory
-            frame = maybe_resize(frame, args.max_width, args.max_height)
-            image_b64 = b64_image_from_frame(frame, args.image_format, args.jpeg_quality)
+        # Grab frame, optionally resize, and encode (only if video provided)
+        image_b64 = None
+        if cap is not None:
+            frame = read_frame(cap, frame_idx)
+            if frame is None:
+                print(f"WARNING: could not read frame {frame_idx} at row {idx}; image omitted")
+            else:
+                # downscale if requested to reduce JSON size / ingest memory
+                frame = maybe_resize(frame, args.max_width, args.max_height)
+                image_b64 = b64_image_from_frame(frame, args.image_format, args.jpeg_quality)
 
         # Assemble rewards
         rewards_vec = []
@@ -369,7 +378,7 @@ def main():
                 # Distribute health among 5 units (45.0 each if total is 225.0)
                 unit_hp = v / 5.0
                 enemy_unit_health = [unit_hp] * 5
-        
+
         if enemy_unit_health:
             agent_step["enemy_unit_health"] = enemy_unit_health
 
@@ -409,7 +418,7 @@ def main():
 
         # Build unit_steps from per-unit tag data OR aggregate counts
         unit_steps = []
-        
+
         if per_unit_tags:
             # Use actual per-unit data from tag columns
             # Check for the step-0 edge case where per-unit HPs are all zero but total friend_hp > 0
@@ -423,14 +432,14 @@ def main():
             for i, tag_id in enumerate(per_unit_tags['tag_ids']):
                 action_col = per_unit_tags['action_cols'][i]
                 hp_col = per_unit_tags['hp_cols'][i]
-                
+
                 # Get action and health for this specific unit
                 unit_action = int(to_float_or_none(row.get(action_col, 0)) or 0)
                 unit_hp = to_float_or_none(row.get(hp_col, 0)) or 0.0
                 if distribute_even_hp:
                     # Distribute the total friendly HP evenly across units for this step
                     unit_hp = total_friend_hp / float(len(per_unit_tags['hp_cols']))
-                
+
                 # Per-unit rewards if available
                 unit_rewards = list(rewards_vec)  # Copy agent rewards
                 if per_unit_tags['nav_rew_cols'] and per_unit_tags['combat_rew_cols']:
@@ -440,10 +449,10 @@ def main():
                     if len(unit_rewards) >= 2:
                         unit_rewards[0] = nav_rew
                         unit_rewards[1] = combat_rew
-                
+
                 # Determine if unit is dead (HP = 0)
                 is_dead = (unit_hp == 0.0)
-                
+
                 unit_step = {
                     "unit": f"marine_{i+1}",
                     "custom_metrics": {"tag_id": tag_id},
@@ -459,7 +468,7 @@ def main():
             n_attack = int(to_float_or_none(row.get("a_attack", 0)) or 0)
             n_noop = int(to_float_or_none(row.get("a_noop", 0)) or 0)
             n_alive_now = int(to_float_or_none(row.get("a_alive", num_units)) or num_units)
-            
+
             # Track deaths: if fewer alive now than we have tracked, kill units
             if n_alive_now < len(alive_units):
                 # Kill units from highest ID down (marine_5 dies first, then marine_4, etc.)
@@ -468,7 +477,7 @@ def main():
                     if alive_units:
                         dead_unit = max(alive_units)  # Kill highest numbered unit
                         alive_units.remove(dead_unit)
-            
+
             # Build action list for currently alive units
             unit_actions = []
             for _ in range(n_move):
@@ -477,16 +486,16 @@ def main():
                 unit_actions.append(2)  # Attack
             for _ in range(n_noop):
                 unit_actions.append(0)  # No-Op
-            
+
             # Pad or truncate to match alive count
             while len(unit_actions) < len(alive_units):
                 unit_actions.append(0)
             unit_actions = unit_actions[:len(alive_units)]
-            
+
             # Calculate health for living units
             total_hp = to_float_or_none(row.get("friend_hp") or row.get("health", 0)) or 0
             unit_health = total_hp / len(alive_units) if (total_hp > 0 and len(alive_units) > 0) else 0.0
-            
+
             # Create unit steps for ALL units (alive and dead)
             alive_list = sorted(alive_units)
             for unit_id in range(1, num_units + 1):
@@ -511,22 +520,22 @@ def main():
                         "action": -1
                     }
                 unit_steps.append(unit_step)
-        
+
         if unit_steps:
             agent_step["unit_steps"] = unit_steps
 
         step_obj = {"number": number, "agent_steps": [agent_step]}
-        
+
         # Populate enemy_unit_health and enemy_unit_steps from enemy_hp_tag_* when available
         if enemy_unit_tags:
             enemy_unit_steps = []
             enemy_hp_vals = []
-            
+
             for i, tag_id in enumerate(enemy_unit_tags['tag_ids']):
                 hp_col = enemy_unit_tags['hp_cols'][i]
                 unit_hp = to_float_or_none(row.get(hp_col, 0)) or 0.0
                 enemy_hp_vals.append(unit_hp)
-                
+
                 # Create individual enemy unit object with tag_id (same structure as friendly units)
                 enemy_unit_step = {
                     "unit": f"enemy_{i+1}",
@@ -534,7 +543,7 @@ def main():
                     "custom_metrics": {"tag_id": tag_id}
                 }
                 enemy_unit_steps.append(enemy_unit_step)
-            
+
             # Only include if any non-zero to avoid conflicting with total at step-0
             if any(v != 0.0 for v in enemy_hp_vals):
                 agent_step["enemy_unit_health"] = enemy_hp_vals
@@ -549,13 +558,14 @@ def main():
                     for j in range(len(enemy_unit_steps)):
                         enemy_unit_steps[j]["health"] = per_enemy
                     agent_step["enemy_unit_steps"] = enemy_unit_steps
-        
+
         if image_b64 is not None:
             step_obj["image"] = image_b64
 
         steps.append(step_obj)
 
-    cap.release()
+    if cap is not None:
+        cap.release()
 
     # Canonicalize reward names so UI can find 'navigation' and 'combat' regardless of CSV column naming
     def _canonical_reward_name(name: str) -> str:
@@ -592,7 +602,7 @@ def main():
             "steps": steps
         }
     }
-    
+
     # Always include action_mapping (required by UI)
     if action_mapping:
         doc["action_mapping"] = action_mapping
@@ -616,6 +626,6 @@ def main():
 
     print(f"Wrote {args.out} with {len(steps)} steps.")
     print("Ready to ingest with: docker compose run --rm -v \"$PWD:/data\" django ./manage.py ingest_episode /data/" + args.out)
-    
+
 if __name__ == "__main__":
     main()

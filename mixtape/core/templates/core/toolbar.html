@@ -1,6 +1,6 @@
 <div class="navbar bg-base-100 shadow-md" data-ga-id="main-toolbar">
   <div class="navbar-start">
-    <a href="{% url 'home' %}" class="btn btn-icon btn-ghost" data-ga-id="home-button">
+    <a href="{% url 'home' %}" class="btn btn-icon btn-ghost" data-ga-id="home-button" @click="window.GAState?.trackNavigation(window.location.pathname, '{% url 'home' %}', 'link')">
       <span class="text-3xl">MIXTAPE</span>
     </a>
   </div>
@@ -32,6 +32,7 @@
                 class="checkbox mr-2"
                 x-model="$store.visOptions.visible"
                 value="combatReward"
+                @change="window.GAState?.trackVisibilityToggle('combatReward', $event.target.checked)"
               />
               Combat Reward
             </label>
@@ -45,6 +46,7 @@
                 class="checkbox mr-2"
                 x-model="$store.visOptions.visible"
                 value="enemyHealth"
+                @change="window.GAState?.trackVisibilityToggle('enemyHealth', $event.target.checked)"
               />
               Enemy Health
             </label>
@@ -58,6 +60,7 @@
                 class="checkbox mr-2"
                 x-model="$store.visOptions.visible"
                 value="episodeDetails"
+                @change="window.GAState?.trackVisibilityToggle('episodeDetails', $event.target.checked)"
               />
               Episode Details
             </label>
@@ -71,6 +74,7 @@
                 class="checkbox mr-2"
                 x-model="$store.visOptions.visible"
                 value="episodeImages"
+                @change="window.GAState?.trackVisibilityToggle('episodeImages', $event.target.checked)"
               />
               Episode Images
             </label>
@@ -84,6 +88,7 @@
                 class="checkbox mr-2"
                 x-model="$store.visOptions.visible"
                 value="friendlyHealth"
+                @change="window.GAState?.trackVisibilityToggle('friendlyHealth', $event.target.checked)"
               />
               Friendly Health
             </label>
@@ -97,6 +102,7 @@
                 class="checkbox mr-2"
                 x-model="$store.visOptions.visible"
                 value="healthDeathRewards"
+                @change="window.GAState?.trackVisibilityToggle('healthDeathRewards', $event.target.checked)"
               />
               Health/Death Rewards
             </label>
@@ -110,6 +116,7 @@
                 class="checkbox mr-2"
                 x-model="$store.visOptions.visible"
                 value="navigation"
+                @change="window.GAState?.trackVisibilityToggle('navigation', $event.target.checked)"
               />
               Navigation Rewards
             </label>
@@ -123,6 +130,7 @@
                 class="checkbox mr-2"
                 x-model="$store.visOptions.visible"
                 value="overallNavVsCombat"
+                @change="window.GAState?.trackVisibilityToggle('overallNavVsCombat', $event.target.checked)"
               />
               Overall Nav vs Combat
             </label>
@@ -136,6 +144,7 @@
                 class="checkbox mr-2"
                 x-model="$store.visOptions.visible"
                 value="perUnitActions"
+                @change="window.GAState?.trackVisibilityToggle('perUnitActions', $event.target.checked)"
               />
               Per Unit Actions
             </label>
@@ -149,6 +158,7 @@
                 class="checkbox mr-2"
                 x-model="$store.visOptions.visible"
                 value="playbackControls"
+                @change="window.GAState?.trackVisibilityToggle('playbackControls', $event.target.checked)"
               />
               Playback Controls
             </label>
@@ -162,6 +172,7 @@
                 class="checkbox mr-2"
                 x-model="$store.visOptions.visible"
                 value="timelines"
+                @change="window.GAState?.trackVisibilityToggle('timelines', $event.target.checked)"
               />
               Timelines
             </label>
@@ -175,6 +186,7 @@
                 class="checkbox mr-2"
                 x-model="$store.visOptions.visible"
                 value="valueEstimate"
+                @change="window.GAState?.trackVisibilityToggle('valueEstimate', $event.target.checked)"
               />
               Value Estimate
             </label>
@@ -188,6 +200,7 @@
                 class="checkbox mr-2"
                 x-model="$store.visOptions.visible"
                 value="unitsOverTime"
+                @change="window.GAState?.trackVisibilityToggle('unitsOverTime', $event.target.checked)"
               />
               Units Over Time
             </label>
@@ -211,6 +224,7 @@
                 class="checkbox mr-2"
                 x-model="$store.visOptions.visible"
                 value="plotLegends"
+                @change="window.GAState?.trackVisibilityToggle('plotLegends', $event.target.checked)"
               />
               Show Legends
             </label>
@@ -225,6 +239,7 @@
                 x-model="$store.visOptions.legendPosition"
                 value="horizontal"
                 :disabled="!$store.visOptions.visible.includes('plotLegends')"
+                @change="window.GAState?.trackLegendSettings('position', 'horizontal')"
               />
               Horizontal Legend
             </label>
@@ -239,6 +254,7 @@
                 x-model="$store.visOptions.legendPosition"
                 value="vertical"
                 :disabled="!$store.visOptions.visible.includes('plotLegends')"
+                @change="window.GAState?.trackLegendSettings('position', 'vertical')"
               />
               Vertical Legend
             </label>
@@ -253,6 +269,7 @@
                 x-model="$store.visOptions.legendOverlap"
                 value="inside"
                 :disabled="!$store.visOptions.visible.includes('plotLegends')"
+                @change="window.GAState?.trackLegendSettings('overlap', 'inside')"
               />
               Inside of Plot
             </label>
@@ -267,6 +284,7 @@
                 x-model="$store.visOptions.legendOverlap"
                 value="outside"
                 :disabled="!$store.visOptions.visible.includes('plotLegends')"
+                @change="window.GAState?.trackLegendSettings('overlap', 'outside')"
               />
               Outside of Plot
             </label>
@@ -275,11 +293,11 @@
       </ul>
     </div>
     <label class="toggle text-base-content ml-2" data-ga-id="theme-toggle">
-      <input type="checkbox" checked="checked" x-model="$store.theme.darkMode" @change="document.documentElement.setAttribute('data-theme', $store.theme.darkMode ? 'dark' : 'light')"/>
+      <input type="checkbox" checked="checked" x-model="$store.theme.darkMode" @change="document.documentElement.setAttribute('data-theme', $store.theme.darkMode ? 'dark' : 'light'); window.GAState?.trackThemeChange($store.theme.darkMode)"/>
       <i class="ri-sun-line flex items-center justify-center text-sm" style="contain: size;"></i>
       <i class="ri-moon-line flex items-center justify-center text-sm" style="contain: size;"></i>
     </label>
-    <button class="btn btn-ghost rounded-field text-center" data-ga-id="layout-toggle" @click="$store.theme.denseLayout = !$store.theme.denseLayout">
+    <button class="btn btn-ghost rounded-field text-center" data-ga-id="layout-toggle" @click="$store.theme.denseLayout = !$store.theme.denseLayout; window.GAState?.trackLayoutChange($store.theme.denseLayout)">
       <i x-show="$store.theme.denseLayout" class="ri-layout-grid-fill h-10 w-10 fill-current font-normal text-xl content-center"></i>
       <i x-show="!$store.theme.denseLayout" class="ri-layout-grid-2-fill h-10 w-10 fill-current font-normal text-xl content-center"></i>
     </button>

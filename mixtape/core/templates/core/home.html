@@ -89,6 +89,7 @@
           type="search"
           class="grow"
           placeholder="Search"
+          data-ga-id="episode-search-input"
           x-model="searchQuery"
           disabled
         />
@@ -97,15 +98,15 @@
     <div class="flex flex-grow-1 gap-2 justify-evenly">
       <ul class="menu menu-horizontal px-1 z-10">
         <li>
-          <details>
-            <summary class="btn btn-ghost content-center!" disabled>
+          <details data-ga-id="algorithm-filter-dropdown">
+            <summary class="btn btn-ghost content-center!" data-ga-id="algorithm-filter-button" disabled>
               Algorithm
             </summary>
             <ul class="bg-base-100 rounded-t-none p-2">
               {% for algorithm in algorithms %}
               <li>
                 <label class="label">
-                  <input type="checkbox" class="checkbox" value="{{ algorithm }}" x-model="selectedAlgorithms" />
+                  <input type="checkbox" class="checkbox" data-ga-id="algorithm-filter-{{ algorithm }}" value="{{ algorithm }}" x-model="selectedAlgorithms" @change="window.GAState?.trackFilterChange('algorithm', selectedAlgorithms)" />
                   {{ algorithm }}
                 </label>
               </li>
@@ -116,15 +117,15 @@
       </ul>
       <ul class="menu menu-horizontal px-1 z-10">
         <li>
-          <details>
-            <summary class="btn btn-ghost content-center!" disabled>
+          <details data-ga-id="environment-filter-dropdown">
+            <summary class="btn btn-ghost content-center!" data-ga-id="environment-filter-button" disabled>
               Environment
             </summary>
             <ul class="bg-base-100 rounded-t-none p-2">
               {% for environment in environments %}
               <li>
                 <label class="label">
-                  <input type="checkbox" class="checkbox" value="{{ environment }}" x-model="selectedEnvironments" />
+                  <input type="checkbox" class="checkbox" data-ga-id="environment-filter-{{ environment }}" value="{{ environment }}" x-model="selectedEnvironments" @change="window.GAState?.trackFilterChange('environment', selectedEnvironments)" />
                   {{ environment }}
                 </label>
               </li>
@@ -135,32 +136,32 @@
       </ul>
       <ul class="menu menu-horizontal px-1 z-10">
         <li>
-          <details>
-            <summary class="btn btn-ghost content-center!" disabled>
+          <details data-ga-id="sort-order-dropdown">
+            <summary class="btn btn-ghost content-center!" data-ga-id="sort-order-button" disabled>
               <i class="ri-arrow-up-down-line"></i>
             </summary>
             <ul class="bg-base-100 rounded-t-none p-2">
               <li>
                 <label class="label">
-                  <input type="checkbox" class="checkbox" value="env_asc" x-model="sortOrder" />
+                  <input type="checkbox" class="checkbox" data-ga-id="sort-env-asc" value="env_asc" x-model="sortOrder" @change="window.GAState?.trackFilterChange('sort_order', sortOrder)" />
                   Environment Name Ascending
                 </label>
               </li>
               <li>
                 <label class="label">
-                  <input type="checkbox" class="checkbox" value="env_desc" x-model="sortOrder" />
+                  <input type="checkbox" class="checkbox" data-ga-id="sort-env-desc" value="env_desc" x-model="sortOrder" @change="window.GAState?.trackFilterChange('sort_order', sortOrder)" />
                   Environment Name Descending
                 </label>
               </li>
               <li>
                 <label class="label">
-                  <input type="checkbox" class="checkbox" value="algo_asc" x-model="sortOrder" />
+                  <input type="checkbox" class="checkbox" data-ga-id="sort-algo-asc" value="algo_asc" x-model="sortOrder" @change="window.GAState?.trackFilterChange('sort_order', sortOrder)" />
                   Algorithm Name Ascending
                 </label>
               </li>
               <li>
                 <label class="label">
-                  <input type="checkbox" class="checkbox" value="algo_desc" x-model="sortOrder" />
+                  <input type="checkbox" class="checkbox" data-ga-id="sort-algo-desc" value="algo_desc" x-model="sortOrder" @change="window.GAState?.trackFilterChange('sort_order', sortOrder)" />
                   Algorithm Name Descending
                 </label>
               </li>
@@ -168,10 +169,10 @@
           </details>
         </li>
       </ul>
-      <button class="btn btn-square btn-ghost self-center" disabled>
+      <button class="btn btn-square btn-ghost self-center" data-ga-id="filter-button" disabled>
         <i class="ri-filter-fill"></i>
       </button>
-      <button class="btn btn-square btn-ghost self-center" disabled>
+      <button class="btn btn-square btn-ghost self-center" data-ga-id="list-check-button" disabled>
         <i class="ri-list-check-3"></i>
       </button>
     </div>
@@ -186,14 +187,15 @@
               <input
                 id="{{ episode.pk }}-checkbox"
                 type="checkbox"
+                data-ga-id="episode-select-{{ episode.pk }}"
                 value="{{ episode.pk }}"
                 x-model="selectedEpisodes"
-                @change="updateAllowedEnvironment('{{ episode.inference.checkpoint.training.environment }}')"
+                @change="updateAllowedEnvironment('{{ episode.inference.checkpoint.training.environment }}'); window.GAState?.trackEpisodeSelection({{ episode.pk }}, $event.target.checked, selectedEpisodes.length, allowedEnvironment)"
                 class="checkbox checkbox-primary"
                 :disabled="allowedEnvironment && allowedEnvironment !== '{{ episode.inference.checkpoint.training.environment }}'"
               >
             </label>
-            <a href="{% url 'insights' %}?episode_id={{ episode.pk }}" class="rounded-lg">
+            <a href="{% url 'insights' %}?episode_id={{ episode.pk }}" data-ga-id="episode-link-{{ episode.pk }}" class="rounded-lg" @click="window.GAState?.trackNavigation(window.location.pathname, '{% url 'insights' %}?episode_id={{ episode.pk }}', 'link')">
               <h2>{{ episode.inference.checkpoint.training.environment }}</h2>
             </a>
           </div>
@@ -225,6 +227,7 @@
                           href="data:text/json;charset=utf-8,{{ episode.inference.checkpoint.training.config|pretty_json:2|safe|urlencode }}"
                           download="training_{{ episode.inference.checkpoint.training.pk }}_config.json"
                           class="btn btn-sm btn-secondary btn-circle"
+                          data-ga-id="download-training-config-{{ episode.pk }}"
                         >
                           <i class="ri-download-line"></i>
                         </a>
@@ -240,6 +243,7 @@
                           href="data:text/json;charset=utf-8,{{ episode.inference.config|pretty_json:2|safe|urlencode }}"
                           download="episode_{{ episode.pk }}_config.json"
                           class="btn btn-sm btn-secondary btn-circle"
+                          data-ga-id="download-episode-config-{{ episode.pk }}"
                         >
                           <i class="ri-download-line"></i>
                         </a>
@@ -259,8 +263,9 @@
   <div class="w-full flex justify-end flex-shrink-0 my-2">
     <button
       class="bg-blue-500 hover:bg-blue-800 rounded-lg px-5 py-2.5 me-2 mb-2 disabled:bg-gray-300 disabled:text-gray-400"
+      data-ga-id="view-selected-episodes"
       :disabled="selectedEpisodes.length <= 1"
-      @click="viewSelectedEpisodes"
+      @click="viewSelectedEpisodes(); window.GAState?.trackNavigation(window.location.pathname, '{% url 'insights' %}', 'button')"
     >
       View Selected Episodes
     </button>

@@ -4,7 +4,7 @@ import secrets
 class GA4StudyUserIdMiddleware:
     """Ensures a pseudonymous, non-PII user id is present in session."""
 
-    SESSION_KEY = 'ga4_study_user_id'
+    SESSION_KEY = 'psuid'
 
     def __init__(self, get_response):
         self.get_response = get_response
