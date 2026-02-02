@@ -58,11 +58,19 @@
         <i class="ri-checkbox-multiple-blank-line"></i>
         <span class="font-semibold" x-text="$store.insights.episodeIds.length"></span>
       </span>
-      <span class="badge badge-soft badge-primary" :title="`${$store.insights.uniqueAgents.length} Agents`">
+      <span class="badge badge-soft badge-primary"
+            :title="`Agents:\n${$store.insights.uniqueAgents.join('\n')}`">
         <i class="ri-robot-2-line"></i>
         <span class="font-semibold" x-text="$store.insights.uniqueAgents.length"></span>
       </span>
-      <span class="badge badge-soft badge-primary" :title="`Avg Reward: ${avgRewardDisplay ?? '—'}`">
+      <span class="badge badge-soft badge-primary"
+            :title="(() => {
+              const rewards = $store.insights.parsedData?.episode_total_rewards || [];
+              const ids = $store.insights.episodeIds || [];
+              if (!rewards.length) return `Avg Reward: ${avgRewardDisplay ?? '—'}`;
+              const lines = rewards.map((r, i) => `Episode ${ids[i] ?? i}: ${typeof r === 'number' ? r.toFixed(2) : '—'}`);
+              return `Avg: ${avgRewardDisplay ?? '—'}\n${lines.join('\n')}`;
+            })()">
         <i class="ri-trophy-line"></i>
         <span class="font-semibold" x-text="avgRewardDisplay ?? '—'"></span>
       </span>
@@ -224,11 +232,16 @@
     <div x-show="$store.settings.showTimeline" x-cloak>
       {% include "core/insights/timeline.html" %}
     </div>
-    <div class="flex flex-row gap-2">
-      <div x-show="$store.settings.showEpisodeInfo" x-cloak class="flex-1">
+    <div class="grid gap-2"
+         :class="{
+           'grid-cols-2': $store.settings.showEpisodeInfo && $store.settings.showMediaViewer,
+           'grid-cols-1': !$store.settings.showEpisodeInfo || !$store.settings.showMediaViewer
+         }">
+      <div x-show="$store.settings.showEpisodeInfo" x-cloak class="overflow-y-auto max-h-full"
+           :class="{ 'row-span-1': $store.settings.showMediaViewer }">
         {% include "core/insights/episode_info.html" %}
       </div>
-      <div x-show="$store.settings.showMediaViewer" x-cloak class="flex-2">
+      <div x-show="$store.settings.showMediaViewer" x-cloak>
         {% include "core/insights/media_viewer.html" %}
       </div>
     </div>

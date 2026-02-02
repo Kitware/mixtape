@@ -59,7 +59,6 @@ document.addEventListener('alpine:init', () => {
           const step = this.$store.insights.currentStep;
           const xLine = [step, step];
           const yLine = [yMin - 0.5, yMax + 0.5];
-          // Use restyle: arguments must be arrays-of-arrays per selected trace
           Plotly.restyle(this.$el, { x: [xLine], y: [yLine] }, [1]);
         }
       });
@@ -99,7 +98,7 @@ document.addEventListener('alpine:init', () => {
         : 1;
       this.data = [
         {
-          agentStepClusters: agentStepClusters,
+          z: agentStepClusters,
           type: 'heatmap',
           showscale: false,
           colorscale: 'YlGnBu',

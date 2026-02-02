@@ -21,6 +21,43 @@ document.addEventListener('alpine:init', () => {
     // Runtime values
     currentStep: 0,
 
+    // Get active timeline key steps based on global/episode mode
+    getActiveTimelineKeySteps() {
+      const settings = Alpine.store('settings');
+      if (!settings) return [];
+      const useGlobal = settings.useGlobalTimeline;
+      const epIdx = settings.timelineEpisodeIdx;
+
+      if (useGlobal && Array.isArray(this.timelineKeySteps)) {
+        // Global mode: merge all episodes' key steps, sort by reward, take top 40
+        const allSteps = [];
+        this.timelineKeySteps.forEach((episodeSteps, episodeIdx) => {
+          if (Array.isArray(episodeSteps)) {
+            episodeSteps.forEach(step => {
+              allSteps.push({
+                ...step,
+                episodeIdx: episodeIdx,
+                episodeId: this.episodeIds?.[episodeIdx] || episodeIdx,
+              });
+            });
+          }
+        });
+        // Sort by total_rewards descending, take top 40, then sort by step number
+        const topSteps = allSteps
+          .sort((a, b) => b.total_rewards - a.total_rewards)
+          .slice(0, 40)
+          .sort((a, b) => {
+            // Sort by episode first, then by step number within episode
+            if (a.episodeIdx !== b.episodeIdx) return a.episodeIdx - b.episodeIdx;
+            return a.number - b.number;
+          });
+        return topSteps;
+      } else {
+        // Episode mode: return selected episode's key steps
+        return this.timelineKeySteps?.[epIdx] || [];
+      }
+    },
+
     init() {
       // Parse JSON data
       this.parsedData = JSON.parse(
