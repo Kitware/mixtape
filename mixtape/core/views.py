@@ -302,9 +302,15 @@ def insights(request: HttpRequest) -> HttpResponse:
     for episode_pk in episode_pks:
         insight_results = _episode_insights(episode_pk, group_by_episode)
         all_episode_details.append(insight_results['episode_details'])
-        all_action_v_reward[f'Episode {episode_pk}'] = insight_results['action_v_reward']
+        if group_by_episode:
+            # Multi-episode: wrap each episode's aggregated data under Episode key
+            all_action_v_reward[f'Episode {episode_pk}'] = insight_results['action_v_reward']
+            all_action_v_frequency[f'Episode {episode_pk}'] = insight_results['action_v_frequency']
+        else:
+            # Single episode: data is already keyed by agent, use directly
+            all_action_v_reward = insight_results['action_v_reward']
+            all_action_v_frequency = insight_results['action_v_frequency']
         all_reward_histogram.append(insight_results['reward_histogram'])
-        all_action_v_frequency[f'Episode {episode_pk}'] = insight_results['action_v_frequency']
         all_rewards_over_time.append(insight_results['rewards_over_time'])
         all_decomposed_rewards.append(insight_results['decomposed_rewards'])
         all_step_data.append(insight_results['step_data'])
