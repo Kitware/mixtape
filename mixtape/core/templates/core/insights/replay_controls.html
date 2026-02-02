@@ -3,6 +3,7 @@
     class="btn btn-ghost btn-sm"
     :disabled="$store.insights.currentStep === 0"
     @click="$store.insights.currentStep = 0"
+    title="Go to first step"
   >
     <i class="ri-rewind-start-line"></i>
   </button>
@@ -10,12 +11,14 @@
     class="btn btn-ghost btn-sm"
     :disabled="$store.insights.currentStep === 0"
     @click="$store.insights.currentStep--"
+    title="Previous step"
   >
     <i class="ri-rewind-line"></i>
   </button>
   <button
     class="btn btn-ghost btn-sm"
     @click="playing = !playing; if (playing) stepForward()"
+    :title="playing ? 'Pause' : 'Play'"
   >
     <i x-show="!playing" x-cloak class="ri-play-line"></i>
     <i x-show="playing" x-cloak class="ri-pause-line"></i>
@@ -24,6 +27,7 @@
     class="btn btn-ghost btn-sm"
     :disabled="$store.insights.currentStep === maxSteps"
     @click="$store.insights.currentStep++"
+    title="Next step"
   >
     <i class="ri-speed-line"></i>
   </button>
@@ -31,6 +35,7 @@
     class="btn btn-ghost btn-sm"
     :disabled="$store.insights.currentStep === maxSteps"
     @click="$store.insights.currentStep = maxSteps"
+    title="Go to last step"
   >
     <i class="ri-forward-end-line"></i>
   </button>
@@ -39,10 +44,12 @@
       x-cloak
       type="number"
       class="input input-sm validator w-16 text-center"
-      min="0"
-      :max="maxSteps"
-      x-model.number="$store.insights.currentStep"
+      min="1"
+      :max="maxSteps + 1"
+      x-model.number="stepInput"
+      @keydown.enter="jumpToStep()"
+      @blur="jumpToStep()"
     />
-    <span class="text-xs">/ <span x-text="maxSteps"></span></span>
+    <span class="text-xs">/ <span x-text="maxSteps + 1"></span></span>
   </div>
 </section>
