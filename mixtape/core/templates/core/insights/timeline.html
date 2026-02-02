@@ -1,8 +1,8 @@
 <section x-cloak class="border border-base-300 rounded-lg flex">
   <ol class="items-center flex p-1 w-full">
     <li class="relative flex items-center"><div class="flex w-1 bg-primary h-6 ml-2"></div></li>
-    <template x-for="ts in $store.insights.timelineKeySteps[$store.settings.timelineEpisodeIdx]">
-      <li class="relative w-full flex even:flex-col odd:flex-col-reverse even:mb-5 odd:mt-5" :key="ts.number">
+    <template x-for="ts in $store.insights.getActiveTimelineKeySteps()">
+      <li class="relative w-full flex even:flex-col odd:flex-col-reverse even:mb-5 odd:mt-5" :key="ts.episodeIdx !== undefined ? `${ts.episodeIdx}-${ts.number}` : ts.number">
         <p class="text-sm text-center" x-text="ts.total_rewards.toFixed(2)"></p>
         <div class="flex items-center">
             <div class="flex w-full bg-primary h-0.5"></div>
@@ -10,8 +10,12 @@
               class="cursor-pointer z-10 flex items-center justify-center w-2 h-2 rounded-full ring-4 shrink-0"
               :class="$store.insights.currentStep === ts.number ? 'ring-[var(--color-primary-content)] bg-primary' : 'ring-[var(--color-primary)]'"
               @click="$store.insights.currentStep = ts.number"
-              :title="`Step ${ts.number} — Reward: ${ts.total_rewards.toFixed(2)}`"
-              :aria-label="`Step ${ts.number} Reward ${ts.total_rewards.toFixed(2)}`"
+              :title="ts.episodeId !== undefined
+                ? `Episode ${ts.episodeId} — Step ${ts.number} — Reward: ${ts.total_rewards.toFixed(2)}`
+                : `Step ${ts.number} — Reward: ${ts.total_rewards.toFixed(2)}`"
+              :aria-label="ts.episodeId !== undefined
+                ? `Episode ${ts.episodeId} Step ${ts.number} Reward ${ts.total_rewards.toFixed(2)}`
+                : `Step ${ts.number} Reward ${ts.total_rewards.toFixed(2)}`"
             >
             </button>
             <div class="flex w-full bg-primary h-0.5"></div>

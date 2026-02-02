@@ -1,41 +1,65 @@
-<section class="border border-base-300 rounded-lg p-3 h-full">
-  <div class="overflow-x-auto">
-    <table class="w-full text-sm">
-      <thead>
-        <tr>
-          <th class="text-left py-2 px-2 align-bottom" rowspan="2">Agents</th>
-          <template x-for="(ep, epIdx) in episodeSummaries" :key="epIdx">
-            <th scope="colgroup" class="text-center py-2 px-2 align-bottom font-medium" :colspan="2" x-text="`Episode ${ep.id}`"></th>
-          </template>
-        </tr>
-        <tr>
-          <template x-for="pair in episodePairs" :key="`h2-${pair.epIdx}-${pair.kind}`">
-            <th class="py-1 px-2 min-w-[6rem]"
-                :class="[
-                  pair.kind==='action' ? 'text-right' : 'text-left',
-                  (pair.kind==='action' && pair.epIdx>0) ? 'border-l' : ''
-                ].join(' ')"
-                x-text="pair.kind==='action' ? 'Action' : 'Reward'">
-            </th>
-          </template>
-        </tr>
-      </thead>
-      <tbody>
-        <template x-for="agent in $store.insights.uniqueAgents" :key="agent">
-          <tr class="border-t">
-            <td class="py-2 px-2 font-medium" x-text="agent"></td>
-            <template x-for="pair in episodePairs" :key="`r-${agent}-${pair.epIdx}-${pair.kind}`">
-              <td class="py-2 px-2 whitespace-nowrap min-w-[6rem] tabular-nums"
-                  :class="[
-                    pair.kind==='action' ? 'text-right' : 'text-left',
-                    (pair.kind==='action' && pair.epIdx>0) ? 'border-l' : ''
-                  ].join(' ')"
-                  x-text="pair.kind==='action' ? $data.getAgentAction(pair.epIdx, agent) : $data.getAgentRewardStr(pair.epIdx, agent)">
-              </td>
+<section class="border border-base-300 rounded-lg p-3 h-full flex flex-col gap-3"
+         x-data="{
+           selectedEpisodes: [],
+           get allSelected() { return this.selectedEpisodes.length === (episodeSummaries?.length || 0); },
+           toggleAll() {
+             if (this.allSelected) {
+               this.selectedEpisodes = [];
+             } else {
+               this.selectedEpisodes = episodeSummaries?.map((_, i) => i) || [];
+             }
+           },
+           init() { this.selectedEpisodes = episodeSummaries?.map((_, i) => i) || []; }
+         }">
+  <div class="flex items-center justify-between flex-wrap gap-2">
+    <h3 class="text-sm font-medium">Step Details</h3>
+    <div x-show="episodeSummaries?.length > 1" x-cloak class="flex items-center gap-3 text-sm">
+      <label class="flex items-center gap-1 cursor-pointer">
+        <input type="checkbox" class="checkbox checkbox-sm"
+               :checked="allSelected"
+               @change="toggleAll()" />
+        <span>All</span>
+      </label>
+      <template x-for="(ep, idx) in episodeSummaries" :key="idx">
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="checkbox" class="checkbox checkbox-sm"
+                 :value="idx"
+                 x-model.number="selectedEpisodes" />
+          <span x-text="`Ep ${ep.id}`"></span>
+        </label>
+      </template>
+    </div>
+  </div>
+  <div class="flex flex-wrap gap-4 overflow-y-auto">
+    <template x-for="(ep, epIdx) in episodeSummaries" :key="epIdx">
+      <div class="flex-1 min-w-[200px]" x-show="selectedEpisodes.includes(epIdx)">
+        <table class="text-sm w-full">
+          <thead>
+            <tr>
+              <th scope="colgroup" class="text-center py-2 px-2 font-medium border-b" colspan="3">
+                <span x-text="`Episode ${ep.id}`"></span>
+                <span x-show="$store.insights.currentStep >= (ep.steps || 0)" x-cloak
+                      class="ml-1 badge badge-xs badge-success"
+                      title="Episode completed">done</span>
+              </th>
+            </tr>
+            <tr class="border-b">
+              <th class="text-left py-1 px-2">Agent</th>
+              <th class="text-right py-1 px-2 min-w-[5rem]">Action</th>
+              <th class="text-left py-1 px-2 min-w-[5rem]">Reward</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="agent in $store.insights.uniqueAgents" :key="`${epIdx}-${agent}`">
+              <tr class="border-t">
+                <td class="py-2 px-2 font-medium" x-text="agent"></td>
+                <td class="py-2 px-2 text-right whitespace-nowrap tabular-nums" x-text="$data.getAgentAction(epIdx, agent)"></td>
+                <td class="py-2 px-2 text-left whitespace-nowrap tabular-nums" x-text="$data.getAgentRewardStr(epIdx, agent)"></td>
+              </tr>
             </template>
-          </tr>
-        </template>
-      </tbody>
-    </table>
+          </tbody>
+        </table>
+      </div>
+    </template>
   </div>
 </section>
