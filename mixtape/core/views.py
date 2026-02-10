@@ -620,5 +620,24 @@ def clustering_result(request: HttpRequest) -> HttpResponse:
 
 
 def home_page(request: HttpRequest) -> HttpResponse:
-    episodes = Episode.objects.select_related('inference__checkpoint__training').all()
-    return render(request, 'core/home/home.html', {'episodes': episodes})
+    episodes = (
+        Episode.objects.select_related('inference__checkpoint__training')
+        .prefetch_related('steps__agent_steps')
+        .all()
+    )
+
+    # Compute total reward for each episode
+    episodes_with_rewards = []
+    for episode in episodes:
+        total_reward = 0.0
+        for step in episode.steps.all():
+            for agent_step in step.agent_steps.all():
+                total_reward += sum(agent_step.rewards)
+        episodes_with_rewards.append(
+            {
+                'episode': episode,
+                'total_reward': total_reward,
+            }
+        )
+
+    return render(request, 'core/home/home.html', {'episodes_with_rewards': episodes_with_rewards})
