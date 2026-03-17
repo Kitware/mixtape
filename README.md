@@ -1,5 +1,10 @@
 # MIXTAPE
 
+## Documentation
+
+- [Blog post](https://www.kitware.com/mixtape-bringing-clarity-to-multi-agent-reinforcement-learning-through-interactive-explainability/)
+- [Interactive demo](https://www.mixtape.kitware.com/)
+
 ## Develop with Docker
 This is the simplest configuration for developers to start with.
 
@@ -92,7 +97,7 @@ If you've already started the server with `docker compose up`, you can see all a
 
 ### Ingest existing episode(s)
 
-See the [ingest documentation](./mixtape/core/ingest/README.md)
+See the [ingest documentation](./mixtape/core/management/ingest/README.md)
 
 ## Testing
 ### Initial Setup
