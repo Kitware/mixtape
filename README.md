@@ -1,5 +1,10 @@
 # MIXTAPE
 
+## Documentation
+
+- [Blog post](https://www.kitware.com/mixtape-bringing-clarity-to-multi-agent-reinforcement-learning-through-interactive-explainability/)
+- [Interactive demo](https://www.mixtape.kitware.com/)
+
 ## Develop with Docker
 This is the simplest configuration for developers to start with.
 
