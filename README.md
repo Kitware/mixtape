@@ -92,7 +92,7 @@ If you've already started the server with `docker compose up`, you can see all a
 
 ### Ingest existing episode(s)
 
-See the [ingest documentation](./mixtape/core/ingest/README.md)
+See the [ingest documentation](./mixtape/core/management/ingest/README.md)
 
 ## Testing
 ### Initial Setup
